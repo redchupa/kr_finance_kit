@@ -120,6 +120,11 @@ class FXSensor(_MarketBase):
 class QuoteSensor(_MarketBase):
     _attr_icon = "mdi:cash"
     _attr_state_class = SensorStateClass.MEASUREMENT
+    # The device already carries the company/ticker name; with
+    # has_entity_name=True (inherited from _MarketBase), setting name=None
+    # makes HA use the device name as the friendly name. Setting an entity
+    # name here would produce "삼성전자 삼성전자" duplication.
+    _attr_name = None
 
     def __init__(
         self,
@@ -132,10 +137,10 @@ class QuoteSensor(_MarketBase):
         self._market = market
         self._ticker = ticker
         self._attr_unique_id = f"{DOMAIN}_{market.lower()}_{ticker}"
-        # Friendly name when we have it (e.g. "삼성전자"), bare code otherwise.
-        # The unique_id stays code-based for stability — the user-facing label
-        # is the only thing that changes when names are resolved.
-        self._attr_name = label or ticker
+        # Device label is the single source of truth for the friendly
+        # name: "삼성전자" when resolved, "KR 005930" otherwise. Both the
+        # unique_id and entity_id stay code-based so automations don't
+        # break when names are added/removed later.
         self._attr_device_info = ticker_device(market, ticker, label)
         self._attr_native_unit_of_measurement = "KRW" if market == MARKET_KR else "USD"
 
