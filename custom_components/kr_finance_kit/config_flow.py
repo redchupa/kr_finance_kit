@@ -9,6 +9,12 @@ codes twice was a recurring source of confusion.
 Holdings (quantity + average price) stay out of the flow on purpose —
 those land via the ``add_position`` service so they're never serialized
 into ``entry.data`` until the user explicitly chooses to add them.
+
+Form pre-fill uses ``add_suggested_values_to_schema`` so the input boxes
+arrive populated with the user's current values (Options flow) or the
+last-attempted values (Config flow after a validation error). The plain
+``vol.Optional(..., default=...)`` only kicks in when the user submits a
+field blank; HA does not surface schema defaults as input placeholders.
 """
 from __future__ import annotations
 
@@ -87,6 +93,22 @@ async def _enrich_kr_metadata(
     return corp_codes, keyed
 
 
+# Shared schema for both Config Flow's user step and Options Flow's init
+# step — they accept the same fields. We keep it free of ``default=``
+# values because pre-filling is handled separately via
+# ``add_suggested_values_to_schema`` (defaults only apply on submit-with-
+# blank, which would silently wipe values across reloads).
+_FORM_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_OPENDART_API_KEY): str,
+        vol.Optional(CONF_KR_TICKERS): str,
+        vol.Optional(CONF_US_TICKERS): str,
+        vol.Optional(CONF_INCLUDE_INDICES, default=True): bool,
+        vol.Optional(CONF_INCLUDE_FX, default=True): bool,
+    }
+)
+
+
 class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
@@ -120,17 +142,14 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     },
                 )
 
+        # On a validation error we re-render the form pre-filled with what
+        # the user just typed (rather than blanks) so they only have to
+        # tweak the offending field. First-time visit has no user_input,
+        # so the form arrives empty as expected.
+        suggested = user_input or {}
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Optional(CONF_OPENDART_API_KEY, default=""): str,
-                    vol.Optional(CONF_KR_TICKERS, default=""): str,
-                    vol.Optional(CONF_US_TICKERS, default=""): str,
-                    vol.Optional(CONF_INCLUDE_INDICES, default=True): bool,
-                    vol.Optional(CONF_INCLUDE_FX, default=True): bool,
-                }
-            ),
+            data_schema=self.add_suggested_values_to_schema(_FORM_SCHEMA, suggested),
             errors=errors,
         )
 
@@ -179,31 +198,20 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
                     },
                 )
 
+        # Pre-fill with whatever the user just typed (if they're returning
+        # after a validation error) or the currently-saved values
+        # (first visit). add_suggested_values_to_schema is the HA-blessed
+        # way to populate input boxes — schema defaults don't show up in
+        # the UI by themselves.
+        suggested = user_input if user_input is not None else {
+            CONF_OPENDART_API_KEY: self._current(CONF_OPENDART_API_KEY, ""),
+            CONF_KR_TICKERS: _list_to_csv(self._current(CONF_KR_TICKERS, [])),
+            CONF_US_TICKERS: _list_to_csv(self._current(CONF_US_TICKERS, [])),
+            CONF_INCLUDE_INDICES: self._current(CONF_INCLUDE_INDICES, True),
+            CONF_INCLUDE_FX: self._current(CONF_INCLUDE_FX, True),
+        }
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema(
-                {
-                    vol.Optional(
-                        CONF_OPENDART_API_KEY,
-                        default=self._current(CONF_OPENDART_API_KEY, ""),
-                    ): str,
-                    vol.Optional(
-                        CONF_KR_TICKERS,
-                        default=_list_to_csv(self._current(CONF_KR_TICKERS, [])),
-                    ): str,
-                    vol.Optional(
-                        CONF_US_TICKERS,
-                        default=_list_to_csv(self._current(CONF_US_TICKERS, [])),
-                    ): str,
-                    vol.Optional(
-                        CONF_INCLUDE_INDICES,
-                        default=self._current(CONF_INCLUDE_INDICES, True),
-                    ): bool,
-                    vol.Optional(
-                        CONF_INCLUDE_FX,
-                        default=self._current(CONF_INCLUDE_FX, True),
-                    ): bool,
-                }
-            ),
+            data_schema=self.add_suggested_values_to_schema(_FORM_SCHEMA, suggested),
             errors=errors,
         )
