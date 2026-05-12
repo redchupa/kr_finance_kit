@@ -71,44 +71,103 @@ def normalize_kr_ticker(raw: str) -> str:
     return s
 
 
-def _fetch_single(symbol: str) -> dict[str, Any]:
-    """Sync helper — run in executor."""
-    import yfinance as yf  # heavy module, lazy-load on first use
+def _fetch_via_history(t) -> tuple[float | None, float | None, str | None, int]:
+    """Try ``Ticker.history`` first; returns (close, prev_close, asof, bar_count).
 
+    We use ``period="1mo"`` (not ``5d``) because Korean markets observe
+    extra holidays (예: Lunar New Year, Chuseok) that can wipe out
+    multi-day windows. 1 month guarantees enough trading days even after
+    long breaks. Returns (None, None, None, 0) when the request fails or
+    yields an empty frame.
+    """
     try:
-        t = yf.Ticker(symbol)
-        hist = t.history(period="5d", auto_adjust=False)
-    except Exception as err:  # noqa: BLE001 — yfinance raises bare Exception subclasses
-        LOGGER.debug("yfinance fetch %s failed: %s", symbol, err)
-        return {}
+        hist = t.history(period="1mo", auto_adjust=False)
+    except Exception as err:  # noqa: BLE001
+        LOGGER.debug("yfinance .history failed: %s", err)
+        return None, None, None, 0
     if hist is None or hist.empty:
-        return {}
+        return None, None, None, 0
 
     last = hist.iloc[-1]
     try:
         close = float(last["Close"])
     except (KeyError, ValueError, TypeError):
+        return None, None, None, 0
+
+    asof = last.name.isoformat() if hasattr(last.name, "isoformat") else str(last.name)
+    prev_close: float | None = None
+    if len(hist) >= 2:
+        try:
+            prev_close = float(hist.iloc[-2]["Close"])
+        except (KeyError, ValueError, TypeError):
+            prev_close = None
+    return close, prev_close, asof, len(hist)
+
+
+def _fetch_via_fast_info(t) -> tuple[float | None, float | None]:
+    """Fallback path: ``Ticker.fast_info`` uses the lightweight chart API.
+
+    Faster and less rate-limited than ``.info``, but doesn't always
+    populate every field. We only ask for ``last_price`` and
+    ``previous_close``. Returns (None, None) when nothing usable came
+    back.
+    """
+    try:
+        info = t.fast_info
+        last = info.last_price
+        prev = info.previous_close
+    except Exception as err:  # noqa: BLE001
+        LOGGER.debug("yfinance .fast_info failed: %s", err)
+        return None, None
+    return (
+        float(last) if last is not None else None,
+        float(prev) if prev is not None else None,
+    )
+
+
+def _fetch_single(symbol: str) -> dict[str, Any]:
+    """Sync helper — run in executor.
+
+    Strategy: try ``history`` first (gives us prev_close and a precise
+    ``asof`` timestamp); if it returns nothing, fall back to
+    ``fast_info`` so we at least get a current price. This covers the
+    overnight / post-holiday window where ``history`` sometimes returns
+    an empty frame for KR equities — the previous v0.1.x behavior of
+    returning ``{}`` made HA mark the sensor unavailable.
+    """
+    import yfinance as yf  # heavy module, lazy-load on first use
+
+    try:
+        t = yf.Ticker(symbol)
+    except Exception as err:  # noqa: BLE001
+        LOGGER.debug("yfinance Ticker(%s) construction failed: %s", symbol, err)
         return {}
+
+    close, prev_close, asof, bar_count = _fetch_via_history(t)
+
+    if close is None:
+        # History didn't yield a usable bar — fall back to fast_info.
+        close, prev_close_alt = _fetch_via_fast_info(t)
+        if close is None:
+            LOGGER.debug("yfinance: no data available for %s", symbol)
+            return {}
+        if prev_close is None:
+            prev_close = prev_close_alt
 
     out: dict[str, Any] = {
         "price": round(close, 4),
-        "asof": last.name.isoformat() if hasattr(last.name, "isoformat") else str(last.name),
-        # On Korean holidays yfinance can return a single bar (no prior session
-        # in the 5-day window). The "stale" flag lets sensors and the LLM tool
-        # surface "no fresh trading day available" without dropping the price.
-        "stale": len(hist) < 2,
+        # bar_count < 2 means we have today but no prior trading day in the
+        # 1-month window — surface that to consumers so they can label the
+        # change figure as missing rather than zero.
+        "stale": bar_count < 2,
     }
-    if len(hist) >= 2:
-        prev = hist.iloc[-2]
-        try:
-            prev_close = float(prev["Close"])
-        except (KeyError, ValueError, TypeError):
-            return out
-        if prev_close:
-            change = close - prev_close
-            out["prev_close"] = round(prev_close, 4)
-            out["change"] = round(change, 4)
-            out["change_pct"] = round(change / prev_close * 100, 2)
+    if asof:
+        out["asof"] = asof
+    if prev_close is not None and prev_close:
+        change = close - prev_close
+        out["prev_close"] = round(prev_close, 4)
+        out["change"] = round(change, 4)
+        out["change_pct"] = round(change / prev_close * 100, 2)
     return out
 
 
