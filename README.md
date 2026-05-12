@@ -6,7 +6,8 @@
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange?style=flat-square)](https://hacs.xyz)
 [![Validate](https://img.shields.io/github/actions/workflow/status/redchupa/kr_finance_kit/validate.yml?label=validate&style=flat-square)](https://github.com/redchupa/kr_finance_kit/actions/workflows/validate.yml)
 [![Tests](https://img.shields.io/github/actions/workflow/status/redchupa/kr_finance_kit/test.yml?label=tests&style=flat-square)](https://github.com/redchupa/kr_finance_kit/actions/workflows/test.yml)
-[![Latest](https://img.shields.io/github/v/release/redchupa/kr_finance_kit?label=release&style=flat-square)](https://github.com/redchupa/kr_finance_kit/releases) · [MIT License](LICENSE)
+
+[Releases](https://github.com/redchupa/kr_finance_kit/releases) · [MIT License](LICENSE)
 
 ---
 
