@@ -231,13 +231,24 @@ See [docs/installation-en.md](docs/installation-en.md) for setup.
 
 ---
 
-## 💝 후원
+## ☕ 후원
 
-이 통합이 도움이 되었다면 ☕ 커피 한잔으로 응원해주세요.
+이 통합이 도움이 되셨다면 커피 한 잔으로 응원해주세요! 🙏
 
-- **토스: 1000-1261-7813**
+<table>
+  <tr>
+    <td align="center">
+      <b>토스</b><br/>
+      <img src="https://raw.githubusercontent.com/redchupa/kr_finance_kit/main/images/toss-donation.png" alt="Toss 후원 QR" width="200"/>
+    </td>
+    <td align="center">
+      <b>PayPal</b><br/>
+      <img src="https://raw.githubusercontent.com/redchupa/kr_finance_kit/main/images/paypal-donation.png" alt="PayPal 후원 QR" width="200"/>
+    </td>
+  </tr>
+</table>
 
-각 HA 기기 패널의 manufacturer/model/sw_version 필드에도 후원 메타가 노출됩니다 (`우*만 / 토스 1000-1261-7813 / 커피 한잔은 사랑입니다 ☕`).
+각 HA 기기 패널의 manufacturer / model / sw_version 필드에도 후원 메타가 노출됩니다 (`우*만 / 토스 1000-1261-7813 / 커피 한잔은 사랑입니다 ☕`).
 
 ---
 
