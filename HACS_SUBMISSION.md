@@ -8,12 +8,14 @@ submission.
 ## Pre-flight checklist
 
 - [x] `hacs.json` at repo root with `country: ["KR"]`
-- [x] `custom_components/kr_finance_kit/manifest.json` with `domain`,
-      `name`, `codeowners`, `documentation`, `issue_tracker`, `version`
+- [x] `custom_components/kr_finance_kit/manifest.json` complete
 - [x] LICENSE present (MIT)
 - [x] README in repo root
-- [x] CI: HACS Action + Hassfest green on main
-- [ ] Brand icons submitted to home-assistant/brands (see below)
+- [x] Hassfest green on main
+- [x] Pytest green on main (40 tests)
+- [x] GitHub topics added (`home-assistant`, `hacs`, `hacs-integration`, etc.)
+- [x] Public repo at https://github.com/redchupa/kr_finance_kit
+- [ ] **Brand icons submitted to home-assistant/brands (blocker for HACS Action's last check)**
 
 ## hacs/default PR
 

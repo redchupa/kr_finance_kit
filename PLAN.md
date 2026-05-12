@@ -124,7 +124,13 @@ kr_finance_kit/
 - [x] HACS_SUBMISSION.md (default repo PR + brands PR 준비물)
 - [x] examples/automation-examples.yaml + daily-summary-automation.yaml
 - [x] README 후원 섹션
-- [ ] **외부 작업 (사용자 결정)**: GitHub repo 생성 + hacs/default PR 제출 + home-assistant/brands PR 제출
+- [x] GitHub public repo 생성 + push → https://github.com/redchupa/kr_finance_kit
+- [x] CI 그린: Hassfest ✓, Tests ✓ (40/40), HACS Action 7/8 ✓
+- [x] HACS topics 추가
+- [ ] **남은 외부 작업 (사용자 결정)**:
+  - [ ] home-assistant/brands PR (icon.png 256×256, logo.png) — HACS의 마지막 1/8 check 해제
+  - [ ] hacs/default PR (HACS_SUBMISSION.md 본문 그대로 사용)
+  - [ ] 첫 GitHub Release (manifest.json `0.0.1` → `0.1.0` bump + 태그)
 
 ## 7. 무료/보안 가드 (본 레포 특화)
 
