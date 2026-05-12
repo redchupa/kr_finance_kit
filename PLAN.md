@@ -116,21 +116,34 @@ kr_finance_kit/
 - [x] 한·미 장 운영시간 인식 → 장외 폴링 1분 → 10분 다이얼다운
 - [x] OpenDart stock_code → corp_code 자동 변환 (`company.json` 활용)
 
-### M3 — LLM tool + 릴리스 (진행 중)
+### M3 — LLM tool + 릴리스 ✅
 - [x] llm_tool.py — pure dispatch 분리, 8개 query_type
   - index, fx, quote, portfolio, disclosures, disclosure_for_ticker, top_movers, market_summary
-- [x] yfinance stale-day fallback (한국 공휴일 시 단봉 → `stale: true` 플래그)
+- [x] yfinance stale-day fallback (한국 공휴일 시 1mo period + fast_info)
+- [x] **NaN/inf 가드 2층** — `_safe_float` (data layer) + `_finite()` (sensor layer)
 - [x] docs/ 한·영 (installation + examples)
-- [x] HACS_SUBMISSION.md (default repo PR + brands PR 준비물)
 - [x] examples/automation-examples.yaml + daily-summary-automation.yaml
-- [x] README 후원 섹션
-- [x] GitHub public repo 생성 + push → https://github.com/redchupa/kr_finance_kit
-- [x] CI 그린: Hassfest ✓, Tests ✓ (40/40), HACS Action 7/8 ✓
-- [x] HACS topics 추가
-- [ ] **남은 외부 작업 (사용자 결정)**:
-  - [ ] home-assistant/brands PR (icon.png 256×256, logo.png) — HACS의 마지막 1/8 check 해제
-  - [ ] hacs/default PR (HACS_SUBMISSION.md 본문 그대로 사용)
-  - [ ] 첫 GitHub Release (manifest.json `0.0.1` → `0.1.0` bump + 태그)
+- [x] GitHub public repo + push → https://github.com/redchupa/kr_finance_kit
+- [x] CI 그린: Hassfest ✓, Tests ✓ (53/53), HACS Action 8/8 ✓ (in-tree brand 자산)
+- [x] HACS topics 11개 등록
+- [x] In-tree brand 자산 (custom_components/kr_finance_kit/brand/{icon,icon@2x,logo}.png)
+- [x] hacs/default PR #7599 제출
+- [x] 13회 패치 릴리스 (v0.1.0 → v0.1.13) — UX 보강 + 핫픽스
+
+### M4 — UX 보강 ✅
+- [x] 단일 step Config Flow (종목 입력 1회로 시세+공시 둘 다 활성)
+- [x] 종목명 자동 매핑 (corpCode.xml에서 corp_name 추출)
+- [x] OptionsFlow 입력란 자동 채움 (`add_suggested_values_to_schema`)
+- [x] 친절한 description (설치/옵션 둘 다)
+- [x] 클릭 가능한 KRX/네이버/Yahoo/OpenDart 링크 (description_placeholders)
+- [x] HA 로그 직접 진단 → NaN 버그 발견·수정
+
+### 다음 후보 (M5+, 검토 중)
+- [ ] 한국 공휴일 라이브러리 통합 (currently yfinance fallback 의존)
+- [ ] OpenDart 재무지표 sensor (`get_financial_index`)
+- [ ] pytest-homeassistant-custom-component 풀패스 async 테스트
+- [ ] KOSPI200·KRX300 등 추가 인덱스 옵션
+- [ ] hacs/default #7599 머지 대기 → 머지되면 HACS 검색 풀에 등재
 
 ## 7. 무료/보안 가드 (본 레포 특화)
 
