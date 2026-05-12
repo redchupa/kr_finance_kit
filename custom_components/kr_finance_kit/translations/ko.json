@@ -34,7 +34,7 @@
       "already_configured": "이미 설정되어 있습니다."
     },
     "error": {
-      "invalid_api_key": "OpenDart 키가 유효하지 않습니다. https://opendart.fss.or.kr 에서 확인하세요.",
+      "invalid_api_key": "OpenDart 키가 유효하지 않습니다. opendart.fss.or.kr 에서 확인하세요.",
       "cannot_connect": "데이터 소스에 연결할 수 없습니다."
     }
   },

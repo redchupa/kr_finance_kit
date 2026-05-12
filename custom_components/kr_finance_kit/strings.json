@@ -34,7 +34,7 @@
       "already_configured": "Already configured."
     },
     "error": {
-      "invalid_api_key": "OpenDart key is not valid. Verify at https://opendart.fss.or.kr.",
+      "invalid_api_key": "OpenDart key is not valid. Verify it at opendart.fss.or.kr.",
       "cannot_connect": "Cannot connect to data source."
     }
   },
