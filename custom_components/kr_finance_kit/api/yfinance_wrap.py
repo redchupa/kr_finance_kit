@@ -31,6 +31,7 @@ surface the gap (we keep stale data at the coordinator layer).
 from __future__ import annotations
 
 import asyncio
+import math
 from typing import Any
 
 from ..const import (
@@ -40,6 +41,27 @@ from ..const import (
     LOGGER,
     MARKET_KR,
 )
+
+
+def _safe_float(value: Any) -> float | None:
+    """Coerce yfinance values to a finite float, or ``None`` for NaN/inf.
+
+    yfinance frequently slips a NaN into the last row of a ``history``
+    frame (holidays, incomplete sessions, pre-market closes). A bare
+    ``float(NaN)`` succeeds but produces a non-finite value, which HA's
+    SensorEntity rejects with ValueError when ``state_class`` is set —
+    that ValueError kills entity registration entirely. Filter NaN/inf
+    out at the data layer and let callers treat ``None`` as "no data".
+    """
+    if value is None:
+        return None
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(f):
+        return None
+    return f
 
 # Map our domain-internal symbols → yfinance tickers. Keeping this mapping
 # inside the data layer lets the rest of the integration stay free of
@@ -88,19 +110,36 @@ def _fetch_via_history(t) -> tuple[float | None, float | None, str | None, int]:
     if hist is None or hist.empty:
         return None, None, None, 0
 
-    last = hist.iloc[-1]
+    # Walk backwards through the frame for the first finite Close. yfinance
+    # often slots a NaN into the most-recent row before the session prints
+    # its real close — skipping NaN rows gives us the last *known good*
+    # price instead of crashing later.
+    close: float | None = None
+    asof: str | None = None
+    last_idx: int | None = None
     try:
-        close = float(last["Close"])
-    except (KeyError, ValueError, TypeError):
+        close_series = hist["Close"]
+    except KeyError:
+        return None, None, None, 0
+    for i in range(len(hist) - 1, -1, -1):
+        candidate = _safe_float(close_series.iloc[i])
+        if candidate is not None:
+            close = candidate
+            row = hist.iloc[i]
+            asof = row.name.isoformat() if hasattr(row.name, "isoformat") else str(row.name)
+            last_idx = i
+            break
+    if close is None:
         return None, None, None, 0
 
-    asof = last.name.isoformat() if hasattr(last.name, "isoformat") else str(last.name)
     prev_close: float | None = None
-    if len(hist) >= 2:
-        try:
-            prev_close = float(hist.iloc[-2]["Close"])
-        except (KeyError, ValueError, TypeError):
-            prev_close = None
+    # Look for the most recent finite Close *before* the one we used.
+    if last_idx is not None and last_idx > 0:
+        for i in range(last_idx - 1, -1, -1):
+            candidate = _safe_float(close_series.iloc[i])
+            if candidate is not None:
+                prev_close = candidate
+                break
     return close, prev_close, asof, len(hist)
 
 
@@ -110,7 +149,7 @@ def _fetch_via_fast_info(t) -> tuple[float | None, float | None]:
     Faster and less rate-limited than ``.info``, but doesn't always
     populate every field. We only ask for ``last_price`` and
     ``previous_close``. Returns (None, None) when nothing usable came
-    back.
+    back. NaN/inf are filtered (fast_info can ship them too).
     """
     try:
         info = t.fast_info
@@ -119,10 +158,7 @@ def _fetch_via_fast_info(t) -> tuple[float | None, float | None]:
     except Exception as err:  # noqa: BLE001
         LOGGER.debug("yfinance .fast_info failed: %s", err)
         return None, None
-    return (
-        float(last) if last is not None else None,
-        float(prev) if prev is not None else None,
-    )
+    return _safe_float(last), _safe_float(prev)
 
 
 def _fetch_single(symbol: str) -> dict[str, Any]:

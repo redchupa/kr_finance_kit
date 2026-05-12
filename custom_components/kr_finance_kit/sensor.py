@@ -1,6 +1,7 @@
 """Sensor platform — indices, FX, ticker quotes, portfolio P/L."""
 from __future__ import annotations
 
+import math
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
@@ -27,6 +28,25 @@ from .portfolio import compute_totals
 
 def _entry_value(entry: ConfigEntry, key: str, default: Any) -> Any:
     return (entry.options or entry.data).get(key, default)
+
+
+def _finite(value: Any) -> float | None:
+    """Defense-in-depth guard for native_value.
+
+    Even though the yfinance layer filters NaN, a future data source might
+    not. HA's SensorEntity raises ValueError on non-finite values when
+    ``state_class`` is set, which crashes entity registration. Returning
+    ``None`` here makes the sensor show "unknown" instead of breaking.
+    """
+    if value is None:
+        return None
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(f):
+        return None
+    return f
 
 
 async def async_setup_entry(
@@ -85,8 +105,7 @@ class IndexSensor(_MarketBase):
     @property
     def native_value(self) -> float | None:
         data = (self.coordinator.data or {}).get("indices", {})
-        v = data.get(self._index, {}).get("price")
-        return float(v) if v is not None else None
+        return _finite(data.get(self._index, {}).get("price"))
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -109,7 +128,7 @@ class FXSensor(_MarketBase):
     @property
     def native_value(self) -> float | None:
         v = (self.coordinator.data or {}).get("fx", {}).get(self._pair, {}).get("price")
-        return float(v) if v is not None else None
+        return _finite(v)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -151,8 +170,7 @@ class QuoteSensor(_MarketBase):
 
     @property
     def native_value(self) -> float | None:
-        v = self._quote.get("price")
-        return float(v) if v is not None else None
+        return _finite(self._quote.get("price"))
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -161,7 +179,7 @@ class QuoteSensor(_MarketBase):
 
 def _usdkrw(coord: MarketCoordinator) -> float | None:
     rate = (coord.data or {}).get("fx", {}).get(FX_USDKRW, {}).get("price")
-    return float(rate) if rate else None
+    return _finite(rate)
 
 
 class _PortfolioBase(_MarketBase):
@@ -179,7 +197,7 @@ class _PortfolioBase(_MarketBase):
     @property
     def native_value(self) -> float | None:
         totals = compute_totals(self.coordinator.data or {}, usdkrw=_usdkrw(self.coordinator))
-        return totals.get(self._key)
+        return _finite(totals.get(self._key))
 
 
 class PortfolioKRValueSensor(_PortfolioBase):
