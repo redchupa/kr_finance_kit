@@ -1,0 +1,32 @@
+{
+  "status": "000",
+  "message": "정상",
+  "page_no": 1,
+  "page_count": 10,
+  "total_count": 2,
+  "total_page": 1,
+  "list": [
+    {
+      "corp_code": "00000001",
+      "corp_name": "예시전자",
+      "stock_code": "999999",
+      "corp_cls": "Y",
+      "report_nm": "[기재정정]주요사항보고서(자기주식취득결정)",
+      "rcept_no": "20260101000001",
+      "flr_nm": "예시전자",
+      "rcept_dt": "20260101",
+      "rm": ""
+    },
+    {
+      "corp_code": "00000002",
+      "corp_name": "샘플반도체",
+      "stock_code": "888888",
+      "corp_cls": "Y",
+      "report_nm": "분기보고서 (2025.12)",
+      "rcept_no": "20260102000002",
+      "flr_nm": "샘플반도체",
+      "rcept_dt": "20260102",
+      "rm": ""
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "config": {
+    "step": {
+      "tickers": {
+        "title": "관심 종목 설정",
+        "description": "한국·미국 종목을 쉼표로 구분해 입력하세요. KR은 6자리 코드(예 005930)면 KOSPI로 처리, KOSDAQ은 .KQ 접미사를 붙이세요(예 035720.KQ).",
+        "data": {
+          "kr_tickers": "한국 종목 코드 (CSV)",
+          "us_tickers": "미국 종목 심볼 (CSV)",
+          "include_indices": "코스피·코스닥 지수 포함",
+          "include_fx": "USD/KRW 환율 포함"
+        }
+      },
+      "disclosures": {
+        "title": "OpenDart 공시 설정 (선택)",
+        "description": "OpenDart 키는 입력 시 HA 암호화 저장소에 보관됩니다. 종목코드(예 005930)만 입력하면 corp_code로 자동 변환됩니다.",
+        "data": {
+          "opendart_api_key": "OpenDart API 키",
+          "disclosure_stock_codes": "종목 코드 (CSV, 자동 변환)",
+          "disclosure_corp_codes": "회사 고유번호 corp_code (CSV, 직접 입력)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "이미 설정되어 있습니다."
+    },
+    "error": {
+      "invalid_api_key": "OpenDart 키가 유효하지 않습니다.",
+      "cannot_connect": "데이터 소스에 연결할 수 없습니다."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "KR Finance Kit 옵션",
+        "data": {
+          "kr_tickers": "한국 종목 코드 (CSV)",
+          "us_tickers": "미국 종목 심볼 (CSV)",
+          "disclosure_corp_codes": "OpenDart 회사 고유번호 (CSV)",
+          "opendart_api_key": "OpenDart API 키",
+          "include_indices": "코스피·코스닥 지수 포함",
+          "include_fx": "USD/KRW 환율 포함"
+        }
+      }
+    },
+    "error": {
+      "invalid_api_key": "OpenDart 키가 유효하지 않습니다."
+    }
+  }
+}

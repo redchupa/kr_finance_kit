@@ -1,0 +1,68 @@
+# Daily summary automations using KR Finance Kit sensors.
+#
+# Replace placeholders:
+#   - `your_ticker`         a single ticker for spot alerts (e.g. 005930)
+#   - `your_notify_target`  a notify service (telegram_bot, mobile_app_*, persistent_notification)
+
+- alias: "장 마감 직후 KRW 환산 일일 요약"
+  trigger:
+    - platform: time
+      at: "15:35:00"
+  condition:
+    - condition: time
+      weekday: [mon, tue, wed, thu, fri]
+  action:
+    - service: your_notify_target
+      data:
+        title: "오늘 시장"
+        message: >
+          KOSPI {{ states('sensor.kr_finance_kit_kospi') }} ({{
+            state_attr('sensor.kr_finance_kit_kospi', 'change_pct') }}%),
+          KOSDAQ {{ states('sensor.kr_finance_kit_kosdaq') }} ({{
+            state_attr('sensor.kr_finance_kit_kosdaq', 'change_pct') }}%),
+          USD/KRW {{ states('sensor.kr_finance_kit_usdkrw') }}.
+          총 평가금액 {{ states('sensor.kr_finance_kit_portfolio_krw_total') }} KRW
+          (손익 {{ states('sensor.kr_finance_kit_portfolio_krw_pl') }} KRW)
+
+- alias: "미국 장 마감 직후 보유 미국주 요약"
+  trigger:
+    - platform: time
+      at: "05:05:00"
+  condition:
+    - condition: time
+      weekday: [tue, wed, thu, fri, sat]   # 미국 월~금 마감 직후가 한국 시간 화~토
+  action:
+    - service: your_notify_target
+      data:
+        title: "미국 장 마감"
+        message: >
+          미국 보유 평가금액 ${{ states('sensor.kr_finance_kit_portfolio_us_value') }} /
+          평가손익 ${{ states('sensor.kr_finance_kit_portfolio_us_pl') }} USD
+
+- alias: "관심 종목 급등(+5% 이상) 알림"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.kr_finance_kit_kr_your_ticker
+      attribute: change_pct
+      above: 5
+  action:
+    - service: your_notify_target
+      data:
+        title: "{{ trigger.to_state.name }} 급등 +{{ state_attr(trigger.entity_id, 'change_pct') }}%"
+        message: "현재 {{ trigger.to_state.state }} KRW"
+
+- alias: "신규 OpenDart 공시 자동 알림"
+  trigger:
+    - platform: state
+      to: "on"
+  action:
+    # Loop over all KR Finance Kit disclosure binary_sensors. Adjust the
+    # template if you only want a subset.
+    - condition: template
+      value_template: "{{ trigger.entity_id.startswith('binary_sensor.kr_finance_kit_disclosure_') }}"
+    - service: your_notify_target
+      data:
+        title: "신규 공시"
+        message: >
+          {{ state_attr(trigger.entity_id, 'report_nm') }}
+          ({{ state_attr(trigger.entity_id, 'url') }})

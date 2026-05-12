@@ -1,0 +1,41 @@
+# Example automations. Replace `your_ticker` / `your_corp_code` with your own.
+
+- alias: "종목 5% 이상 하락 시 알림"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.kr_finance_kit_kr_your_ticker
+      attribute: change_pct
+      below: -5
+  action:
+    - service: notify.persistent_notification
+      data:
+        title: "{{ trigger.to_state.name }} 급락"
+        message: "현재 {{ trigger.to_state.state }}원 ({{ state_attr(trigger.entity_id, 'change_pct') }}%)"
+
+- alias: "관심 종목 신규 공시"
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.kr_finance_kit_disclosure_your_corp_code
+      to: "on"
+  action:
+    - service: notify.persistent_notification
+      data:
+        title: "신규 공시"
+        message: >
+          {{ state_attr(trigger.entity_id, 'report_nm') }}
+          ({{ state_attr(trigger.entity_id, 'url') }})
+
+- alias: "장 마감 직후 포트폴리오 요약"
+  trigger:
+    - platform: time
+      at: "15:35:00"
+  condition:
+    - condition: time
+      weekday: [mon, tue, wed, thu, fri]
+  action:
+    - service: notify.persistent_notification
+      data:
+        title: "보유 평가 요약"
+        message: >
+          평가금액 {{ states('sensor.kr_finance_kit_portfolio_value') }} /
+          평가손익 {{ states('sensor.kr_finance_kit_portfolio_pl') }}

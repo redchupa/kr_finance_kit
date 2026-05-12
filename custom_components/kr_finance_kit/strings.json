@@ -1,0 +1,50 @@
+{
+  "config": {
+    "step": {
+      "tickers": {
+        "title": "Tickers",
+        "description": "Comma-separated. 6-digit KR codes (e.g. 005930) default to KOSPI; add the .KQ suffix for KOSDAQ (e.g. 035720.KQ).",
+        "data": {
+          "kr_tickers": "KR ticker codes (CSV)",
+          "us_tickers": "US ticker symbols (CSV)",
+          "include_indices": "Include KOSPI/KOSDAQ indices",
+          "include_fx": "Include USD/KRW FX"
+        }
+      },
+      "disclosures": {
+        "title": "OpenDart disclosures (optional)",
+        "description": "The OpenDart key is stored in HA's encrypted storage. Enter stock_codes (e.g. 005930) — they're auto-resolved to corp_codes.",
+        "data": {
+          "opendart_api_key": "OpenDart API key",
+          "disclosure_stock_codes": "Stock codes (CSV, auto-resolved)",
+          "disclosure_corp_codes": "OpenDart corp_codes (CSV, manual)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Already configured."
+    },
+    "error": {
+      "invalid_api_key": "OpenDart key is not valid.",
+      "cannot_connect": "Cannot connect to data source."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "KR Finance Kit options",
+        "data": {
+          "kr_tickers": "KR ticker codes (CSV)",
+          "us_tickers": "US ticker symbols (CSV)",
+          "disclosure_corp_codes": "OpenDart corp_codes (CSV)",
+          "opendart_api_key": "OpenDart API key",
+          "include_indices": "Include KOSPI/KOSDAQ indices",
+          "include_fx": "Include USD/KRW FX"
+        }
+      }
+    },
+    "error": {
+      "invalid_api_key": "OpenDart key is not valid."
+    }
+  }
+}

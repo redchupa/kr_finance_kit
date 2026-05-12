@@ -1,0 +1,12 @@
+{
+  "domain": "kr_finance_kit",
+  "name": "KR Finance Kit",
+  "codeowners": ["@redchupa"],
+  "config_flow": true,
+  "dependencies": ["conversation"],
+  "documentation": "https://github.com/redchupa/kr_finance_kit",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/redchupa/kr_finance_kit/issues",
+  "requirements": ["yfinance>=0.2.40"],
+  "version": "0.0.1"
+}
