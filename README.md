@@ -3,11 +3,11 @@
 > **Home Assistant에서 한국·미국 주식, 환율, OpenDart 공시를 네이티브 센서로.**
 > 무료 API만 사용. 음성으로 "삼성전자 지금 얼마?" 가능.
 
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
-[![Validate](https://github.com/redchupa/kr_finance_kit/actions/workflows/validate.yml/badge.svg)](https://github.com/redchupa/kr_finance_kit/actions/workflows/validate.yml)
-[![Tests](https://github.com/redchupa/kr_finance_kit/actions/workflows/test.yml/badge.svg)](https://github.com/redchupa/kr_finance_kit/actions/workflows/test.yml)
-[![Latest](https://img.shields.io/github/v/release/redchupa/kr_finance_kit?label=latest)](https://github.com/redchupa/kr_finance_kit/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange?style=flat-square)](https://hacs.xyz)
+[![Validate](https://img.shields.io/github/actions/workflow/status/redchupa/kr_finance_kit/validate.yml?label=validate&style=flat-square)](https://github.com/redchupa/kr_finance_kit/actions/workflows/validate.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/redchupa/kr_finance_kit/test.yml?label=tests&style=flat-square)](https://github.com/redchupa/kr_finance_kit/actions/workflows/test.yml)
+[![Latest](https://img.shields.io/github/v/release/redchupa/kr_finance_kit?label=release&style=flat-square)](https://github.com/redchupa/kr_finance_kit/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
 ---
 
