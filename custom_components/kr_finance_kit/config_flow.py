@@ -108,6 +108,18 @@ _FORM_SCHEMA = vol.Schema(
     }
 )
 
+# URLs are injected via description_placeholders rather than embedded
+# directly in the translation strings — hassfest rejects raw URLs inside
+# translations, but the {placeholder} substitution path is allowed and
+# renders as a clickable markdown link in the HA UI.
+_LINK_PLACEHOLDERS = {
+    "opendart_signup_url": "https://opendart.fss.or.kr/uss/umt/EgovMberInsertView.do",
+    "opendart_key_url": "https://opendart.fss.or.kr/mng/apiUseStusUser.do",
+    "krx_search_url": "https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage",
+    "naver_finance_url": "https://finance.naver.com/sise/sise_market_sum.naver",
+    "yahoo_finance_url": "https://finance.yahoo.com/lookup",
+}
+
 
 class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
@@ -150,6 +162,7 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=self.add_suggested_values_to_schema(_FORM_SCHEMA, suggested),
+            description_placeholders=_LINK_PLACEHOLDERS,
             errors=errors,
         )
 
@@ -213,5 +226,6 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=self.add_suggested_values_to_schema(_FORM_SCHEMA, suggested),
+            description_placeholders=_LINK_PLACEHOLDERS,
             errors=errors,
         )

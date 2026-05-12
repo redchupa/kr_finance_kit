@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "KR Finance Kit 설정",
-        "description": "한 번에 모두 입력하시면 됩니다. 모든 항목은 선택이며 비워두면 해당 기능이 비활성화됩니다.\n\n**OpenDart 키**가 있고 **한국 종목**이 입력되어 있으면 → 시세 sensor + 공시 binary_sensor + 종목명(예 삼성전자) 매핑이 모두 자동으로 활성화됩니다.\n\n**OpenDart 키 발급**: opendart.fss.or.kr → 인증키 신청 (무료, 즉시).\n\n**종목코드 찾는 법**:\n• 한국 종목 (6자리 숫자): 네이버 금융 / 다음 금융 / KRX에서 종목 검색 → URL의 6자리 또는 종목정보 페이지의 종목코드. 예: 삼성전자=005930, SK하이닉스=000660, NAVER=035420\n• 미국 종목 (티커 심볼): Yahoo Finance, Google Finance에서 회사 검색. 예: 애플=AAPL, 마이크로소프트=MSFT, 테슬라=TSLA",
+        "description": "한 번에 모두 입력하시면 됩니다. 모든 항목은 선택이며 비워두면 해당 기능이 비활성화됩니다.\n\n**OpenDart 키**가 있고 **한국 종목**이 입력되어 있으면 → 시세 sensor + 공시 binary_sensor + 종목명(예 삼성전자) 매핑이 모두 자동으로 활성화됩니다.\n\n**OpenDart 키 발급**: [회원가입]({opendart_signup_url}) → [인증키 신청]({opendart_key_url}) (무료, 즉시).\n\n**종목코드 검색 (클릭하면 바로 이동)**:\n• 한국 종목 (6자리 숫자): [KRX 상장법인 목록]({krx_search_url}) 또는 [네이버 금융 시세]({naver_finance_url}). 예: 삼성전자=005930, SK하이닉스=000660, NAVER=035420\n• 미국 종목 (티커 심볼): [Yahoo Finance Lookup]({yahoo_finance_url}). 예: 애플=AAPL, 마이크로소프트=MSFT, 테슬라=TSLA",
         "data": {
           "opendart_api_key": "OpenDart API 키 (선택)",
           "kr_tickers": "한국 종목 코드 (CSV)",
@@ -30,7 +30,7 @@
     "step": {
       "init": {
         "title": "KR Finance Kit 옵션",
-        "description": "설치 시 입력한 값을 자유롭게 수정할 수 있습니다. **저장하면 통합이 자동으로 재시작**되며 변경 사항이 즉시 반영됩니다.\n\n**무엇이 바뀌나**:\n• 한국 종목을 **추가하면** → 시세 sensor 즉시 생성. OpenDart 키가 있으면 공시 binary_sensor와 종목명(예 삼성전자)도 자동.\n• 한국 종목을 **삭제하면** → 해당 sensor 자동 제거.\n• **OpenDart 키를 비우면** → 공시 binary_sensor와 종목명 매핑이 비활성화됩니다 (가격 sensor는 그대로 동작).\n• **OpenDart 키를 새로 입력하면** → corpCode.xml을 다시 다운로드해 종목명·corp_code를 다시 매핑합니다.\n\n**종목코드 찾는 법** (설치 시와 동일):\n• 한국 종목 (6자리 숫자): 네이버 금융 / 다음 금융 / KRX에서 종목 검색. 예: 삼성전자=005930, SK하이닉스=000660, NAVER=035420\n• 미국 종목 (티커 심볼): Yahoo Finance, Google Finance에서 회사 검색. 예: 애플=AAPL, 마이크로소프트=MSFT, 테슬라=TSLA\n\n**OpenDart 키 발급**: opendart.fss.or.kr → 인증키 신청 (무료, 즉시).\n\n참고: 보유 종목 평가손익(수량·평단가)은 옵션 화면이 아닌 `kr_finance_kit.add_position` 서비스로 관리됩니다 — 이 화면에서 손대지 않아도 됩니다.",
+        "description": "설치 시 입력한 값을 자유롭게 수정할 수 있습니다. **저장하면 통합이 자동으로 재시작**되며 변경 사항이 즉시 반영됩니다.\n\n**무엇이 바뀌나**:\n• 한국 종목을 **추가하면** → 시세 sensor 즉시 생성. OpenDart 키가 있으면 공시 binary_sensor와 종목명(예 삼성전자)도 자동.\n• 한국 종목을 **삭제하면** → 해당 sensor 자동 제거.\n• **OpenDart 키를 비우면** → 공시 binary_sensor와 종목명 매핑이 비활성화됩니다 (가격 sensor는 그대로 동작).\n• **OpenDart 키를 새로 입력하면** → corpCode.xml을 다시 다운로드해 종목명·corp_code를 다시 매핑합니다.\n\n**종목코드 검색 (클릭하면 바로 이동)**:\n• 한국 종목 (6자리 숫자): [KRX 상장법인 목록]({krx_search_url}) 또는 [네이버 금융 시세]({naver_finance_url}). 예: 삼성전자=005930, SK하이닉스=000660, NAVER=035420\n• 미국 종목 (티커 심볼): [Yahoo Finance Lookup]({yahoo_finance_url}). 예: 애플=AAPL, 마이크로소프트=MSFT, 테슬라=TSLA\n\n**OpenDart 키 발급**: [회원가입]({opendart_signup_url}) → [인증키 신청]({opendart_key_url}) (무료, 즉시).\n\n참고: 보유 종목 평가손익(수량·평단가)은 옵션 화면이 아닌 `kr_finance_kit.add_position` 서비스로 관리됩니다 — 이 화면에서 손대지 않아도 됩니다.",
         "data": {
           "opendart_api_key": "OpenDart API 키 (선택)",
           "kr_tickers": "한국 종목 코드 (CSV)",
