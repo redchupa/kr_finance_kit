@@ -1,32 +1,20 @@
 {
   "config": {
     "step": {
-      "tickers": {
-        "title": "관심 종목 설정",
-        "description": "한국·미국 종목을 쉼표로 구분해 입력하세요. 모두 비워두고 지수/환율만 받아봐도 됩니다.\n\n예시: `005930, 000660`\n• KR 6자리 코드는 KOSPI로 처리됩니다 (예 005930).\n• KOSDAQ 종목은 `.KQ` 접미사를 붙이세요 (예 `035720.KQ`).\n• 미국 종목은 그대로 (예 `AAPL, MSFT`).",
+      "user": {
+        "title": "KR Finance Kit 설정",
+        "description": "한 번에 모두 입력하시면 됩니다. 모든 항목은 선택이며 비워두면 해당 기능이 비활성화됩니다.\n\n**OpenDart 키**가 있고 **한국 종목**이 입력되어 있으면 → 시세 sensor + 공시 binary_sensor가 함께 자동 생성됩니다.\n\nOpenDart 키는 opendart.fss.or.kr → 인증키 신청에서 무료로 즉시 발급됩니다.",
         "data": {
-          "kr_tickers": "한국 종목 코드 (CSV, 선택)",
-          "us_tickers": "미국 종목 심볼 (CSV, 선택)",
+          "opendart_api_key": "OpenDart API 키 (선택)",
+          "kr_tickers": "한국 종목 코드 (CSV)",
+          "us_tickers": "미국 종목 심볼 (CSV)",
           "include_indices": "코스피·코스닥 지수 포함",
           "include_fx": "USD/KRW 환율 포함"
         },
         "data_description": {
-          "kr_tickers": "예: 005930, 000660 — KOSPI는 6자리 그대로, KOSDAQ은 .KQ 접미사",
+          "opendart_api_key": "비워두면 공시 모니터링만 비활성화됩니다 (시세는 정상 동작)",
+          "kr_tickers": "예: 005930, 000660 — KOSPI는 6자리 그대로, KOSDAQ은 .KQ 접미사. OpenDart 키가 있으면 같은 종목의 공시도 자동 추적됩니다",
           "us_tickers": "예: AAPL, MSFT, TSLA"
-        }
-      },
-      "disclosures": {
-        "title": "OpenDart 공시 설정 (선택)",
-        "description": "OpenDart는 한국 금융감독원이 운영하는 무료 기업공시 시스템입니다. 관심 종목에 신규 공시가 발생하면 binary_sensor가 ON이 됩니다.\n\n**모두 비워두고 건너뛰어도 됩니다** — 공시 기능이 비활성화될 뿐 다른 센서는 정상 동작합니다.\n\n사용하시려면:\n1. opendart.fss.or.kr 회원가입 → 인증키 신청 (즉시 발급, 무료)\n2. 발급받은 키와 관심 종목코드 (예: `005930`)를 아래에 입력하면 corp_code로 자동 변환됩니다.",
-        "data": {
-          "opendart_api_key": "OpenDart API 키",
-          "disclosure_stock_codes": "관심 종목코드 (CSV, 6자리)",
-          "disclosure_corp_codes": "회사 고유번호 corp_code (CSV, 고급)"
-        },
-        "data_description": {
-          "opendart_api_key": "opendart.fss.or.kr 의 '인증키 신청' 메뉴에서 발급",
-          "disclosure_stock_codes": "예: 005930, 000660 — 종목코드만 알면 됩니다. corp_code로 자동 변환됨",
-          "disclosure_corp_codes": "OpenDart가 회사마다 부여한 8자리 ID (예 00126380). 위 종목코드 입력으로 충분하면 비워두세요"
         }
       }
     },
@@ -42,20 +30,18 @@
     "step": {
       "init": {
         "title": "KR Finance Kit 옵션",
-        "description": "설치 시 입력한 값을 수정합니다. OpenDart 키 발급: opendart.fss.or.kr 의 인증키 신청 메뉴.",
+        "description": "설치 시 입력한 값을 수정합니다. OpenDart 키 발급: opendart.fss.or.kr 인증키 신청 메뉴.",
         "data": {
+          "opendart_api_key": "OpenDart API 키",
           "kr_tickers": "한국 종목 코드 (CSV)",
           "us_tickers": "미국 종목 심볼 (CSV)",
-          "disclosure_corp_codes": "OpenDart 회사 고유번호 corp_code (CSV)",
-          "opendart_api_key": "OpenDart API 키",
           "include_indices": "코스피·코스닥 지수 포함",
           "include_fx": "USD/KRW 환율 포함"
         },
         "data_description": {
-          "kr_tickers": "예: 005930, 035720.KQ",
-          "us_tickers": "예: AAPL, MSFT",
-          "disclosure_corp_codes": "8자리 OpenDart 회사 ID (모르면 비워두고 재설치 후 종목코드로 입력)",
-          "opendart_api_key": "opendart.fss.or.kr 의 인증키 신청 메뉴에서 발급"
+          "opendart_api_key": "비워두면 공시 모니터링 비활성화",
+          "kr_tickers": "예: 005930, 035720.KQ — OpenDart 키가 있으면 공시도 자동 추적",
+          "us_tickers": "예: AAPL, MSFT"
         }
       }
     },

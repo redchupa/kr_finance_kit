@@ -1,32 +1,20 @@
 {
   "config": {
     "step": {
-      "tickers": {
-        "title": "Tickers",
-        "description": "Comma-separated. You can leave both blank and use only indices/FX.\n\nExamples: `005930, 000660`\n• 6-digit KR codes default to KOSPI (e.g. 005930).\n• Add `.KQ` suffix for KOSDAQ (e.g. `035720.KQ`).\n• US symbols are used as-is (e.g. `AAPL, MSFT`).",
+      "user": {
+        "title": "KR Finance Kit",
+        "description": "Everything fits on one page. Each field is optional — leave blank to disable that feature.\n\nWhen an **OpenDart key** and **KR tickers** are both provided, the same tickers drive both price sensors and disclosure binary_sensors automatically — no need to type them twice.\n\nGet a free OpenDart key at opendart.fss.or.kr → API Key request.",
         "data": {
-          "kr_tickers": "KR ticker codes (CSV, optional)",
-          "us_tickers": "US ticker symbols (CSV, optional)",
+          "opendart_api_key": "OpenDart API key (optional)",
+          "kr_tickers": "KR ticker codes (CSV)",
+          "us_tickers": "US ticker symbols (CSV)",
           "include_indices": "Include KOSPI/KOSDAQ indices",
           "include_fx": "Include USD/KRW FX"
         },
         "data_description": {
-          "kr_tickers": "e.g. 005930, 000660 — 6-digit codes = KOSPI; add .KQ for KOSDAQ",
+          "opendart_api_key": "Leave blank to disable disclosure monitoring; price sensors still work",
+          "kr_tickers": "e.g. 005930, 000660 — 6-digit = KOSPI; add .KQ for KOSDAQ. When an OpenDart key is set, the same codes drive disclosure binary_sensors too",
           "us_tickers": "e.g. AAPL, MSFT, TSLA"
-        }
-      },
-      "disclosures": {
-        "title": "OpenDart disclosures (optional)",
-        "description": "OpenDart is Korea FSS's free corporate disclosure system. A binary_sensor turns ON when a watched company files a new disclosure.\n\n**You can skip this step entirely** — only the disclosure feature is disabled; everything else still works.\n\nTo enable:\n1. Sign up at opendart.fss.or.kr → request an API key (instant, free)\n2. Enter your key and the stock codes (e.g. `005930`) below — corp_codes are auto-resolved.",
-        "data": {
-          "opendart_api_key": "OpenDart API key",
-          "disclosure_stock_codes": "Watched stock codes (CSV, 6-digit)",
-          "disclosure_corp_codes": "OpenDart corp_codes (CSV, advanced)"
-        },
-        "data_description": {
-          "opendart_api_key": "Get one at opendart.fss.or.kr in the API Key request menu",
-          "disclosure_stock_codes": "e.g. 005930, 000660 — auto-resolved to corp_codes",
-          "disclosure_corp_codes": "8-digit OpenDart company ID (e.g. 00126380). Leave blank if you used stock codes above"
         }
       }
     },
@@ -42,20 +30,18 @@
     "step": {
       "init": {
         "title": "KR Finance Kit options",
-        "description": "Edit values entered at setup. OpenDart key: get one at opendart.fss.or.kr in the API Key request menu.",
+        "description": "Edit values entered at setup. OpenDart key: get one at opendart.fss.or.kr (API Key request).",
         "data": {
+          "opendart_api_key": "OpenDart API key",
           "kr_tickers": "KR ticker codes (CSV)",
           "us_tickers": "US ticker symbols (CSV)",
-          "disclosure_corp_codes": "OpenDart corp_codes (CSV)",
-          "opendart_api_key": "OpenDart API key",
           "include_indices": "Include KOSPI/KOSDAQ indices",
           "include_fx": "Include USD/KRW FX"
         },
         "data_description": {
-          "kr_tickers": "e.g. 005930, 035720.KQ",
-          "us_tickers": "e.g. AAPL, MSFT",
-          "disclosure_corp_codes": "8-digit OpenDart company ID; leave blank if you'll re-add by stock code",
-          "opendart_api_key": "opendart.fss.or.kr API Key request menu"
+          "opendart_api_key": "Blank = disclosure monitoring disabled",
+          "kr_tickers": "e.g. 005930, 035720.KQ — also drives disclosures when an OpenDart key is set",
+          "us_tickers": "e.g. AAPL, MSFT"
         }
       }
     },

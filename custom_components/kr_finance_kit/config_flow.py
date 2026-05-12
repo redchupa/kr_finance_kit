@@ -1,10 +1,14 @@
 """Config flow + options flow for KR Finance Kit.
 
-A short menu lets the user configure each piece independently and revisit
-it later via the Options flow. We keep all financial-private inputs
-(holdings quantity/avg price) **out** of the Config Flow on purpose —
+Single-step layout: one form captures everything (tickers, OpenDart key,
+toggles). The same KR ticker list feeds both price sensors (via yfinance)
+and disclosure binary_sensors (via the OpenDart resolver) — we removed
+the separate "stock_codes for disclosure" field because typing the same
+codes twice was a recurring source of confusion.
+
+Holdings (quantity + average price) stay out of the flow on purpose —
 those land via the ``add_position`` service so they're never serialized
-into ``entry.data`` until the user is ready.
+into ``entry.data`` until the user explicitly chooses to add them.
 """
 from __future__ import annotations
 
@@ -38,76 +42,69 @@ def _list_to_csv(items: list[str] | None) -> str:
     return ", ".join(items or [])
 
 
+async def _resolve_corp_codes_for_kr_tickers(
+    hass, api_key: str, kr_tickers: list[str]
+) -> list[str]:
+    """Map the user's KR tickers to OpenDart corp_codes.
+
+    Only the 6-digit ones go through the resolver (``.KQ``-suffixed codes
+    still resolve — we strip the suffix). Returns the deduped list of
+    corp_codes; empty when no key or no tickers.
+    """
+    if not api_key or not kr_tickers:
+        return []
+    stock_codes = []
+    for t in kr_tickers:
+        bare = t.split(".")[0]  # 005930 / 035720.KQ → 005930 / 035720
+        if bare.isdigit() and len(bare) == 6:
+            stock_codes.append(bare)
+    if not stock_codes:
+        return []
+    resolved = await resolve_corp_codes_by_stock(hass, api_key, stock_codes)
+    return list(dict.fromkeys(resolved.values()))  # preserve insertion order
+
+
 class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
-
-    def __init__(self) -> None:
-        self._data: dict[str, Any] = {
-            CONF_KR_TICKERS: [],
-            CONF_US_TICKERS: [],
-            CONF_DISCLOSURE_CORP_CODES: [],
-            CONF_OPENDART_API_KEY: "",
-            CONF_INCLUDE_INDICES: True,
-            CONF_INCLUDE_FX: True,
-            CONF_POSITIONS: [],
-        }
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
-        return await self.async_step_tickers()
 
-    async def async_step_tickers(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        errors: dict[str, str] = {}
-        if user_input is not None:
-            self._data[CONF_KR_TICKERS] = _csv_to_list(user_input.get(CONF_KR_TICKERS))
-            self._data[CONF_US_TICKERS] = _csv_to_list(user_input.get(CONF_US_TICKERS))
-            self._data[CONF_INCLUDE_INDICES] = user_input.get(CONF_INCLUDE_INDICES, True)
-            self._data[CONF_INCLUDE_FX] = user_input.get(CONF_INCLUDE_FX, True)
-            return await self.async_step_disclosures()
-        return self.async_show_form(
-            step_id="tickers",
-            data_schema=vol.Schema(
-                {
-                    vol.Optional(CONF_KR_TICKERS, default=""): str,
-                    vol.Optional(CONF_US_TICKERS, default=""): str,
-                    vol.Optional(CONF_INCLUDE_INDICES, default=True): bool,
-                    vol.Optional(CONF_INCLUDE_FX, default=True): bool,
-                }
-            ),
-            errors=errors,
-        )
-
-    async def async_step_disclosures(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
             api_key = (user_input.get(CONF_OPENDART_API_KEY) or "").strip()
-            explicit_corp_codes = _csv_to_list(user_input.get(CONF_DISCLOSURE_CORP_CODES))
-            stock_codes = _csv_to_list(user_input.get("disclosure_stock_codes"))
+            kr = _csv_to_list(user_input.get(CONF_KR_TICKERS))
+            us = _csv_to_list(user_input.get(CONF_US_TICKERS))
 
             if api_key and not await validate_api_key(self.hass, api_key):
                 errors[CONF_OPENDART_API_KEY] = "invalid_api_key"
             else:
-                resolved: dict[str, str] = {}
-                if api_key and stock_codes:
-                    resolved = await resolve_corp_codes_by_stock(
-                        self.hass, api_key, stock_codes
-                    )
-                # Merge explicit corp_codes with resolved-from-stock_codes, dedupe.
-                merged = list({*explicit_corp_codes, *resolved.values()})
+                corp_codes = await _resolve_corp_codes_for_kr_tickers(
+                    self.hass, api_key, kr
+                )
+                return self.async_create_entry(
+                    title="KR Finance Kit",
+                    data={
+                        CONF_KR_TICKERS: kr,
+                        CONF_US_TICKERS: us,
+                        CONF_OPENDART_API_KEY: api_key,
+                        CONF_DISCLOSURE_CORP_CODES: corp_codes,
+                        CONF_INCLUDE_INDICES: user_input.get(CONF_INCLUDE_INDICES, True),
+                        CONF_INCLUDE_FX: user_input.get(CONF_INCLUDE_FX, True),
+                        CONF_POSITIONS: [],
+                    },
+                )
 
-                self._data[CONF_OPENDART_API_KEY] = api_key
-                self._data[CONF_DISCLOSURE_CORP_CODES] = merged
-                return self.async_create_entry(title="KR Finance Kit", data=self._data)
         return self.async_show_form(
-            step_id="disclosures",
+            step_id="user",
             data_schema=vol.Schema(
                 {
                     vol.Optional(CONF_OPENDART_API_KEY, default=""): str,
-                    vol.Optional("disclosure_stock_codes", default=""): str,
-                    vol.Optional(CONF_DISCLOSURE_CORP_CODES, default=""): str,
+                    vol.Optional(CONF_KR_TICKERS, default=""): str,
+                    vol.Optional(CONF_US_TICKERS, default=""): str,
+                    vol.Optional(CONF_INCLUDE_INDICES, default=True): bool,
+                    vol.Optional(CONF_INCLUDE_FX, default=True): bool,
                 }
             ),
             errors=errors,
@@ -134,21 +131,25 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
         errors: dict[str, str] = {}
         if user_input is not None:
             api_key = (user_input.get(CONF_OPENDART_API_KEY) or "").strip()
+            kr = _csv_to_list(user_input.get(CONF_KR_TICKERS))
+            us = _csv_to_list(user_input.get(CONF_US_TICKERS))
+
             if api_key and not await validate_api_key(self.hass, api_key):
                 errors[CONF_OPENDART_API_KEY] = "invalid_api_key"
             else:
+                corp_codes = await _resolve_corp_codes_for_kr_tickers(
+                    self.hass, api_key, kr
+                )
                 return self.async_create_entry(
                     title="",
                     data={
-                        CONF_KR_TICKERS: _csv_to_list(user_input.get(CONF_KR_TICKERS)),
-                        CONF_US_TICKERS: _csv_to_list(user_input.get(CONF_US_TICKERS)),
-                        CONF_DISCLOSURE_CORP_CODES: _csv_to_list(
-                            user_input.get(CONF_DISCLOSURE_CORP_CODES)
-                        ),
+                        CONF_KR_TICKERS: kr,
+                        CONF_US_TICKERS: us,
                         CONF_OPENDART_API_KEY: api_key,
+                        CONF_DISCLOSURE_CORP_CODES: corp_codes,
                         CONF_INCLUDE_INDICES: user_input.get(CONF_INCLUDE_INDICES, True),
                         CONF_INCLUDE_FX: user_input.get(CONF_INCLUDE_FX, True),
-                        # Holdings are managed via service, not options UI.
+                        # Holdings are service-managed; keep whatever we already have.
                         CONF_POSITIONS: self._current(CONF_POSITIONS, []),
                     },
                 )
@@ -158,20 +159,16 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema(
                 {
                     vol.Optional(
+                        CONF_OPENDART_API_KEY,
+                        default=self._current(CONF_OPENDART_API_KEY, ""),
+                    ): str,
+                    vol.Optional(
                         CONF_KR_TICKERS,
                         default=_list_to_csv(self._current(CONF_KR_TICKERS, [])),
                     ): str,
                     vol.Optional(
                         CONF_US_TICKERS,
                         default=_list_to_csv(self._current(CONF_US_TICKERS, [])),
-                    ): str,
-                    vol.Optional(
-                        CONF_DISCLOSURE_CORP_CODES,
-                        default=_list_to_csv(self._current(CONF_DISCLOSURE_CORP_CODES, [])),
-                    ): str,
-                    vol.Optional(
-                        CONF_OPENDART_API_KEY,
-                        default=self._current(CONF_OPENDART_API_KEY, ""),
                     ): str,
                     vol.Optional(
                         CONF_INCLUDE_INDICES,
