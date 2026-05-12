@@ -54,17 +54,17 @@ def test_live_api_key_is_accepted():
 def test_live_corp_code_xml_maps_known_stock_codes():
     """Download corpCode.xml ZIP, unzip, parse, and verify well-known mappings.
 
-    This is what resolve_corp_codes_by_stock relies on under the hood.
-    Mappings checked: Samsung Electronics (005930→00126380), SK Hynix
-    (000660→00164779).
+    This is what resolve_corp_codes_by_stock and resolve_kr_ticker_names
+    rely on under the hood. We check Samsung Electronics
+    (005930→00126380/삼성전자) and SK Hynix (000660→00164779/SK하이닉스).
     """
     qs = urllib.parse.urlencode({"crtfc_key": KEY})
     with urllib.request.urlopen(f"{OPENDART_CORPCODE_URL}?{qs}", timeout=30) as r:
         zip_bytes = r.read()
     xml_bytes = _unzip_corp_code(zip_bytes)
     mapping = _parse_corp_code_xml(xml_bytes)
-    assert mapping.get("005930") == "00126380", "Samsung Electronics mapping changed"
-    assert mapping.get("000660") == "00164779", "SK Hynix mapping changed"
+    assert mapping.get("005930") == ("00126380", "삼성전자"), "Samsung mapping changed"
+    assert mapping.get("000660") == ("00164779", "SK하이닉스"), "SK Hynix mapping changed"
     # OpenDart lists ~3000 KRX equities; a sane lower bound guards against
     # the dump being silently truncated or empty.
     assert len(mapping) > 2000

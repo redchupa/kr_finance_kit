@@ -26,8 +26,11 @@ def market_device() -> DeviceInfo:
     return _device("market", "한국 시장 지표")
 
 
-def ticker_device(market: str, ticker: str) -> DeviceInfo:
-    return _device(f"ticker_{market.lower()}_{ticker}", f"{market} {ticker}")
+def ticker_device(market: str, ticker: str, label: str | None = None) -> DeviceInfo:
+    # When we have a friendly label (e.g. "삼성전자"), surface it in the device
+    # panel; otherwise fall back to the raw "{MARKET} {TICKER}" form.
+    device_label = label or f"{market} {ticker}"
+    return _device(f"ticker_{market.lower()}_{ticker}", device_label)
 
 
 def disclosure_device(corp_code: str) -> DeviceInfo:

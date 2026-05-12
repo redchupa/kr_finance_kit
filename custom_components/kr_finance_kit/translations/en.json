@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "KR Finance Kit",
-        "description": "Everything fits on one page. Each field is optional — leave blank to disable that feature.\n\nWhen an **OpenDart key** and **KR tickers** are both provided, the same tickers drive both price sensors and disclosure binary_sensors automatically — no need to type them twice.\n\nGet a free OpenDart key at opendart.fss.or.kr → API Key request.",
+        "description": "Everything fits on one page. Each field is optional — leave blank to disable that feature.\n\nWhen an **OpenDart key** and **KR tickers** are both set, the same tickers automatically drive price sensors, disclosure binary_sensors, AND friendly company-name labels (e.g. \"삼성전자\" instead of \"005930\").\n\n**Get an OpenDart key**: opendart.fss.or.kr → API Key request (free, instant).\n\n**Where to find ticker codes**:\n• KR (6-digit number): search at Naver Finance, Daum Finance, or KRX. Examples: Samsung Electronics=005930, SK Hynix=000660, NAVER=035420\n• US (ticker symbol): search at Yahoo Finance or Google Finance. Examples: Apple=AAPL, Microsoft=MSFT, Tesla=TSLA",
         "data": {
           "opendart_api_key": "OpenDart API key (optional)",
           "kr_tickers": "KR ticker codes (CSV)",
@@ -12,8 +12,8 @@
           "include_fx": "Include USD/KRW FX"
         },
         "data_description": {
-          "opendart_api_key": "Leave blank to disable disclosure monitoring; price sensors still work",
-          "kr_tickers": "e.g. 005930, 000660 — 6-digit = KOSPI; add .KQ for KOSDAQ. When an OpenDart key is set, the same codes drive disclosure binary_sensors too",
+          "opendart_api_key": "Blank disables disclosure monitoring AND company-name labels (price sensors still work)",
+          "kr_tickers": "e.g. 005930, 000660 — 6-digit = KOSPI; add .KQ for KOSDAQ (e.g. 035720.KQ). With an OpenDart key, company names display automatically",
           "us_tickers": "e.g. AAPL, MSFT, TSLA"
         }
       }
@@ -30,7 +30,7 @@
     "step": {
       "init": {
         "title": "KR Finance Kit options",
-        "description": "Edit values entered at setup. OpenDart key: get one at opendart.fss.or.kr (API Key request).",
+        "description": "Edit values entered at setup. Find KR ticker codes at Naver Finance / Daum Finance / KRX. US tickers at Yahoo Finance.",
         "data": {
           "opendart_api_key": "OpenDart API key",
           "kr_tickers": "KR ticker codes (CSV)",
@@ -39,8 +39,8 @@
           "include_fx": "Include USD/KRW FX"
         },
         "data_description": {
-          "opendart_api_key": "Blank = disclosure monitoring disabled",
-          "kr_tickers": "e.g. 005930, 035720.KQ — also drives disclosures when an OpenDart key is set",
+          "opendart_api_key": "Blank disables disclosure monitoring and company-name labels",
+          "kr_tickers": "e.g. 005930, 035720.KQ — company names auto-resolve when an OpenDart key is set",
           "us_tickers": "e.g. AAPL, MSFT"
         }
       }

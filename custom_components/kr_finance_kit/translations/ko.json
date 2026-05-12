@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "KR Finance Kit 설정",
-        "description": "한 번에 모두 입력하시면 됩니다. 모든 항목은 선택이며 비워두면 해당 기능이 비활성화됩니다.\n\n**OpenDart 키**가 있고 **한국 종목**이 입력되어 있으면 → 시세 sensor + 공시 binary_sensor가 함께 자동 생성됩니다.\n\nOpenDart 키는 opendart.fss.or.kr → 인증키 신청에서 무료로 즉시 발급됩니다.",
+        "description": "한 번에 모두 입력하시면 됩니다. 모든 항목은 선택이며 비워두면 해당 기능이 비활성화됩니다.\n\n**OpenDart 키**가 있고 **한국 종목**이 입력되어 있으면 → 시세 sensor + 공시 binary_sensor + 종목명(예 삼성전자) 매핑이 모두 자동으로 활성화됩니다.\n\n**OpenDart 키 발급**: opendart.fss.or.kr → 인증키 신청 (무료, 즉시).\n\n**종목코드 찾는 법**:\n• 한국 종목 (6자리 숫자): 네이버 금융 / 다음 금융 / KRX에서 종목 검색 → URL의 6자리 또는 종목정보 페이지의 종목코드. 예: 삼성전자=005930, SK하이닉스=000660, NAVER=035420\n• 미국 종목 (티커 심볼): Yahoo Finance, Google Finance에서 회사 검색. 예: 애플=AAPL, 마이크로소프트=MSFT, 테슬라=TSLA",
         "data": {
           "opendart_api_key": "OpenDart API 키 (선택)",
           "kr_tickers": "한국 종목 코드 (CSV)",
@@ -12,8 +12,8 @@
           "include_fx": "USD/KRW 환율 포함"
         },
         "data_description": {
-          "opendart_api_key": "비워두면 공시 모니터링만 비활성화됩니다 (시세는 정상 동작)",
-          "kr_tickers": "예: 005930, 000660 — KOSPI는 6자리 그대로, KOSDAQ은 .KQ 접미사. OpenDart 키가 있으면 같은 종목의 공시도 자동 추적됩니다",
+          "opendart_api_key": "비워두면 공시 모니터링 + 종목명 자동 매핑이 비활성화됩니다 (시세는 정상 동작)",
+          "kr_tickers": "예: 005930, 000660 — KOSPI는 6자리 그대로, KOSDAQ은 .KQ 접미사 (예 035720.KQ). OpenDart 키가 있으면 종목명도 자동으로 표시됩니다",
           "us_tickers": "예: AAPL, MSFT, TSLA"
         }
       }
@@ -30,7 +30,7 @@
     "step": {
       "init": {
         "title": "KR Finance Kit 옵션",
-        "description": "설치 시 입력한 값을 수정합니다. OpenDart 키 발급: opendart.fss.or.kr 인증키 신청 메뉴.",
+        "description": "설치 시 입력한 값을 수정합니다. 종목코드 찾는 법: 네이버 금융/다음 금융/KRX에서 검색. 미국은 Yahoo Finance.",
         "data": {
           "opendart_api_key": "OpenDart API 키",
           "kr_tickers": "한국 종목 코드 (CSV)",
@@ -39,8 +39,8 @@
           "include_fx": "USD/KRW 환율 포함"
         },
         "data_description": {
-          "opendart_api_key": "비워두면 공시 모니터링 비활성화",
-          "kr_tickers": "예: 005930, 035720.KQ — OpenDart 키가 있으면 공시도 자동 추적",
+          "opendart_api_key": "비워두면 공시 모니터링 + 종목명 매핑 비활성화",
+          "kr_tickers": "예: 005930, 035720.KQ — OpenDart 키 있으면 종목명도 자동",
           "us_tickers": "예: AAPL, MSFT"
         }
       }

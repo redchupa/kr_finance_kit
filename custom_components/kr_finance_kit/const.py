@@ -13,6 +13,7 @@ CONF_KR_TICKERS = "kr_tickers"
 CONF_US_TICKERS = "us_tickers"
 CONF_POSITIONS = "positions"  # list[{ticker, quantity, avg_price, market}]
 CONF_DISCLOSURE_CORP_CODES = "disclosure_corp_codes"
+CONF_KR_TICKER_NAMES = "kr_ticker_names"  # dict[stock_code, corp_name] for friendly labels
 CONF_INCLUDE_INDICES = "include_indices"
 CONF_INCLUDE_FX = "include_fx"
 

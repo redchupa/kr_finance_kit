@@ -1,4 +1,4 @@
-"""Unit tests for the corpCode.xml parser and stock→corp_code resolution.
+"""Unit tests for the corpCode.xml parser and stock→corp/name resolution.
 
 We exercise the pure helpers (parse XML, unzip a zipped XML, lookup
 via the cache seam) without standing up Home Assistant.
@@ -18,6 +18,7 @@ from custom_components.kr_finance_kit.api.opendart import (
     _set_corp_code_cache,
     _unzip_corp_code,
     resolve_corp_codes_by_stock,
+    resolve_kr_ticker_names,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -38,9 +39,9 @@ def sample_xml() -> bytes:
 
 def test_parse_corpcode_extracts_listed_entries(sample_xml):
     mapping = _parse_corp_code_xml(sample_xml)
-    # Both listed equities resolve.
-    assert mapping["005930"] == "00126380"
-    assert mapping["000660"] == "00164779"
+    # Both listed equities resolve to (corp_code, corp_name).
+    assert mapping["005930"] == ("00126380", "삼성전자")
+    assert mapping["000660"] == ("00164779", "SK하이닉스")
 
 
 def test_parse_corpcode_skips_unlisted_entries(sample_xml):
@@ -48,7 +49,7 @@ def test_parse_corpcode_skips_unlisted_entries(sample_xml):
     # The 비상장 entry has an empty stock_code — must be skipped, not stored
     # under "" or some other sentinel.
     assert "" not in mapping
-    assert "00264529" not in mapping.values()
+    assert all(entry[0] != "00264529" for entry in mapping.values())
 
 
 def test_unzip_corpcode_extracts_xml_member(sample_xml):
@@ -75,8 +76,8 @@ def test_unzip_corpcode_raises_when_no_xml():
         _unzip_corp_code(buf.getvalue())
 
 
-def test_resolve_via_cached_mapping(sample_xml):
-    """resolve_corp_codes_by_stock uses the in-memory cache when present."""
+def test_resolve_corp_codes_via_cached_mapping(sample_xml):
+    """resolve_corp_codes_by_stock returns only the corp_code projection."""
     _set_corp_code_cache(_parse_corp_code_xml(sample_xml))
     result = asyncio.run(
         resolve_corp_codes_by_stock(hass=None, api_key="dummy", stock_codes=["005930", "000660"])
@@ -84,16 +85,15 @@ def test_resolve_via_cached_mapping(sample_xml):
     assert result == {"005930": "00126380", "000660": "00164779"}
 
 
-def test_resolve_skips_unknown_stock_codes(sample_xml):
+def test_resolve_corp_codes_skips_unknown_stock_codes(sample_xml):
     _set_corp_code_cache(_parse_corp_code_xml(sample_xml))
     result = asyncio.run(
         resolve_corp_codes_by_stock(hass=None, api_key="dummy", stock_codes=["005930", "999999"])
     )
-    # Known: present. Unknown: absent (caller treats absence as "skip").
     assert result == {"005930": "00126380"}
 
 
-def test_resolve_handles_whitespace_and_empty_inputs(sample_xml):
+def test_resolve_corp_codes_handles_whitespace_and_empty_inputs(sample_xml):
     _set_corp_code_cache(_parse_corp_code_xml(sample_xml))
     result = asyncio.run(
         resolve_corp_codes_by_stock(
@@ -103,15 +103,39 @@ def test_resolve_handles_whitespace_and_empty_inputs(sample_xml):
     assert result == {"005930": "00126380"}
 
 
-def test_resolve_returns_empty_when_no_api_key():
+def test_resolve_corp_codes_returns_empty_when_no_api_key():
     result = asyncio.run(
         resolve_corp_codes_by_stock(hass=None, api_key="", stock_codes=["005930"])
     )
     assert result == {}
 
 
-def test_resolve_returns_empty_when_no_stock_codes():
+def test_resolve_corp_codes_returns_empty_when_no_stock_codes():
     result = asyncio.run(
         resolve_corp_codes_by_stock(hass=None, api_key="dummy", stock_codes=[])
+    )
+    assert result == {}
+
+
+def test_resolve_kr_ticker_names_returns_corp_names(sample_xml):
+    """resolve_kr_ticker_names returns the friendly company-name projection."""
+    _set_corp_code_cache(_parse_corp_code_xml(sample_xml))
+    result = asyncio.run(
+        resolve_kr_ticker_names(hass=None, api_key="dummy", stock_codes=["005930", "000660"])
+    )
+    assert result == {"005930": "삼성전자", "000660": "SK하이닉스"}
+
+
+def test_resolve_kr_ticker_names_skips_unknown(sample_xml):
+    _set_corp_code_cache(_parse_corp_code_xml(sample_xml))
+    result = asyncio.run(
+        resolve_kr_ticker_names(hass=None, api_key="dummy", stock_codes=["005930", "999999"])
+    )
+    assert result == {"005930": "삼성전자"}
+
+
+def test_resolve_kr_ticker_names_returns_empty_when_no_api_key():
+    result = asyncio.run(
+        resolve_kr_ticker_names(hass=None, api_key="", stock_codes=["005930"])
     )
     assert result == {}

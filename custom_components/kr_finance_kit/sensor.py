@@ -12,6 +12,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import (
     CONF_INCLUDE_FX,
     CONF_INCLUDE_INDICES,
+    CONF_KR_TICKER_NAMES,
     DOMAIN,
     FX_USDKRW,
     INDEX_KOSDAQ,
@@ -46,8 +47,9 @@ async def async_setup_entry(
     if _entry_value(entry, CONF_INCLUDE_FX, True):
         entities.append(FXSensor(market, FX_USDKRW))
 
+    kr_names: dict[str, str] = _entry_value(entry, CONF_KR_TICKER_NAMES, {}) or {}
     for ticker in market.kr_tickers:
-        entities.append(QuoteSensor(market, MARKET_KR, ticker))
+        entities.append(QuoteSensor(market, MARKET_KR, ticker, label=kr_names.get(ticker)))
     for ticker in market.us_tickers:
         entities.append(QuoteSensor(market, MARKET_US, ticker))
 
@@ -119,13 +121,22 @@ class QuoteSensor(_MarketBase):
     _attr_icon = "mdi:cash"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, coordinator: MarketCoordinator, market: str, ticker: str) -> None:
+    def __init__(
+        self,
+        coordinator: MarketCoordinator,
+        market: str,
+        ticker: str,
+        label: str | None = None,
+    ) -> None:
         super().__init__(coordinator)
         self._market = market
         self._ticker = ticker
         self._attr_unique_id = f"{DOMAIN}_{market.lower()}_{ticker}"
-        self._attr_name = f"{ticker}"
-        self._attr_device_info = ticker_device(market, ticker)
+        # Friendly name when we have it (e.g. "삼성전자"), bare code otherwise.
+        # The unique_id stays code-based for stability — the user-facing label
+        # is the only thing that changes when names are resolved.
+        self._attr_name = label or ticker
+        self._attr_device_info = ticker_device(market, ticker, label)
         self._attr_native_unit_of_measurement = "KRW" if market == MARKET_KR else "USD"
 
     @property

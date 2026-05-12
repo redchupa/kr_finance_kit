@@ -72,8 +72,8 @@ def _normalize(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _parse_corp_code_xml(xml_bytes: bytes) -> dict[str, str]:
-    """Build a ``stock_code → corp_code`` map from CORPCODE.xml bytes.
+def _parse_corp_code_xml(xml_bytes: bytes) -> dict[str, tuple[str, str]]:
+    """Build a ``stock_code → (corp_code, corp_name)`` map from CORPCODE.xml.
 
     The XML schema is::
 
@@ -88,15 +88,19 @@ def _parse_corp_code_xml(xml_bytes: bytes) -> dict[str, str]:
         </result>
 
     Entries without a stock_code (non-listed companies, ETFs sometimes
-    missing it) are skipped — we only need listed-equity mappings.
+    missing it) are skipped — we only need listed-equity mappings. We
+    capture ``corp_name`` alongside ``corp_code`` because it doubles as
+    the friendly label for our price sensors ("삼성전자" instead of
+    "005930").
     """
-    out: dict[str, str] = {}
+    out: dict[str, tuple[str, str]] = {}
     root = ET.fromstring(xml_bytes)
     for entry in root.findall("list"):
         stock = (entry.findtext("stock_code") or "").strip()
         corp = (entry.findtext("corp_code") or "").strip()
+        name = (entry.findtext("corp_name") or "").strip()
         if stock and corp:
-            out[stock] = corp
+            out[stock] = (corp, name)
     return out
 
 
@@ -114,10 +118,10 @@ def _unzip_corp_code(zip_bytes: bytes) -> bytes:
 # Process-level cache: the mapping is several megabytes of strings but
 # rarely changes (OpenDart updates corp_codes a few times a year). Caching
 # avoids re-downloading on every Options-flow save.
-_corp_code_cache: dict[str, str] | None = None
+_corp_code_cache: dict[str, tuple[str, str]] | None = None
 
 
-def _set_corp_code_cache(mapping: dict[str, str]) -> None:
+def _set_corp_code_cache(mapping: dict[str, tuple[str, str]]) -> None:
     """Test seam — let unit tests prime the cache without network."""
     global _corp_code_cache
     _corp_code_cache = mapping
@@ -128,8 +132,10 @@ def _clear_corp_code_cache() -> None:
     _corp_code_cache = None
 
 
-async def _load_corp_code_map(hass: "HomeAssistant", api_key: str) -> dict[str, str]:
-    """Download (or reuse cached) corpCode.xml and return the stock→corp map."""
+async def _load_corp_code_map(
+    hass: "HomeAssistant", api_key: str
+) -> dict[str, tuple[str, str]]:
+    """Download (or reuse cached) corpCode.xml and return the stock→(corp_code, name) map."""
     global _corp_code_cache
     if _corp_code_cache is not None:
         return _corp_code_cache
@@ -232,11 +238,35 @@ async def resolve_corp_codes_by_stock(
         sc = stock.strip()
         if not sc:
             continue
-        corp = mapping.get(sc)
-        if corp:
-            out[sc] = corp
+        entry = mapping.get(sc)
+        if entry:
+            out[sc] = entry[0]
         else:
             LOGGER.debug("stock_code %s has no listed-equity mapping in corpCode.xml", sc)
+    return out
+
+
+async def resolve_kr_ticker_names(
+    hass: "HomeAssistant", api_key: str, stock_codes: list[str]
+) -> dict[str, str]:
+    """Resolve KR 6-digit stock codes to their Korean company names.
+
+    Same data source as ``resolve_corp_codes_by_stock`` (corpCode.xml),
+    just a different projection. Used by Config Flow to label price
+    sensors with friendly names like "삼성전자" instead of "005930".
+    Unmapped codes are omitted; caller falls back to the bare code.
+    """
+    if not api_key or not stock_codes:
+        return {}
+    mapping = await _load_corp_code_map(hass, api_key)
+    out: dict[str, str] = {}
+    for stock in stock_codes:
+        sc = stock.strip()
+        if not sc:
+            continue
+        entry = mapping.get(sc)
+        if entry and entry[1]:
+            out[sc] = entry[1]
     return out
 
 
