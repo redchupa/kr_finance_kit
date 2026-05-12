@@ -30,23 +30,25 @@
     "step": {
       "init": {
         "title": "KR Finance Kit options",
-        "description": "Edit values entered at setup. Find KR ticker codes at Naver Finance / Daum Finance / KRX. US tickers at Yahoo Finance.",
+        "description": "Edit any value you set at install. **Saving auto-reloads the integration** so changes take effect immediately.\n\n**What changes when**:\n• **Add a KR ticker** → its price sensor appears immediately. With an OpenDart key, the disclosure binary_sensor and Korean company-name label come along automatically.\n• **Remove a KR ticker** → its sensor is removed.\n• **Clear the OpenDart key** → disclosure binary_sensors and company-name labels are disabled (price sensors keep working).\n• **Enter a new OpenDart key** → corpCode.xml is re-downloaded and corp_codes / names are re-mapped.\n\n**Where to find ticker codes** (same as install):\n• KR (6-digit number): Naver Finance, Daum Finance, or KRX. Examples: Samsung Electronics=005930, SK Hynix=000660, NAVER=035420\n• US (ticker symbol): Yahoo Finance or Google Finance. Examples: Apple=AAPL, Microsoft=MSFT, Tesla=TSLA\n\n**Get an OpenDart key**: opendart.fss.or.kr → API Key request (free, instant).\n\nNote: holdings (quantity / avg price) are managed via the `kr_finance_kit.add_position` service, not this screen — you don't need to touch them here.",
         "data": {
-          "opendart_api_key": "OpenDart API key",
+          "opendart_api_key": "OpenDart API key (optional)",
           "kr_tickers": "KR ticker codes (CSV)",
           "us_tickers": "US ticker symbols (CSV)",
           "include_indices": "Include KOSPI/KOSDAQ indices",
           "include_fx": "Include USD/KRW FX"
         },
         "data_description": {
-          "opendart_api_key": "Blank disables disclosure monitoring and company-name labels",
-          "kr_tickers": "e.g. 005930, 035720.KQ — company names auto-resolve when an OpenDart key is set",
-          "us_tickers": "e.g. AAPL, MSFT"
+          "opendart_api_key": "Re-validated on save. Paste a freshly rotated key here. Blank disables disclosures + name mapping",
+          "kr_tickers": "e.g. 005930, 000660, 035720.KQ — comma-separated. Sensors follow add/remove automatically. With an OpenDart key, company names are auto-mapped",
+          "us_tickers": "e.g. AAPL, MSFT, TSLA — US tickers are unaffected by OpenDart and always render as codes",
+          "include_indices": "Disabling removes sensor.kr_finance_kit_kospi / kosdaq",
+          "include_fx": "Disabling removes sensor.kr_finance_kit_usdkrw. The USD→KRW-converted portfolio totals also go offline, so keep this on if you hold US tickers"
         }
       }
     },
     "error": {
-      "invalid_api_key": "OpenDart key is not valid."
+      "invalid_api_key": "OpenDart key is not valid. Verify it at opendart.fss.or.kr."
     }
   }
 }
