@@ -17,14 +17,14 @@
       },
       "disclosures": {
         "title": "OpenDart 공시 설정 (선택)",
-        "description": "OpenDart는 한국 금융감독원이 운영하는 무료 기업공시 시스템입니다. 관심 종목에 신규 공시가 발생하면 binary_sensor가 ON이 됩니다.\n\n**모두 비워두고 건너뛰어도 됩니다** — 공시 기능이 비활성화될 뿐 다른 센서는 정상 동작합니다.\n\n사용하시려면:\n1. [OpenDart 사이트](https://opendart.fss.or.kr/uss/umt/EgovMberInsertView.do) 에서 회원가입 → 인증키 신청 (즉시 발급, 무료)\n2. 발급받은 키와 관심 종목코드 (예: `005930`)를 아래에 입력 → 자동으로 corp_code 변환",
+        "description": "OpenDart는 한국 금융감독원이 운영하는 무료 기업공시 시스템입니다. 관심 종목에 신규 공시가 발생하면 binary_sensor가 ON이 됩니다.\n\n**모두 비워두고 건너뛰어도 됩니다** — 공시 기능이 비활성화될 뿐 다른 센서는 정상 동작합니다.\n\n사용하시려면:\n1. opendart.fss.or.kr 회원가입 → 인증키 신청 (즉시 발급, 무료)\n2. 발급받은 키와 관심 종목코드 (예: `005930`)를 아래에 입력하면 corp_code로 자동 변환됩니다.",
         "data": {
           "opendart_api_key": "OpenDart API 키",
           "disclosure_stock_codes": "관심 종목코드 (CSV, 6자리)",
           "disclosure_corp_codes": "회사 고유번호 corp_code (CSV, 고급)"
         },
         "data_description": {
-          "opendart_api_key": "발급: https://opendart.fss.or.kr → 인증키 신청 메뉴",
+          "opendart_api_key": "opendart.fss.or.kr 의 '인증키 신청' 메뉴에서 발급",
           "disclosure_stock_codes": "예: 005930, 000660 — 종목코드만 알면 됩니다. corp_code로 자동 변환됨",
           "disclosure_corp_codes": "OpenDart가 회사마다 부여한 8자리 ID (예 00126380). 위 종목코드 입력으로 충분하면 비워두세요"
         }
@@ -42,7 +42,7 @@
     "step": {
       "init": {
         "title": "KR Finance Kit 옵션",
-        "description": "설치 시 입력한 값을 수정합니다. OpenDart 키 발급: [opendart.fss.or.kr](https://opendart.fss.or.kr)",
+        "description": "설치 시 입력한 값을 수정합니다. OpenDart 키 발급: opendart.fss.or.kr 의 인증키 신청 메뉴.",
         "data": {
           "kr_tickers": "한국 종목 코드 (CSV)",
           "us_tickers": "미국 종목 심볼 (CSV)",
@@ -55,7 +55,7 @@
           "kr_tickers": "예: 005930, 035720.KQ",
           "us_tickers": "예: AAPL, MSFT",
           "disclosure_corp_codes": "8자리 OpenDart 회사 ID (모르면 비워두고 재설치 후 종목코드로 입력)",
-          "opendart_api_key": "https://opendart.fss.or.kr → 인증키 신청"
+          "opendart_api_key": "opendart.fss.or.kr 의 인증키 신청 메뉴에서 발급"
         }
       }
     },

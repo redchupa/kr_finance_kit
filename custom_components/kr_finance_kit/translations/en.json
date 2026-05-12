@@ -17,15 +17,15 @@
       },
       "disclosures": {
         "title": "OpenDart disclosures (optional)",
-        "description": "OpenDart is Korea FSS's free corporate disclosure system. A binary_sensor turns ON when a watched company files a new disclosure.\n\n**You can skip this step entirely** — only the disclosure feature is disabled; everything else still works.\n\nTo enable:\n1. Sign up at [OpenDart](https://opendart.fss.or.kr/uss/umt/EgovMberInsertView.do) → request an API key (instant, free)\n2. Enter your key and the stock codes (e.g. `005930`) below — corp_codes are auto-resolved",
+        "description": "OpenDart is Korea FSS's free corporate disclosure system. A binary_sensor turns ON when a watched company files a new disclosure.\n\n**You can skip this step entirely** — only the disclosure feature is disabled; everything else still works.\n\nTo enable:\n1. Sign up at opendart.fss.or.kr → request an API key (instant, free)\n2. Enter your key and the stock codes (e.g. `005930`) below — corp_codes are auto-resolved.",
         "data": {
           "opendart_api_key": "OpenDart API key",
           "disclosure_stock_codes": "Watched stock codes (CSV, 6-digit)",
           "disclosure_corp_codes": "OpenDart corp_codes (CSV, advanced)"
         },
         "data_description": {
-          "opendart_api_key": "Get one at https://opendart.fss.or.kr → API Key request menu",
-          "disclosure_stock_codes": "e.g. 005930, 000660 — auto-resolved to corp_codes via OpenDart's company.json",
+          "opendart_api_key": "Get one at opendart.fss.or.kr in the API Key request menu",
+          "disclosure_stock_codes": "e.g. 005930, 000660 — auto-resolved to corp_codes",
           "disclosure_corp_codes": "8-digit OpenDart company ID (e.g. 00126380). Leave blank if you used stock codes above"
         }
       }
@@ -42,7 +42,7 @@
     "step": {
       "init": {
         "title": "KR Finance Kit options",
-        "description": "Edit values entered at setup. OpenDart key: [opendart.fss.or.kr](https://opendart.fss.or.kr)",
+        "description": "Edit values entered at setup. OpenDart key: get one at opendart.fss.or.kr in the API Key request menu.",
         "data": {
           "kr_tickers": "KR ticker codes (CSV)",
           "us_tickers": "US ticker symbols (CSV)",
@@ -55,7 +55,7 @@
           "kr_tickers": "e.g. 005930, 035720.KQ",
           "us_tickers": "e.g. AAPL, MSFT",
           "disclosure_corp_codes": "8-digit OpenDart company ID; leave blank if you'll re-add by stock code",
-          "opendart_api_key": "https://opendart.fss.or.kr → API Key request"
+          "opendart_api_key": "opendart.fss.or.kr API Key request menu"
         }
       }
     },
