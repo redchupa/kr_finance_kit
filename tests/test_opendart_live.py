@@ -25,8 +25,11 @@ import pytest
 
 from custom_components.kr_finance_kit.api.opendart import (
     OPENDART_COMPANY_URL,
+    OPENDART_CORPCODE_URL,
     OPENDART_LIST_URL,
     _normalize,
+    _parse_corp_code_xml,
+    _unzip_corp_code,
 )
 
 KEY = os.environ.get("OPENDART_API_KEY")
@@ -48,19 +51,31 @@ def test_live_api_key_is_accepted():
     assert payload.get("status") in ("000", "013"), payload
 
 
-def test_live_resolve_samsung_stock_code():
-    payload = _get(OPENDART_COMPANY_URL, corp_code="005930")
+def test_live_corp_code_xml_maps_known_stock_codes():
+    """Download corpCode.xml ZIP, unzip, parse, and verify well-known mappings.
+
+    This is what resolve_corp_codes_by_stock relies on under the hood.
+    Mappings checked: Samsung Electronics (005930→00126380), SK Hynix
+    (000660→00164779).
+    """
+    qs = urllib.parse.urlencode({"crtfc_key": KEY})
+    with urllib.request.urlopen(f"{OPENDART_CORPCODE_URL}?{qs}", timeout=30) as r:
+        zip_bytes = r.read()
+    xml_bytes = _unzip_corp_code(zip_bytes)
+    mapping = _parse_corp_code_xml(xml_bytes)
+    assert mapping.get("005930") == "00126380", "Samsung Electronics mapping changed"
+    assert mapping.get("000660") == "00164779", "SK Hynix mapping changed"
+    # OpenDart lists ~3000 KRX equities; a sane lower bound guards against
+    # the dump being silently truncated or empty.
+    assert len(mapping) > 2000
+
+
+def test_live_company_lookup_with_real_corp_code():
+    """company.json should accept a true 8-digit corp_code (not a stock code)."""
+    payload = _get(OPENDART_COMPANY_URL, corp_code="00126380")
     assert payload.get("status") == "000"
-    # Samsung Electronics' canonical OpenDart corp_code.
     assert payload.get("corp_code") == "00126380"
     assert "삼성" in (payload.get("corp_name") or "")
-
-
-def test_live_resolve_invalid_stock_code_returns_non_ok():
-    payload = _get(OPENDART_COMPANY_URL, corp_code="999999")
-    # We intentionally check non-000 (any error code is fine — resolver
-    # treats anything other than 000 as "skip this entry").
-    assert payload.get("status") != "000"
 
 
 def test_live_recent_disclosures_normalize_round_trip():
