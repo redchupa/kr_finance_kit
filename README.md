@@ -248,8 +248,6 @@ See [docs/installation-en.md](docs/installation-en.md) for setup.
   </tr>
 </table>
 
-각 HA 기기 패널의 manufacturer / model / sw_version 필드에도 후원 메타가 노출됩니다 (`우*만 / 토스 1000-1261-7813 / 커피 한잔은 사랑입니다 ☕`).
-
 ---
 
 ## 📝 License
