@@ -4,7 +4,7 @@ refresh_now:
 
 add_position:
   name: 보유 종목 추가/수정
-  description: |
+  description: >
     Add or update a holding (quantity + average purchase price). Stored
     in encrypted ConfigEntry options — never persisted to source files.
   fields:
@@ -12,30 +12,34 @@ add_position:
       name: 종목 코드/심볼
       description: KR 종목 코드 (예 005930) 또는 US 심볼 (예 AAPL).
       required: true
+      example: "005930"
       selector:
         text:
     quantity:
       name: 수량
       description: Number of shares.
       required: true
+      example: "10"
       selector:
         number:
-          mode: box
           min: 0
-          step: 0.0001
+          max: 1000000000
+          mode: box
     avg_price:
       name: 평단가
       description: Average purchase price in market currency.
       required: true
+      example: "60000"
       selector:
         number:
-          mode: box
           min: 0
-          step: 0.01
+          max: 1000000000
+          mode: box
     market:
       name: 시장
-      description: KR or US.
+      description: KR 또는 US
       required: true
+      default: "KR"
       selector:
         select:
           options:
@@ -49,11 +53,13 @@ remove_position:
     ticker:
       name: 종목 코드/심볼
       required: true
+      example: "005930"
       selector:
         text:
     market:
       name: 시장
       required: true
+      default: "KR"
       selector:
         select:
           options:
