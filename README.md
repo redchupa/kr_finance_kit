@@ -7,7 +7,7 @@
 [![Validate](https://img.shields.io/github/actions/workflow/status/redchupa/kr_finance_kit/validate.yml?label=validate&style=flat-square)](https://github.com/redchupa/kr_finance_kit/actions/workflows/validate.yml)
 [![Tests](https://img.shields.io/github/actions/workflow/status/redchupa/kr_finance_kit/test.yml?label=tests&style=flat-square)](https://github.com/redchupa/kr_finance_kit/actions/workflows/test.yml)
 [![Latest](https://img.shields.io/github/v/release/redchupa/kr_finance_kit?label=release&style=flat-square)](https://github.com/redchupa/kr_finance_kit/releases)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+[![MIT](https://img.shields.io/github/license/redchupa/kr_finance_kit?style=flat-square&color=blue)](LICENSE)
 
 ---
 
