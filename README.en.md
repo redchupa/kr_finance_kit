@@ -112,7 +112,7 @@ Lookup sites: [Yahoo Finance Lookup](https://finance.yahoo.com/lookup) · [Googl
 
 OpenDart is Korea's FSS free disclosure API. Adding a key unlocks two things:
 
-- **Automatic company names** — `sensor.kr_005930` shows up as "Samsung Electronics"
+- **Automatic company names** — `sensor.kr_finance_kit_kr_005930` shows up as "Samsung Electronics"
 - **New disclosure alerts** — a `binary_sensor` turns ON when a new filing is detected for a watched ticker
 
 **How to get one**:
@@ -163,7 +163,7 @@ A minimal example — **notify when a ticker drops 5% or more**:
 alias: "Samsung drop alert"
 trigger:
   - platform: numeric_state
-    entity_id: sensor.kr_005930_005930   # ← replace with your ticker
+    entity_id: sensor.kr_finance_kit_kr_005930   # ← replace with your ticker
     attribute: change_pct
     below: -5
 action:
@@ -264,8 +264,8 @@ Existing values are pre-filled — adjust tickers or the OpenDart key and save.
 
 - `sensor.kr_finance_kit_kospi` / `_kosdaq` — indices
 - `sensor.kr_finance_kit_usdkrw` — FX
-- `sensor.kr_<code>_<code>` — Korean ticker (attrs: `price`, `change`, `change_pct`, `asof`, `stale`)
-- `sensor.us_<symbol>_<symbol>` — US ticker
+- `sensor.kr_finance_kit_kr_<code>` — Korean ticker (attrs: `price`, `change`, `change_pct`, `asof`, `stale`)
+- `sensor.kr_finance_kit_us_<symbol>` — US ticker
 - `sensor.kr_finance_kit_portfolio_*` — six P/L sensors (KR/US/KRW-converted × value/pl)
 - `binary_sensor.kr_finance_kit_disclosure_<corp_code>` — 24h disclosure trigger
 
