@@ -1,14 +1,23 @@
-# 🇰🇷 KR Finance Kit
+# KR Finance Kit
 
-> **Home Assistant 대시보드에 한국 주식이 뜬다.**
+**[English](README.en.md)** · 한국어
+
+> **Home Assistant 대시보드에 한국·미국 주식이 뜬다.**
 > 음성으로 "삼성전자 지금 얼마?"
 > 보유 종목 떨어지면 자동 알림.
 
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange?style=flat-square)](https://hacs.xyz)
-[![Validate](https://img.shields.io/github/actions/workflow/status/redchupa/kr_finance_kit/validate.yml?label=validate&style=flat-square)](https://github.com/redchupa/kr_finance_kit/actions/workflows/validate.yml)
-[![Tests](https://img.shields.io/github/actions/workflow/status/redchupa/kr_finance_kit/test.yml?label=tests&style=flat-square)](https://github.com/redchupa/kr_finance_kit/actions/workflows/test.yml)
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-FF8C00?style=flat-square&logo=homeassistantcommunitystore&logoColor=white)](https://hacs.xyz)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.6%2B-03A9F4?style=flat-square&logo=home-assistant&logoColor=white)](https://www.home-assistant.io)
+[![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-43A047?style=flat-square)](LICENSE)
 
-[Releases](https://github.com/redchupa/kr_finance_kit/releases) · [MIT License](LICENSE)
+[![Validate](https://img.shields.io/github/actions/workflow/status/redchupa/kr_finance_kit/validate.yml?label=validate&style=flat-square&logo=github)](https://github.com/redchupa/kr_finance_kit/actions/workflows/validate.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/redchupa/kr_finance_kit/test.yml?label=tests&style=flat-square&logo=github)](https://github.com/redchupa/kr_finance_kit/actions/workflows/test.yml)
+[![Data: yfinance](https://img.shields.io/badge/data-yfinance-7B1FA2?style=flat-square&logo=yahoo&logoColor=white)](https://github.com/ranaroussi/yfinance)
+[![Disclosures: OpenDart](https://img.shields.io/badge/disclosures-OpenDart-E53935?style=flat-square)](https://opendart.fss.or.kr)
+[![Made for HA](https://img.shields.io/badge/Made%20for-Home%20Assistant-18BCF2?style=flat-square&logo=home-assistant&logoColor=white)](https://www.home-assistant.io)
+
+[Releases](https://github.com/redchupa/kr_finance_kit/releases)
 
 ---
 
