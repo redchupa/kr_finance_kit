@@ -177,6 +177,40 @@ More examples (end-of-day digest, disclosure pings, etc.) live in [docs/examples
 
 ---
 
+## Blueprints for ticker-based alerts
+
+**Register many tickers in the integration, then check which ones you want alerts for — no rebuilding automations when you change your mind.** Adjusting the ticker list is a checkbox edit in the blueprint inputs.
+
+Two blueprints are provided:
+
+### 1. Price-change alert
+
+Pushes when any selected ticker crosses a +/- threshold (e.g. +5% / -5%).
+
+[![Open your Home Assistant instance and import this blueprint.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fprice_change_alert.yaml)
+
+Manual import URL: `https://github.com/redchupa/kr_finance_kit/blob/main/blueprints/automation/kr_finance_kit/price_change_alert.yaml`
+
+Inputs: tickers to watch (multi-select) · drop threshold (e.g. `-5`) · rise threshold (e.g. `5`) · notify service (e.g. `notify.mobile_app_my_phone`).
+
+### 2. Daily market summary
+
+At a configurable time (defaults to Korean market close, 15:30 KST), sends one message with KOSPI/KOSDAQ, FX, selected tickers, and holdings value/P&L.
+
+[![Open your Home Assistant instance and import this blueprint.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fdaily_summary.yaml)
+
+Manual import URL: `https://github.com/redchupa/kr_finance_kit/blob/main/blueprints/automation/kr_finance_kit/daily_summary.yaml`
+
+### How to import (same for both)
+
+1. Click the **Import blueprint** badge above → HA opens the import dialog.
+2. Or: **Settings → Automations & Scenes → Blueprints → Import Blueprint**, paste the URL.
+3. Then **Create Automation → Use this blueprint** → fill in tickers/thresholds/notify service → save.
+
+To add or remove a ticker later, edit the automation's blueprint inputs — no need to recreate the automation.
+
+---
+
 ## Ask by voice
 
 The integration registers automatically with HA Voice Assist, so you can ask:

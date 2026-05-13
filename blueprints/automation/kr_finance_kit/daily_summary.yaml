@@ -1,0 +1,98 @@
+blueprint:
+  name: KR Finance Kit — 일일 시장 요약
+  description: |
+    지정한 시각(기본 한국 장 마감 15:30)에 코스피·코스닥·환율과 선택한
+    종목들의 현재가·변동률, 그리고 보유 종목 평가금액·평가손익을 한
+    메시지로 묶어서 보냅니다.
+
+    매일 보고 싶은 종목만 입력에서 선택하면 됩니다. 종목을 바꾸고 싶으면
+    체크박스만 수정.
+  domain: automation
+  source_url: https://github.com/redchupa/kr_finance_kit/blob/main/blueprints/automation/kr_finance_kit/daily_summary.yaml
+  input:
+    summary_time:
+      name: 발송 시각
+      description: 매일 이 시각에 요약을 발송. 기본은 한국 장 마감 직후 15:30.
+      default: "15:30:00"
+      selector:
+        time:
+    target_tickers:
+      name: 요약에 포함할 종목 (선택)
+      description: KR Finance Kit 종목 시세 sensor 중 메시지에 포함할 종목. 비워두면 종목 줄은 생략됨.
+      default: []
+      selector:
+        entity:
+          integration: kr_finance_kit
+          domain: sensor
+          multiple: true
+    include_indices:
+      name: 코스피·코스닥 포함
+      default: true
+      selector:
+        boolean:
+    include_fx:
+      name: USD/KRW 환율 포함
+      default: true
+      selector:
+        boolean:
+    include_portfolio:
+      name: 보유 종목 평가금액·평가손익 포함
+      description: 보유 종목을 add_position 서비스로 등록한 경우만 표시됨.
+      default: true
+      selector:
+        boolean:
+    notify_service:
+      name: 알림 서비스
+      description: 예 notify.mobile_app_my_phone. 쉼표로 여러 서비스 가능.
+      default: notify.notify
+      selector:
+        text:
+
+mode: single
+
+trigger:
+  - platform: time
+    at: !input summary_time
+
+variables:
+  tickers: !input target_tickers
+  inc_indices: !input include_indices
+  inc_fx: !input include_fx
+  inc_portfolio: !input include_portfolio
+  notify_svc: !input notify_service
+
+action:
+  - variables:
+      indices_line: >-
+        {% if inc_indices %}
+        코스피 {{ states('sensor.kr_finance_kit_kospi') }} ({{ state_attr('sensor.kr_finance_kit_kospi', 'change_pct') }}%) /
+        코스닥 {{ states('sensor.kr_finance_kit_kosdaq') }} ({{ state_attr('sensor.kr_finance_kit_kosdaq', 'change_pct') }}%)
+        {% endif %}
+      fx_line: >-
+        {% if inc_fx %}
+        USD/KRW {{ states('sensor.kr_finance_kit_usdkrw') }}
+        {% endif %}
+      tickers_line: >-
+        {% if tickers | length > 0 %}
+        {% for t in tickers %}
+        · {{ state_attr(t, 'friendly_name') or t }} {{ states(t) }} ({{ state_attr(t, 'change_pct') }}%)
+        {% endfor %}
+        {% endif %}
+      portfolio_line: >-
+        {% if inc_portfolio %}
+        평가금액 {{ states('sensor.kr_finance_kit_portfolio_krw_total') }} KRW
+        (손익 {{ states('sensor.kr_finance_kit_portfolio_krw_pl') }} KRW)
+        {% endif %}
+      message: |-
+        📊 오늘의 시장 요약
+        {{ indices_line }}
+        {{ fx_line }}
+        {{ tickers_line }}
+        {{ portfolio_line }}
+  - repeat:
+      for_each: "{{ notify_svc.split(',') }}"
+      sequence:
+        - service: "{{ repeat.item | trim }}"
+          data:
+            title: "KR Finance Kit · 일일 요약"
+            message: "{{ message }}"

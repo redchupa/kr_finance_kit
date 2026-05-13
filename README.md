@@ -179,6 +179,40 @@ action:
 
 ---
 
+## 🧩 블루프린트로 알림 자동화
+
+**관심 종목을 여러 개 등록해놓고, 어떤 종목만 알림을 받을지 체크박스로 골라 쓰는 방식**입니다. 종목을 빼고 넣을 때 자동화를 새로 만들 필요 없이 블루프린트 입력만 수정하면 됩니다.
+
+블루프린트 두 개를 제공합니다:
+
+### 1. 종목 가격 변동률 알림
+
+선택한 종목 중 어느 하나라도 임계값(예 +5% / -5%)을 넘으면 푸시.
+
+[![내 Home Assistant에서 블루프린트 import 열기](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fprice_change_alert.yaml)
+
+수동 import용 URL: `https://github.com/redchupa/kr_finance_kit/blob/main/blueprints/automation/kr_finance_kit/price_change_alert.yaml`
+
+입력 항목: 알림 받을 종목(여러 개 선택) · 하락 임계값(예 -5) · 상승 임계값(예 5) · 알림 서비스(예 `notify.mobile_app_my_phone`).
+
+### 2. 일일 시장 요약
+
+지정한 시각(기본 한국 장 마감 15:30)에 코스피·코스닥·환율·선택 종목·보유 종목 평가손익을 한 메시지로 발송.
+
+[![내 Home Assistant에서 블루프린트 import 열기](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fdaily_summary.yaml)
+
+수동 import용 URL: `https://github.com/redchupa/kr_finance_kit/blob/main/blueprints/automation/kr_finance_kit/daily_summary.yaml`
+
+### import 방법 (둘 다 동일)
+
+1. 위 **"블루프린트 import 열기"** 버튼 클릭 → HA가 import 다이얼로그 자동 표시
+2. 또는 **설정 → 자동화 및 장면 → 블루프린트 → 블루프린트 import** 에 위 URL 붙여넣기
+3. import 후 **자동화 만들기 → 이 블루프린트 사용** → 종목·임계값·알림 서비스 입력 → 저장
+
+종목을 추가/제거할 때는 **자동화 → 옵션 → 블루프린트 입력 수정** 으로 종목 체크박스만 바꾸면 됩니다.
+
+---
+
 ## 🗣️ 음성으로 물어보기
 
 HA Assist(음성 비서)에 자동으로 등록되어, 다음과 같이 물어볼 수 있습니다:
