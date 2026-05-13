@@ -191,7 +191,7 @@ Pushes when any selected ticker crosses a +/- threshold (e.g. +5% / -5%).
 
 Manual import URL: `https://github.com/redchupa/kr_finance_kit/blob/main/blueprints/automation/kr_finance_kit/price_change_alert.yaml`
 
-Inputs: tickers to watch (multi-select) · drop threshold (e.g. `-5`) · rise threshold (e.g. `5`) · notify service (e.g. `notify.mobile_app_my_phone`).
+Inputs: tickers to watch (multi-select) · drop threshold (e.g. `-5`) · rise threshold (e.g. `5`) · **notify target** (notify entities like `mobile_app_*`, pick from a searchable dropdown).
 
 ### 2. Daily market summary
 
@@ -208,6 +208,8 @@ Manual import URL: `https://github.com/redchupa/kr_finance_kit/blob/main/bluepri
 3. Then **Create Automation → Use this blueprint** → fill in tickers/thresholds/notify service → save.
 
 To add or remove a ticker later, edit the automation's blueprint inputs — no need to recreate the automation.
+
+> **Notify compatibility note**: Both blueprints use the `notify.send_message` service (the HA 2024.6+ standard). **mobile_app** (HA Companion) auto-registers as a notify entity and shows up in the dropdown. If a service-only notify integration (e.g. some telegram_bot modes) doesn't appear, fall back to the raw YAML examples under [docs/examples/](docs/examples/) for that integration.
 
 ---
 

@@ -39,14 +39,16 @@ blueprint:
           step: 0.5
           unit_of_measurement: "%"
           mode: box
-    notify_service:
-      name: 알림 서비스
+    notify_target:
+      name: 알림 보낼 대상
       description: |
-        예 notify.mobile_app_my_phone, notify.telegram, notify.notify.
-        쉼표로 여러 서비스 가능.
-      default: notify.notify
+        알림을 받을 모바일 앱(또는 다른 notify entity)을 검색·선택하세요.
+        여러 개 선택 가능. mobile_app 같은 HA 2024.6+ entity-based notify와
+        호환됩니다 (notify.send_message 서비스 사용).
       selector:
-        text:
+        target:
+          entity:
+            domain: notify
 
 mode: parallel
 max: 30
@@ -63,19 +65,14 @@ trigger:
     below: !input drop_threshold_pct
     id: drop
 
-variables:
-  notify_svc: !input notify_service
-
 action:
   - variables:
       pct: "{{ state_attr(trigger.entity_id, 'change_pct') }}"
       price: "{{ states(trigger.entity_id) }}"
       label: "{{ state_attr(trigger.entity_id, 'friendly_name') or trigger.entity_id }}"
       direction: "{{ '상승' if trigger.id == 'rise' else '하락' }}"
-  - repeat:
-      for_each: "{{ notify_svc.split(',') }}"
-      sequence:
-        - service: "{{ repeat.item | trim }}"
-          data:
-            title: "KR Finance Kit · {{ direction }}"
-            message: "{{ label }} {{ pct }}% — 현재가 {{ price }}"
+  - service: notify.send_message
+    target: !input notify_target
+    data:
+      title: "KR Finance Kit · {{ direction }}"
+      message: "{{ label }} {{ pct }}% — 현재가 {{ price }}"

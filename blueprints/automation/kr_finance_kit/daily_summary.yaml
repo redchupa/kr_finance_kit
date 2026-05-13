@@ -41,12 +41,16 @@ blueprint:
       default: true
       selector:
         boolean:
-    notify_service:
-      name: 알림 서비스
-      description: 예 notify.mobile_app_my_phone. 쉼표로 여러 서비스 가능.
-      default: notify.notify
+    notify_target:
+      name: 알림 보낼 대상
+      description: |
+        알림을 받을 모바일 앱(또는 다른 notify entity)을 검색·선택하세요.
+        여러 개 선택 가능. mobile_app 같은 HA 2024.6+ entity-based notify와
+        호환됩니다 (notify.send_message 서비스 사용).
       selector:
-        text:
+        target:
+          entity:
+            domain: notify
 
 mode: single
 
@@ -59,7 +63,6 @@ variables:
   inc_indices: !input include_indices
   inc_fx: !input include_fx
   inc_portfolio: !input include_portfolio
-  notify_svc: !input notify_service
 
 action:
   - variables:
@@ -89,10 +92,8 @@ action:
         {{ fx_line }}
         {{ tickers_line }}
         {{ portfolio_line }}
-  - repeat:
-      for_each: "{{ notify_svc.split(',') }}"
-      sequence:
-        - service: "{{ repeat.item | trim }}"
-          data:
-            title: "KR Finance Kit · 일일 요약"
-            message: "{{ message }}"
+  - service: notify.send_message
+    target: !input notify_target
+    data:
+      title: "KR Finance Kit · 일일 요약"
+      message: "{{ message }}"

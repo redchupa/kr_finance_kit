@@ -193,7 +193,7 @@ action:
 
 수동 import용 URL: `https://github.com/redchupa/kr_finance_kit/blob/main/blueprints/automation/kr_finance_kit/price_change_alert.yaml`
 
-입력 항목: 알림 받을 종목(여러 개 선택) · 하락 임계값(예 -5) · 상승 임계값(예 5) · 알림 서비스(예 `notify.mobile_app_my_phone`).
+입력 항목: 알림 받을 종목(여러 개 선택) · 하락 임계값(예 -5) · 상승 임계값(예 5) · **알림 보낼 대상**(mobile_app 등 notify entity, 드롭다운에서 검색·선택).
 
 ### 2. 일일 시장 요약
 
@@ -210,6 +210,8 @@ action:
 3. import 후 **자동화 만들기 → 이 블루프린트 사용** → 종목·임계값·알림 서비스 입력 → 저장
 
 종목을 추가/제거할 때는 **자동화 → 옵션 → 블루프린트 입력 수정** 으로 종목 체크박스만 바꾸면 됩니다.
+
+> **알림 호환성 메모**: 두 블루프린트 모두 `notify.send_message` 서비스(HA 2024.6+ 표준)를 사용합니다. **mobile_app**(HA Companion 앱)은 자동으로 notify entity로 등록되어 검색·선택됩니다. 일부 service-only notify 통합(예 telegram_bot의 일부 모드)이 드롭다운에 안 뜨면, 그 통합용 자동화는 [docs/examples/](docs/examples/)의 raw YAML 예시를 참고하세요.
 
 ---
 
