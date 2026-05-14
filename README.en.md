@@ -180,33 +180,49 @@ All three use `notify.send_message` (HA 2024.6+ standard). mobile_app auto-works
 
 ---
 
-## 📊 Ready-made dashboard
+## 📊 Dashboard example
 
-An eight-section sample dashboard — portfolio summary · indices & FX · KR/US holdings · OpenDart disclosures · 7-day price trends · quick links.
+A slim vertical-stack example built from Markdown tables — tweak it to taste. Only one ApexCharts card; every other section is a built-in Markdown card.
 
 [![dashboard.yaml](https://img.shields.io/badge/copy-docs%2Fexamples%2Fdashboard.yaml-blue?logo=homeassistant)](docs/examples/dashboard.yaml)
+
+<table>
+<tr>
+<td width="33%"><img src="docs/screenshots/보유종목현황.png" alt="Holdings table"></td>
+<td width="33%"><img src="docs/screenshots/지수.png" alt="Indices & FX table"></td>
+<td width="33%"><img src="docs/screenshots/종목.png" alt="Tickers table"></td>
+</tr>
+</table>
 
 ### How to use
 
 1. Copy the view block from [docs/examples/dashboard.yaml](docs/examples/dashboard.yaml)
 2. HA → Settings → Dashboards → ⋮ Edit → ⋮ **Raw configuration editor**
 3. Paste under `views:` → Save
-4. In sections 4 / 5 / 6 replace the placeholder tickers (e.g. `sensor.fi_kr_005930`) with your own
+4. Replace section 6 ticker entity_ids and section 7 disclosure entity_ids with your own
 
-> All entity refs use the `sensor.fi_*` / `binary_sensor.fi_*` form. Works out of the box on v0.1.54+ after the migration runs.
+> Entity refs use the `sensor.fi_*` / `binary_sensor.fi_*` form. The holdings table needs the `positions` attribute added in v0.1.61.
+
+### HACS card dependencies
+
+| Card | Used for | Replaceable |
+|---|---|---|
+| [`apexcharts-card`](https://github.com/RomRider/apexcharts-card) | Portfolio 30-day trend (single chart) | Drop the section to skip the dependency |
+
+Everything else is HA built-in (`markdown` card only).
 
 ### Sections at a glance
 
-| Section | Card type | Entities |
+| Section | Card | Data |
 |---|---|---|
-| 1. Hero | markdown | total value / P/L via template + index summary |
-| 2. Portfolio | tile × 7 | KRW totals + per-country value/P/L + alert |
-| 3. Indices & FX | tile × 6 | KOSPI / KOSDAQ / USDKRW / NASDAQ / DOW / SP500 |
-| 4. 🇰🇷 KR holdings | tile × N | your tickers (placeholders) |
-| 5. 🇺🇸 US holdings | tile × N | your tickers (placeholders) |
-| 6. Disclosures | tile × N | OpenDart binary_sensors |
-| 7. Price trends | history-graph × 3 | 7 days / 168 hours |
-| 8. Quick links | markdown | add position · integration options · automations |
+| 1. Hero | markdown | Header |
+| 2. 💼 Portfolio KPI table | markdown | KR · US · KRW totals (3 rows) |
+| 3. 📦 Holdings table | markdown | `sensor.fi_portfolio_krw_pl` `positions` attribute (qty / avg / current / P/L %) |
+| 4. 📈 Portfolio 30-day chart | apexcharts-card | `sensor.fi_portfolio_krw_total` area chart |
+| 5. 🌐 Indices & FX table | markdown | KOSPI · KOSDAQ · USD/KRW · NASDAQ · DOW · S&P 500 · NIKKEI · HANGSENG · FTSE · DAX |
+| 6. 📊 Ticker prices table | markdown | KR + US + crypto/FX/futures in one table (14 placeholder rows) |
+| 7. 📋 Disclosures live list | markdown | OpenDart binary_sensors — ON rows surface report title / date / link |
+| 8. 🔗 Quick links | markdown | Developer Tools · integration options · automations |
 
 ---
 

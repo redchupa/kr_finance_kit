@@ -1,204 +1,214 @@
-# KR Finance Kit — sample dashboard (v0.1.54+)
+# KR Finance Kit — sample dashboard (v0.1.61+)
+#
+# Pure-Markdown layout. Slim, vertical, no heavy chart cards except
+# one ApexCharts portfolio trend. Designed to work on both desktop
+# and mobile (max_columns: 1).
 #
 # How to use:
 #   1. Settings → Dashboards → ⋮ Edit dashboard → ⋮ Raw configuration editor
 #   2. Paste this view into your dashboard's `views:` list
-#   3. Replace the placeholder tickers in section 4 / 5 / 6 with your own
-#      (the `kr_<code>`, `us_<symbol>`, `disclosure_<corp>` entity_ids that
-#      KR Finance Kit generated for you).
+#   3. Adjust the ticker entity_ids in section 5 / 6 to your own
 #
-# Entity IDs assume v0.1.54+ migration applied — i.e. `sensor.fi_*` slugs.
-# If you are on an older install run HACS Update → HA Restart first so
-# the integration migrates legacy Korean slugs onto the fi_* form.
-
+# HACS card dependencies:
+#   - apexcharts-card   (RomRider/apexcharts-card)
+#
+# Optional (replaceable with built-in cards):
+#   - none — every card except the chart is a built-in Markdown card.
+#
+# All Markdown tables read the live state of `sensor.fi_*` entities
+# the integration creates. The holdings table reads
+# `sensor.fi_portfolio_krw_pl` 's `positions` attribute (v0.1.61+).
 title: KR Finance Kit
 path: kr-finance
 icon: mdi:chart-line
 type: sections
-max_columns: 4
+max_columns: 1
 sections:
 
-  # ── 1. Hero summary ──────────────────────────────────────────────
+  # ── 1. Hero header ──────────────────────────────────────────────
   - type: grid
     cards:
       - type: markdown
         content: |
           # 📊 KR Finance Kit
-          **한국·미국 주식, 환율, OpenDart 공시 통합 대시보드**
+          한국·미국 주식 · 환율 · 암호화폐 · OpenDart 공시 — **한눈에**
 
-          > 총 평가금액 **{{ states('sensor.fi_portfolio_krw_total') | float(0) | int }} 원**, 총 평가손익 **{{ states('sensor.fi_portfolio_krw_pl') | float(0) | int }} 원**
-
-          USD/KRW {{ states('sensor.fi_usdkrw') }} · KOSPI {{ states('sensor.fi_kospi') }} · NASDAQ {{ states('sensor.fi_nasdaq') }}
-
-  # ── 2. Portfolio breakdown ──────────────────────────────────────
+  # ── 2. Portfolio KPI table ──────────────────────────────────────
   - type: grid
     cards:
-      - type: heading
-        heading: 💼 포트폴리오 현황
-        icon: mdi:briefcase-variant
-      - type: tile
-        entity: sensor.fi_portfolio_krw_total
-        name: 총 평가금액 (KRW)
-        icon: mdi:cash-multiple
-        color: blue
-        vertical: true
-      - type: tile
-        entity: sensor.fi_portfolio_krw_pl
-        name: 총 평가손익 (KRW)
-        icon: mdi:chart-line-variant
-        color: green
-        vertical: true
-      - type: tile
-        entity: sensor.fi_portfolio_kr_value
-        name: 🇰🇷 한국 평가금액
-        icon: mdi:briefcase
-        color: indigo
-      - type: tile
-        entity: sensor.fi_portfolio_kr_pl
-        name: 🇰🇷 한국 평가손익
-        icon: mdi:trending-up
-        color: teal
-      - type: tile
-        entity: sensor.fi_portfolio_us_value
-        name: 🇺🇸 미국 평가금액 (USD)
-        icon: mdi:briefcase
-        color: deep-purple
-      - type: tile
-        entity: sensor.fi_portfolio_us_pl
-        name: 🇺🇸 미국 평가손익 (USD)
-        icon: mdi:trending-up
-        color: purple
-      # Only renders if portfolio_pl_alert_pct > 0 in your integration options.
-      - type: tile
-        entity: binary_sensor.fi_portfolio_pl_alert
-        name: P/L 임계값 알림
-        icon: mdi:bell-alert
-        color: red
+      - type: markdown
+        content: |
+          ### 💼 포트폴리오 현황
 
-  # ── 3. Indices & FX ─────────────────────────────────────────────
+          | 시장 | 평가금액 | 평가손익 |
+          |:---|---:|---:|
+          | 🇰🇷 한국 | `{{ '{:,.0f}'.format(states('sensor.fi_portfolio_kr_value')|float(0)) }}원` | {% set v = states('sensor.fi_portfolio_kr_pl')|float(0) %}{% if v>0 %}🟢{% elif v<0 %}🔴{% else %}⚪{% endif %} `{{ '+' if v>0 else '' }}{{ '{:,.0f}'.format(v) }}원` |
+          | 🇺🇸 미국 | `${{ '{:,.2f}'.format(states('sensor.fi_portfolio_us_value')|float(0)) }}` | {% set v = states('sensor.fi_portfolio_us_pl')|float(0) %}{% if v>0 %}🟢{% elif v<0 %}🔴{% else %}⚪{% endif %} `{{ '+' if v>0 else '' }}${{ '{:,.2f}'.format(v) }}` |
+          | 💰 **합계 (KRW)** | **`{{ '{:,.0f}'.format(states('sensor.fi_portfolio_krw_total')|float(0)) }}원`** | {% set v = states('sensor.fi_portfolio_krw_pl')|float(0) %}{% if v>0 %}🟢{% elif v<0 %}🔴{% else %}⚪{% endif %} **`{{ '+' if v>0 else '' }}{{ '{:,.0f}'.format(v) }}원`** |
+
+  # ── 3. Per-position holdings table ──────────────────────────────
+  # Reads sensor.fi_portfolio_krw_pl 's 'positions' attribute, added
+  # by the integration in v0.1.61. Shows ticker / qty / avg / now /
+  # P/L %. Empty state nudges the user to add_position.
   - type: grid
     cards:
-      - type: heading
-        heading: 📈 주요 지수 & 환율
-        icon: mdi:chart-bell-curve
-      - type: tile
-        entity: sensor.fi_kospi
-        name: KOSPI
-        icon: mdi:flag-variant
-        color: blue
-      - type: tile
-        entity: sensor.fi_kosdaq
-        name: KOSDAQ
-        icon: mdi:flag-variant
-        color: light-blue
-      - type: tile
-        entity: sensor.fi_usdkrw
-        name: USD/KRW 환율
-        icon: mdi:currency-usd
-        color: amber
-      - type: tile
-        entity: sensor.fi_nasdaq
-        name: NASDAQ
-        icon: mdi:chart-line
-        color: deep-purple
-      - type: tile
-        entity: sensor.fi_dow
-        name: DOW
-        icon: mdi:chart-line
-        color: purple
-      - type: tile
-        entity: sensor.fi_sp500
-        name: S&P 500
-        icon: mdi:chart-line
-        color: pink
+      - type: markdown
+        content: |
+          ### 📦 보유 종목 현황
 
-  # ── 4. KR holdings (replace with your tickers) ──────────────────
+          {% set ps = state_attr('sensor.fi_portfolio_krw_pl', 'positions') or [] %}
+          {% if ps %}
+          | 종목 | 수량 | 평단가 | 현재가 | 손익률 |
+          |:---|---:|---:|---:|---:|
+          {% for p in ps %}{% set ind = '🟢' if p.pl > 0 else '🔴' if p.pl < 0 else '⚪' %}{% if p.market == 'US' %}| 🇺🇸 {{ p.ticker }} | `{{ p.quantity|int if p.quantity == p.quantity|int else p.quantity }}` | `${{ '{:,.2f}'.format(p.avg_price) }}` | `${{ '{:,.2f}'.format(p.current_price) }}` | {{ ind }} `{{ '+' if p.pl_pct>0 else '' }}{{ p.pl_pct }}%` |
+          {% else %}| 🇰🇷 {{ p.ticker }} | `{{ p.quantity|int if p.quantity == p.quantity|int else p.quantity }}` | `{{ '{:,.0f}'.format(p.avg_price) }}원` | `{{ '{:,.0f}'.format(p.current_price) }}원` | {{ ind }} `{{ '+' if p.pl_pct>0 else '' }}{{ p.pl_pct }}%` |
+          {% endif %}{% endfor %}
+          {% else %}
+          _보유 종목이 없습니다. **개발자 도구 → 동작 → `kr_finance_kit.add_position`** 으로 추가하세요._
+          {% endif %}
+
+  # ── 4. Portfolio 30-day chart (only ApexCharts card) ────────────
   - type: grid
     cards:
-      - type: heading
-        heading: 🇰🇷 한국 보유 종목
-        icon: mdi:store
-      - type: tile
-        entity: sensor.fi_kr_005930   # 삼성전자
-        name: 삼성전자
-        icon: mdi:cellphone
-        color: blue
-      - type: tile
-        entity: sensor.fi_kr_000660   # SK하이닉스
-        name: SK하이닉스
-        icon: mdi:memory
-        color: red
-      - type: tile
-        entity: sensor.fi_kr_035420   # NAVER
-        name: NAVER
-        icon: mdi:web
-        color: green
-
-  # ── 5. US holdings (replace with your tickers) ──────────────────
-  - type: grid
-    cards:
-      - type: heading
-        heading: 🇺🇸 미국 보유 종목
-        icon: mdi:flag
-      - type: tile
-        entity: sensor.fi_us_aapl
-        name: Apple
-        icon: mdi:apple
-        color: grey
-      - type: tile
-        entity: sensor.fi_us_msft
-        name: Microsoft
-        icon: mdi:microsoft
-        color: blue
-      - type: tile
-        entity: sensor.fi_us_tsla
-        name: Tesla
-        icon: mdi:car-sports
-        color: red
-
-  # ── 6. Disclosures (OpenDart, replace corp_codes) ───────────────
-  - type: grid
-    cards:
-      - type: heading
-        heading: 📋 신규 공시 (OpenDart)
-        icon: mdi:file-document-alert
-      - type: tile
-        entity: binary_sensor.fi_disclosure_00126380   # 삼성전자
-        name: 삼성전자
-        icon: mdi:file-document
-        color: blue
-      - type: tile
-        entity: binary_sensor.fi_disclosure_00164779   # SK하이닉스
-        name: SK하이닉스
-        icon: mdi:file-document
-        color: red
-
-  # ── 7. Price trends ─────────────────────────────────────────────
-  - type: grid
-    cards:
-      - type: heading
-        heading: 📊 가격 추세 (7일)
-        icon: mdi:chart-areaspline
-      - type: history-graph
-        title: 🇰🇷 지수 + 환율
-        hours_to_show: 168
-        entities:
-          - entity: sensor.fi_kospi
-          - entity: sensor.fi_kosdaq
-          - entity: sensor.fi_usdkrw
-      - type: history-graph
-        title: 🇺🇸 미국 지수
-        hours_to_show: 168
-        entities:
-          - entity: sensor.fi_nasdaq
-          - entity: sensor.fi_dow
-          - entity: sensor.fi_sp500
-      - type: history-graph
-        title: 💰 포트폴리오 KRW
-        hours_to_show: 168
-        entities:
+      - type: custom:apexcharts-card
+        header:
+          show: true
+          title: 📈 포트폴리오 30일 (총 평가금액 KRW)
+          show_states: true
+          colorize_states: true
+        graph_span: 30d
+        span:
+          end: day
+        apex_config:
+          chart:
+            height: 250
+          grid:
+            borderColor: rgba(255,255,255,0.08)
+          stroke:
+            width: 2
+            curve: smooth
+          fill:
+            type: gradient
+            gradient:
+              shadeIntensity: 1
+              opacityFrom: 0.45
+              opacityTo: 0.05
+              stops: [0, 90, 100]
+          dataLabels:
+            enabled: false
+          xaxis:
+            tickAmount: 15
+            labels:
+              show: true
+              format: M/d
+              rotate: -45
+              rotateAlways: true
+              hideOverlappingLabels: false
+              style:
+                fontSize: 9px
+          yaxis:
+            show: true
+            labels:
+              formatter: |
+                EVAL:value => value.toLocaleString()
+              style:
+                fontSize: 10px
+          tooltip:
+            enabled: true
+            x:
+              format: MM월 dd일
+        series:
           - entity: sensor.fi_portfolio_krw_total
-          - entity: sensor.fi_portfolio_krw_pl
+            name: 총 평가금액 (KRW)
+            color: "#1abc9c"
+            stroke_width: 2
+            type: area
+            group_by:
+              func: avg
+              duration: 1d
+            show:
+              in_header: true
+              legend_value: false
+
+  # ── 5. Indices & FX table (10 rows) ─────────────────────────────
+  - type: grid
+    cards:
+      - type: markdown
+        content: |
+          ### 🌐 지수 & 환율
+
+          | 지수 | 현재값 | 등락률 |
+          |:---|---:|---:|
+          {% for e, l in [
+            ('sensor.fi_kospi','🇰🇷 KOSPI'),
+            ('sensor.fi_kosdaq','🇰🇷 KOSDAQ'),
+            ('sensor.fi_usdkrw','💱 USD/KRW'),
+            ('sensor.fi_nasdaq','🇺🇸 NASDAQ'),
+            ('sensor.fi_dow','🇺🇸 DOW'),
+            ('sensor.fi_sp500','🇺🇸 S&P 500'),
+            ('sensor.fi_nikkei','🇯🇵 NIKKEI'),
+            ('sensor.fi_hangseng','🇭🇰 HANGSENG'),
+            ('sensor.fi_ftse','🇬🇧 FTSE'),
+            ('sensor.fi_dax','🇩🇪 DAX')
+          ] %}{% set p = state_attr(e,'change_pct')|float(0) %}{% set i = '🟢' if p>0 else '🔴' if p<0 else '⚪' %}| {{ l }} | `{{ '{:,.2f}'.format(states(e)|float(0)) }}` | {{ i }} `{{ '+' if p>0 else '' }}{{ p }}%` |
+          {% endfor %}
+
+  # ── 6. Ticker prices table (KR + US + crypto/FX/futures all in one) ──
+  # Replace the entity list with your own ticker entity_ids — the
+  # third tuple element is the currency suffix ('원' / '$').
+  - type: grid
+    cards:
+      - type: markdown
+        content: |
+          ### 📊 종목 시세
+
+          | 종목 | 현재가 | 등락률 |
+          |:---|---:|---:|
+          {% for e, l, c in [
+            ('sensor.fi_kr_005930','🇰🇷 삼성전자','원'),
+            ('sensor.fi_kr_000660','🇰🇷 SK하이닉스','원'),
+            ('sensor.fi_kr_035420','🇰🇷 NAVER','원'),
+            ('sensor.fi_kr_035720_kq','🇰🇷 카카오','원'),
+            ('sensor.fi_kr_373220','🇰🇷 LG에너지솔루션','원'),
+            ('sensor.fi_us_aapl','🇺🇸 Apple','$'),
+            ('sensor.fi_us_msft','🇺🇸 Microsoft','$'),
+            ('sensor.fi_us_tsla','🇺🇸 Tesla','$'),
+            ('sensor.fi_us_nvda','🇺🇸 NVIDIA','$'),
+            ('sensor.fi_other_btc_usd','🪙 Bitcoin','$'),
+            ('sensor.fi_other_eth_usd','🪙 Ethereum','$'),
+            ('sensor.fi_other_eur_x','💱 EUR/USD','$'),
+            ('sensor.fi_other_gc_f','🥇 Gold','$'),
+            ('sensor.fi_other_cl_f','🛢️ Oil','$')
+          ] %}{% set price = states(e)|float(0) %}{% set p = state_attr(e,'change_pct')|float(0) %}{% set i = '🟢' if p>0 else '🔴' if p<0 else '⚪' %}| {{ l }} | `{% if c=='$' %}${{ '{:,.2f}'.format(price) }}{% else %}{{ '{:,.0f}'.format(price) }}{{ c }}{% endif %}` | {{ i }} `{{ '+' if p>0 else '' }}{{ p }}%` |
+          {% endfor %}
+
+  # ── 7. OpenDart disclosures (live list) ─────────────────────────
+  # Replace the disclosure entity_ids + labels with your own corps.
+  - type: grid
+    cards:
+      - type: markdown
+        content: |
+          ## 📋 신규 공시 (OpenDart · 최근 24시간)
+
+          {% set ns = namespace(any_active=false) %}
+          {% set disclosures = [
+            {'name': '🏢 삼성전자', 'entity': 'binary_sensor.fi_disclosure_00126380'},
+            {'name': '💾 SK하이닉스', 'entity': 'binary_sensor.fi_disclosure_00164779'},
+            {'name': '🟢 NAVER', 'entity': 'binary_sensor.fi_disclosure_00266961'},
+            {'name': '🟡 카카오', 'entity': 'binary_sensor.fi_disclosure_00258801'},
+            {'name': '🔋 LG에너지솔루션', 'entity': 'binary_sensor.fi_disclosure_01515323'}
+          ] %}
+          {% for d in disclosures %}{% if is_state(d.entity, 'on') %}{% set ns.any_active = true %}---
+
+          🔴 **{{ d.name }}** · *NEW*
+
+          📝 {{ state_attr(d.entity, 'report_nm') or '제목 정보 없음' }}
+
+          🕐 {{ state_attr(d.entity, 'rcept_dt') or '-' }}{% if state_attr(d.entity, 'url') %} · [📄 보고서 열기]({{ state_attr(d.entity, 'url') }}){% endif %}
+
+          {% endif %}{% endfor %}{% if not ns.any_active %}_최근 24시간 신규 공시 없음 — 종목별 모니터링 활성_
+
+          {% for d in disclosures %}⚪ {{ d.name }}{% if not loop.last %} · {% endif %}{% endfor %}{% endif %}
 
   # ── 8. Quick links ──────────────────────────────────────────────
   - type: grid
@@ -209,5 +219,3 @@ sections:
           - [개발자 도구 → 동작 (보유 종목 추가)](/developer-tools/action?service=kr_finance_kit.add_position)
           - [통합 옵션 (종목 추가/삭제)](/config/integrations)
           - [블루프린트 자동화](/config/automation/dashboard)
-
-          **Tip** — 카드 우클릭 → *카드 편집* 으로 색상·아이콘·이름 자유롭게 변경 가능.

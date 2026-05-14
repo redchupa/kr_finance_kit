@@ -184,33 +184,49 @@ v0.1.53부터 sensor가 **1·5·15·30·60·90·120·180분** 8개 윈도우 att
 
 ---
 
-## 📊 끝내주는 대시보드
+## 📊 대시보드 예시
 
-8섹션 통합 대시보드 — 포트폴리오 요약 · 지수/환율 · 한국·미국 보유 종목 · OpenDart 공시 · 7일 가격 추세 · 빠른 링크.
+마크다운 표 위주의 슬림한 vertical-stack 예시 — 본인 취향대로 수정하세요. ApexCharts 1개 외에는 빌트인 markdown 카드만 사용.
 
 [![dashboard.yaml](https://img.shields.io/badge/copy-docs%2Fexamples%2Fdashboard.yaml-blue?logo=homeassistant)](docs/examples/dashboard.yaml)
+
+<table>
+<tr>
+<td width="33%"><img src="docs/screenshots/보유종목현황.png" alt="보유 종목 현황 표"></td>
+<td width="33%"><img src="docs/screenshots/지수.png" alt="지수 & 환율 표"></td>
+<td width="33%"><img src="docs/screenshots/종목.png" alt="종목 시세 표"></td>
+</tr>
+</table>
 
 ### 사용법
 
 1. [docs/examples/dashboard.yaml](docs/examples/dashboard.yaml) 의 view 블록 복사
 2. HA → Settings → Dashboards → ⋮ Edit → ⋮ **Raw configuration editor**
 3. `views:` 아래에 paste → Save
-4. 섹션 4 / 5 / 6 의 placeholder ticker (예 `sensor.fi_kr_005930`) 를 본인 종목 entity로 교체
+4. 섹션 6 의 종목 entity_id 와 섹션 7 의 disclosure entity_id 를 본인 종목으로 교체
 
-> 모든 entity 참조는 `sensor.fi_*` / `binary_sensor.fi_*` 형식. v0.1.54+ 자동 migration 후 즉시 동작합니다.
+> entity 참조는 `sensor.fi_*` / `binary_sensor.fi_*` 형식. v0.1.54+ migration 후, v0.1.61+ `positions` attribute 가 있어야 보유 종목 현황 표가 작동합니다.
+
+### HACS 의존 카드
+
+| 카드 | 어디 쓰임 | 대체 가능 여부 |
+|---|---|---|
+| [`apexcharts-card`](https://github.com/RomRider/apexcharts-card) | 포트폴리오 30일 추세 차트 1개 | 빼면 그 섹션만 제거 |
+
+다른 모든 카드는 HA 빌트인 (markdown 만 사용).
 
 ### 구성 요소
 
-| 섹션 | 카드 종류 | 포함 entity |
+| 섹션 | 카드 | 데이터 |
 |---|---|---|
-| 1. Hero | markdown | 포트폴리오 총평가금액·총평가손익 (템플릿) + 지수 요약 |
-| 2. 포트폴리오 | tile × 7 | KRW 환산 합계 + 국가별 평가금액/평가손익 + P/L 알림 |
-| 3. 지수 & 환율 | tile × 6 | KOSPI / KOSDAQ / USDKRW / NASDAQ / DOW / SP500 |
-| 4. 🇰🇷 한국 보유 | tile × N | 본인 종목 placeholder |
-| 5. 🇺🇸 미국 보유 | tile × N | 본인 종목 placeholder |
-| 6. 신규 공시 | tile × N | OpenDart 공시 binary_sensor |
-| 7. 가격 추세 | history-graph × 3 | 7일 / 168시간 |
-| 8. 빠른 링크 | markdown | 보유 종목 추가·통합 옵션·자동화 페이지 |
+| 1. Hero | markdown | 헤더 |
+| 2. 💼 포트폴리오 KPI 표 | markdown | 한국·미국·KRW 합계 (3행) |
+| 3. 📦 보유 종목 현황 표 | markdown | `sensor.fi_portfolio_krw_pl` 의 `positions` attribute (qty / avg / current / 손익률) |
+| 4. 📈 포트폴리오 30일 차트 | apexcharts-card | `sensor.fi_portfolio_krw_total` 30일 area chart |
+| 5. 🌐 지수 & 환율 표 | markdown | KOSPI · KOSDAQ · USD/KRW · NASDAQ · DOW · S&P 500 · NIKKEI · HANGSENG · FTSE · DAX |
+| 6. 📊 종목 시세 표 | markdown | KR + US + 암호화폐/환율/선물 한 표 통합 (placeholder 14행) |
+| 7. 📋 공시 라이브 리스트 | markdown | OpenDart binary_sensor — ON 종목 보고서명·날짜·링크, OFF 종목 회색 점선 |
+| 8. 🔗 빠른 링크 | markdown | 개발자 도구·통합 옵션·자동화 화면 바로가기 |
 
 ---
 
