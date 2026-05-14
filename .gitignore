@@ -32,3 +32,7 @@ config/secrets.yaml
 holdings.json
 positions.yaml
 portfolio.csv
+
+# Reference copies of other people's HACS components (kept locally for
+# inspection, never committed).
+yahoofinance-master/

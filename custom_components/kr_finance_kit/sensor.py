@@ -19,6 +19,7 @@ from .const import (
     FX_USDKRW,
     KR_INDICES,
     MARKET_KR,
+    MARKET_OTHER,
     MARKET_US,
     US_INDICES,
 )
@@ -72,6 +73,8 @@ async def async_setup_entry(
         entities.append(QuoteSensor(market, MARKET_KR, ticker, label=kr_names.get(ticker)))
     for ticker in market.us_tickers:
         entities.append(QuoteSensor(market, MARKET_US, ticker))
+    for ticker in market.other_tickers:
+        entities.append(QuoteSensor(market, MARKET_OTHER, ticker))
 
     if market.positions:
         entities += [
@@ -168,11 +171,20 @@ class QuoteSensor(_MarketBase):
         # unique_id and entity_id stay code-based so automations don't
         # break when names are added/removed later.
         self._attr_device_info = ticker_device(market, ticker, label)
+        # KR tickers are reported in KRW; US and "other" assets (crypto,
+        # forex, futures) default to USD because Yahoo Finance reports
+        # them in USD for the common ticker forms (BTC-USD, ETH-USD,
+        # EUR=X, GC=F). Users who want native currency or KRW conversion
+        # can layer that on top via target_currency in a later release.
         self._attr_native_unit_of_measurement = "KRW" if market == MARKET_KR else "USD"
 
     @property
     def _quote(self) -> dict[str, Any]:
-        key = "kr_quotes" if self._market == MARKET_KR else "us_quotes"
+        key = {
+            MARKET_KR: "kr_quotes",
+            MARKET_US: "us_quotes",
+            MARKET_OTHER: "other_quotes",
+        }.get(self._market, "us_quotes")
         return (self.coordinator.data or {}).get(key, {}).get(self._ticker, {}) or {}
 
     @property

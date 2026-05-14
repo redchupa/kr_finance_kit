@@ -29,11 +29,13 @@ from .const import (
     CONF_INCLUDE_INDICES,
     CONF_INCLUDE_US_INDICES,
     CONF_KR_TICKERS,
+    CONF_OTHER_TICKERS,
     CONF_POSITIONS,
     CONF_US_TICKERS,
     KR_INDICES,
     LOGGER,
     MARKET_KR,
+    MARKET_OTHER,
     MARKET_US,
     SCAN_INTERVAL_DISCLOSURE,
     SCAN_INTERVAL_MARKET,
@@ -67,6 +69,10 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     @property
     def us_tickers(self) -> list[str]:
         return list(self._config.get(CONF_US_TICKERS, []))
+
+    @property
+    def other_tickers(self) -> list[str]:
+        return list(self._config.get(CONF_OTHER_TICKERS, []))
 
     @property
     def positions(self) -> list[dict[str, Any]]:
@@ -117,6 +123,12 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             us_quotes = await yfinance_wrap.fetch_quotes(self.us_tickers, MARKET_US) \
                 if (us_open or not prev.get("us_quotes")) \
                 else prev.get("us_quotes", {})
+            # `other_tickers` covers crypto, FX, futures — assets that
+            # trade 24/7 or 24/5, so we ignore market_hours and always
+            # fetch. Empty list is a free no-op.
+            other_quotes = await yfinance_wrap.fetch_quotes(
+                self.other_tickers, MARKET_OTHER
+            ) if self.other_tickers else {}
         except Exception as err:  # noqa: BLE001
             self._failures += 1
             if self._failures <= 5 and self.data is not None:
@@ -136,6 +148,7 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "fx": fx,
             "kr_quotes": kr_quotes,
             "us_quotes": us_quotes,
+            "other_quotes": other_quotes,
             "positions": self.positions,
             "kr_market_open": kr_open,
             "us_market_open": us_open,

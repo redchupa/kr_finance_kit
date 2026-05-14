@@ -11,6 +11,7 @@ TZ_KST = ZoneInfo("Asia/Seoul")
 CONF_OPENDART_API_KEY = "opendart_api_key"
 CONF_KR_TICKERS = "kr_tickers"
 CONF_US_TICKERS = "us_tickers"
+CONF_OTHER_TICKERS = "other_tickers"  # crypto/forex/futures — 24/7 fetch, no market-hours gating
 CONF_POSITIONS = "positions"  # list[{ticker, quantity, avg_price, market}]
 CONF_DISCLOSURE_CORP_CODES = "disclosure_corp_codes"
 CONF_KR_TICKER_NAMES = "kr_ticker_names"  # dict[stock_code, corp_name] for friendly labels
@@ -33,6 +34,7 @@ FX_USDKRW = "USDKRW"
 
 MARKET_KR = "KR"
 MARKET_US = "US"
+MARKET_OTHER = "OTHER"  # crypto, forex, futures, commodities — Yahoo ticker passed through
 
 # Donation meta — intentionally public per MASTER_PLAN.md.
 DONATION_MANUFACTURER = "우*만"

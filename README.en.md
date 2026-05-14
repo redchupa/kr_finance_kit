@@ -66,6 +66,7 @@ All of this is free — no brokerage credentials required.
    | **OpenDart API key** | Enables disclosure alerts + automatic company names (price-only without it) | `14ab...` (see below) |
    | **Korean tickers** | Tickers to watch, comma-separated | `005930, 000660, 035420` |
    | **US tickers** | US symbols, comma-separated | `AAPL, MSFT, TSLA` |
+   | **Crypto / FX / futures** | Yahoo ticker form, fetched 24/7 regardless of market hours | `BTC-USD, ETH-USD, EUR=X, GC=F` |
    | Include KOSPI / KOSDAQ indices | Adds Korean index sensors | ☑ |
    | Include NASDAQ / Dow / S&P 500 indices | Adds US index sensors | ☑ |
    | Include USD/KRW FX | Adds FX sensor | ☑ |
@@ -296,6 +297,7 @@ Existing values are pre-filled — adjust tickers or the OpenDart key and save.
 | USD/KRW | yfinance | `KRW=X` |
 | Korean tickers | yfinance | `005930.KS` / `.KQ` |
 | US tickers | yfinance | `AAPL` |
+| Crypto / FX / futures | yfinance | `BTC-USD`, `EUR=X`, `GC=F` etc (24/7) |
 | Disclosures + company-name mapping | OpenDart | `list.json`, `corpCode.xml` |
 
 ### Entities created
@@ -305,6 +307,7 @@ Existing values are pre-filled — adjust tickers or the OpenDart key and save.
 - `sensor.kr_finance_kit_usdkrw` — FX
 - `sensor.kr_finance_kit_kr_<code>` — Korean ticker (attrs: `price`, `change`, `change_pct`, `asof`, `stale`)
 - `sensor.kr_finance_kit_us_<symbol>` — US ticker
+- `sensor.kr_finance_kit_other_<slug>` — crypto / FX / futures (e.g. `_btc_usd`, `_eth_usd`, `_eur_x`, `_gc_f`). 24/7 fetch.
 - `sensor.kr_finance_kit_portfolio_*` — six P/L sensors (KR/US/KRW-converted × value/pl)
 - `binary_sensor.kr_finance_kit_disclosure_<corp_code>` — 24h disclosure trigger
 

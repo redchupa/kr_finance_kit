@@ -38,6 +38,7 @@ from .const import (
     CONF_KR_TICKER_NAMES,
     CONF_KR_TICKERS,
     CONF_OPENDART_API_KEY,
+    CONF_OTHER_TICKERS,
     CONF_POSITIONS,
     CONF_US_TICKERS,
     DOMAIN,
@@ -104,6 +105,7 @@ _FORM_SCHEMA = vol.Schema(
         vol.Optional(CONF_OPENDART_API_KEY): str,
         vol.Optional(CONF_KR_TICKERS): str,
         vol.Optional(CONF_US_TICKERS): str,
+        vol.Optional(CONF_OTHER_TICKERS): str,
         vol.Optional(CONF_INCLUDE_INDICES, default=True): bool,
         vol.Optional(CONF_INCLUDE_US_INDICES, default=True): bool,
         vol.Optional(CONF_INCLUDE_FX, default=True): bool,
@@ -135,6 +137,7 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             api_key = (user_input.get(CONF_OPENDART_API_KEY) or "").strip()
             kr = _csv_to_list(user_input.get(CONF_KR_TICKERS))
             us = _csv_to_list(user_input.get(CONF_US_TICKERS))
+            other = _csv_to_list(user_input.get(CONF_OTHER_TICKERS))
 
             if api_key and not await validate_api_key(self.hass, api_key):
                 errors[CONF_OPENDART_API_KEY] = "invalid_api_key"
@@ -147,6 +150,7 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data={
                         CONF_KR_TICKERS: kr,
                         CONF_US_TICKERS: us,
+                        CONF_OTHER_TICKERS: other,
                         CONF_OPENDART_API_KEY: api_key,
                         CONF_DISCLOSURE_CORP_CODES: corp_codes,
                         CONF_KR_TICKER_NAMES: ticker_names,
@@ -192,6 +196,7 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
             api_key = (user_input.get(CONF_OPENDART_API_KEY) or "").strip()
             kr = _csv_to_list(user_input.get(CONF_KR_TICKERS))
             us = _csv_to_list(user_input.get(CONF_US_TICKERS))
+            other = _csv_to_list(user_input.get(CONF_OTHER_TICKERS))
 
             if api_key and not await validate_api_key(self.hass, api_key):
                 errors[CONF_OPENDART_API_KEY] = "invalid_api_key"
@@ -204,6 +209,7 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
                     data={
                         CONF_KR_TICKERS: kr,
                         CONF_US_TICKERS: us,
+                        CONF_OTHER_TICKERS: other,
                         CONF_OPENDART_API_KEY: api_key,
                         CONF_DISCLOSURE_CORP_CODES: corp_codes,
                         CONF_KR_TICKER_NAMES: ticker_names,
@@ -224,6 +230,7 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
             CONF_OPENDART_API_KEY: self._current(CONF_OPENDART_API_KEY, ""),
             CONF_KR_TICKERS: _list_to_csv(self._current(CONF_KR_TICKERS, [])),
             CONF_US_TICKERS: _list_to_csv(self._current(CONF_US_TICKERS, [])),
+            CONF_OTHER_TICKERS: _list_to_csv(self._current(CONF_OTHER_TICKERS, [])),
             CONF_INCLUDE_INDICES: self._current(CONF_INCLUDE_INDICES, True),
             CONF_INCLUDE_US_INDICES: self._current(CONF_INCLUDE_US_INDICES, True),
             CONF_INCLUDE_FX: self._current(CONF_INCLUDE_FX, True),
