@@ -196,7 +196,21 @@ Manual import URL: `https://github.com/redchupa/kr_finance_kit/blob/main/bluepri
 
 Inputs: tickers to watch (multi-select) · drop threshold (e.g. `-5`) · rise threshold (e.g. `5`) · **notify target** (notify entities like `mobile_app_*`, pick from a searchable dropdown).
 
-### 2. Daily market summary
+### 2. Short-window change alert (15 / 30 / 60 min)
+
+Pushes when a selected ticker moves more than the threshold within the chosen window. From v0.1.45 the coordinator keeps an in-memory per-ticker price ring buffer and exposes `change_pct_15min` / `_30min` / `_1h` attributes on each QuoteSensor — this blueprint just hangs a `numeric_state` trigger off them.
+
+[![Open your Home Assistant instance and import this blueprint.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fshort_window_alert.yaml)
+
+Manual import URL: `https://github.com/redchupa/kr_finance_kit/blob/main/blueprints/automation/kr_finance_kit/short_window_alert.yaml`
+
+Inputs: tickers (multi-select) · window (select 15 / 30 / 60 min) · drop threshold (e.g. `-2`) · rise threshold (e.g. `2`) · notify target.
+
+> 📥 **Warm-up after import** — the blueprint appears immediately but the first alert can only fire once the buffer has accumulated one window's worth of samples.
+
+⚠️ **HA restart caveat** — because the buffer is memory-only it empties on restart. **The 60-min window stays None for ~1 hour after restart, 30-min for 30 min, 15-min for 15 min**, so automations don't trigger during that warm-up. Steady-state operation is unaffected; only post-HACS-update / HA-Restart users see the delay.
+
+### 3. Daily market summary
 
 At a configurable time (defaults to Korean market close, 15:30 KST), sends one message with KOSPI/KOSDAQ, FX, selected tickers, and holdings value/P&L.
 

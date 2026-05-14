@@ -9,8 +9,13 @@ blueprint:
     `change_pct_1h`를 노출합니다. 이 블루프린트는 그 attribute를
     numeric_state 트리거로 받습니다.
 
-    참고: HA를 재시작하면 가격 history가 비워져 첫 윈도우만큼 attribute가
-    None 상태. 60분 윈도우면 재시작 직후 약 1시간 동안 트리거 안 됨.
+    📥 **Import 직후 warm-up 필요** — 블루프린트는 즉시 등록되지만 첫
+    알림은 선택한 윈도우만큼 기다려야 옵니다 (그만큼의 가격 샘플이
+    쌓여야 비교 가능).
+
+    ⚠️ **HA 재시작 시 주의** — 가격 history는 메모리에만 보관되므로
+    HA Restart 직후 60분 윈도우는 약 1시간, 30분은 30분, 15분은 15분
+    동안 attribute가 None → 자동화가 트리거되지 않습니다.
   domain: automation
   source_url: https://github.com/redchupa/kr_finance_kit/blob/main/blueprints/automation/kr_finance_kit/short_window_alert.yaml
   input:
