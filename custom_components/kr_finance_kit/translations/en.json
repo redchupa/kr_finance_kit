@@ -89,20 +89,20 @@
   "services": {
     "add_position": {
       "name": "Add / update holding",
-      "description": "Add or update a holding (quantity + average purchase price). Stored in encrypted ConfigEntry options — never persisted to source files.",
+      "description": "Add or update a holding (quantity + average purchase price). Stored in encrypted ConfigEntry options — never persisted to source files. ⚠ KR / US stocks only — crypto, FX, futures (BTC-USD, EUR=X, GC=F …) expose price sensors only; portfolio tracking is not supported for them.",
       "fields": {
-        "ticker": {"name": "Ticker / symbol", "description": "KR stock code (e.g. 005930) or US symbol (e.g. AAPL)."},
+        "ticker": {"name": "Ticker / symbol", "description": "KR stock code (e.g. 005930, 035720.KQ) or US symbol (e.g. AAPL)."},
         "quantity": {"name": "Quantity", "description": "Number of shares."},
-        "avg_price": {"name": "Average price", "description": "Average purchase price in market currency."},
-        "market": {"name": "Market", "description": "KR or US"}
+        "avg_price": {"name": "Average price", "description": "Average purchase price in the market's native currency — KR positions in KRW (won), US positions in USD. Don't pre-convert; the integration does the FX conversion for the KRW totals."},
+        "market": {"name": "Market", "description": "KR (Korea) or US (United States). Crypto / FX tickers can't be selected here."}
       }
     },
     "remove_position": {
       "name": "Remove holding",
-      "description": "Remove a holding from the portfolio.",
+      "description": "Remove a holding from the portfolio. Matched by ticker + market.",
       "fields": {
         "ticker": {"name": "Ticker / symbol", "description": "Ticker code or symbol to remove."},
-        "market": {"name": "Market", "description": "KR or US"}
+        "market": {"name": "Market", "description": "KR (Korea) or US (United States)."}
       }
     }
   }

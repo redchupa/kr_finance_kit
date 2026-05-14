@@ -119,10 +119,14 @@
 
 | HA UI 라벨 | 키 | 예시 | 비고 |
 |---|---|---|---|
-| 종목 코드/심볼 | `ticker` | `005930` / `AAPL` / `BTC-USD` | KR은 6자리 숫자, US는 심볼 |
+| 종목 코드/심볼 | `ticker` | `005930` / `AAPL` | KR은 6자리 숫자(코스닥은 `.KQ`), US는 심볼 |
 | 수량 | `quantity` | `10` | 보유 주수 |
-| 평단가 | `avg_price` | `60000` (KR=KRW) / `180.5` (US=USD) | 시장 통화 그대로 |
+| **평단가** | `avg_price` | KR `60000` (원/KRW) · US `180.5` (달러/USD) | **시장 통화 그대로** 입력 — 환산 금지 |
 | 시장 | `market` | `KR` 또는 `US` | 라디오 버튼 |
+
+> ⚠ **암호화폐 / 환율 / 선물 (BTC-USD, EUR=X, GC=F …) 은 보유 종목 추적 미지원**. 시세 sensor (`sensor.fi_other_*`) 는 제공되지만 add_position 의 market 라디오에는 KR/US 만 있어요. 비트코인 평단가 입력하실 필요 없습니다.
+
+> 💱 **환산 자동** — KR 종목은 원 그대로, US 종목은 달러 그대로 입력하시면 됩니다. USD/KRW 환율은 통합이 자동으로 가져와서 `sensor.fi_portfolio_krw_total` / `sensor.fi_portfolio_krw_pl` 에 합산합니다. 환산값을 미리 입력하면 이중 환산되어 망가져요.
 
 저장 후 6개 portfolio sensor (`sensor.fi_portfolio_*`) + P/L alert binary_sensor가 자동으로 활성화됩니다.
 

@@ -1,22 +1,24 @@
 refresh_now:
-  name: 즉시 갱신
+  name: Refresh now
   description: Trigger an immediate refresh of market and disclosure data.
 
 add_position:
-  name: 보유 종목 추가/수정
+  name: Add / update holding
   description: >
     Add or update a holding (quantity + average purchase price). Stored
     in encrypted ConfigEntry options — never persisted to source files.
+    ⚠ KR / US stocks only — crypto, FX, futures (BTC-USD, EUR=X, GC=F …)
+    expose price sensors only; portfolio tracking is not supported.
   fields:
     ticker:
-      name: 종목 코드/심볼
-      description: KR 종목 코드 (예 005930) 또는 US 심볼 (예 AAPL).
+      name: Ticker / symbol
+      description: KR stock code (e.g. 005930, 035720.KQ) or US symbol (e.g. AAPL).
       required: true
       example: "005930"
       selector:
         text:
     quantity:
-      name: 수량
+      name: Quantity
       description: Number of shares.
       required: true
       example: "10"
@@ -26,8 +28,11 @@ add_position:
           max: 1000000000
           mode: box
     avg_price:
-      name: 평단가
-      description: Average purchase price in market currency.
+      name: Average price
+      description: >
+        Average purchase price in the market's native currency — KR
+        positions in KRW (won), US positions in USD. Don't pre-convert;
+        the integration does the FX conversion for KRW totals.
       required: true
       example: "60000"
       selector:
@@ -36,8 +41,8 @@ add_position:
           max: 1000000000
           mode: box
     market:
-      name: 시장
-      description: KR 또는 US
+      name: Market
+      description: KR (Korea) or US (United States). Crypto / FX tickers can't be selected here.
       required: true
       default: "KR"
       selector:
@@ -47,17 +52,19 @@ add_position:
             - US
 
 remove_position:
-  name: 보유 종목 삭제
-  description: Remove a previously added position.
+  name: Remove holding
+  description: Remove a previously added position. Matched by ticker + market.
   fields:
     ticker:
-      name: 종목 코드/심볼
+      name: Ticker / symbol
+      description: Ticker code or symbol to remove.
       required: true
       example: "005930"
       selector:
         text:
     market:
-      name: 시장
+      name: Market
+      description: KR (Korea) or US (United States).
       required: true
       default: "KR"
       selector:

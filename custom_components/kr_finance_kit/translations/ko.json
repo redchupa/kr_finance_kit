@@ -89,20 +89,20 @@
   "services": {
     "add_position": {
       "name": "보유 종목 추가/수정",
-      "description": "보유 종목(수량 + 평단가)을 추가하거나 수정합니다. ConfigEntry options에 암호화 저장 — 소스 파일에 기록되지 않습니다.",
+      "description": "보유 종목(수량 + 평단가)을 추가하거나 수정합니다. ConfigEntry options에 암호화 저장 — 소스 파일에 기록되지 않습니다. ⚠ 한국·미국 주식만 지원 — 암호화폐·환율·선물(BTC-USD 등)은 시세 sensor만 제공되고 보유 추적은 안 됩니다.",
       "fields": {
-        "ticker": {"name": "종목 코드/심볼", "description": "한국 종목 코드 (예 005930) 또는 미국 심볼 (예 AAPL)."},
-        "quantity": {"name": "수량", "description": "보유 수량."},
-        "avg_price": {"name": "평단가", "description": "시장 통화 기준 평균 매입가."},
-        "market": {"name": "시장", "description": "KR 또는 US"}
+        "ticker": {"name": "종목 코드/심볼", "description": "한국 종목 코드 (예 005930, 035720.KQ) 또는 미국 심볼 (예 AAPL)."},
+        "quantity": {"name": "수량", "description": "보유 수량 (주식 수)."},
+        "avg_price": {"name": "평단가", "description": "평균 매입가를 시장 통화 그대로 입력 — 한국 종목은 원(KRW), 미국 종목은 달러(USD). 환산은 자동으로 처리되니 환산값으로 넣지 마세요."},
+        "market": {"name": "시장", "description": "KR (한국) 또는 US (미국). 암호화폐·환율 ticker는 여기서 선택할 수 없습니다."}
       }
     },
     "remove_position": {
       "name": "보유 종목 삭제",
-      "description": "보유 종목을 삭제합니다.",
+      "description": "보유 종목을 삭제합니다. ticker + market 조합으로 매칭됩니다.",
       "fields": {
         "ticker": {"name": "종목 코드/심볼", "description": "삭제할 종목 코드 또는 심볼."},
-        "market": {"name": "시장", "description": "KR 또는 US"}
+        "market": {"name": "시장", "description": "KR (한국) 또는 US (미국)."}
       }
     }
   }

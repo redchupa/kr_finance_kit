@@ -119,10 +119,14 @@ Holdings (quantity + average cost) are entered as a **service call**, not on the
 
 | UI label | Key | Example | Notes |
 |---|---|---|---|
-| Ticker / symbol | `ticker` | `005930` / `AAPL` / `BTC-USD` | KR uses the 6-digit code, US uses the symbol |
-| Quantity | `quantity` | `10` | Number of shares |
-| Average price | `avg_price` | `60000` (KR=KRW) / `180.5` (US=USD) | In the market's native currency |
+| Ticker / symbol | `ticker` | `005930` / `AAPL` | KR = 6-digit code (KOSDAQ adds `.KQ`), US = symbol |
+| Quantity | `quantity` | `10` | Share count |
+| **Average price** | `avg_price` | KR `60000` (KRW) · US `180.5` (USD) | **Native market currency** — do NOT pre-convert |
 | Market | `market` | `KR` or `US` | Radio button |
+
+> ⚠ **Crypto / FX / futures (BTC-USD, EUR=X, GC=F …) are price-only.** Portfolio tracking isn't supported for them — the `market` radio only offers KR / US. Don't try to enter a Bitcoin position.
+
+> 💱 **Auto-conversion** — enter KR positions in won, US positions in dollars. The integration pulls USD/KRW itself and rolls everything into `sensor.fi_portfolio_krw_total` / `sensor.fi_portfolio_krw_pl`. Pre-converting will double-count.
 
 After saving, the six portfolio sensors (`sensor.fi_portfolio_*`) and the P/L alert binary_sensor turn on automatically.
 
