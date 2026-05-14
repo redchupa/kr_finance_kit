@@ -242,8 +242,17 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        await self.async_set_unique_id(DOMAIN)
-        self._abort_if_unique_id_configured()
+        # Single-instance guard reads HA's entry registry instead of the
+        # flow handler's unique_id slot. Reason: `async_set_unique_id`
+        # registered the in-flight flow against DOMAIN, and an abandoned
+        # form (user opened the dialog and walked away, or HACS pulled
+        # an update mid-flow) kept that slot occupied — the next install
+        # attempt then failed with `already_in_progress` even though the
+        # entry itself was already deleted. _async_current_entries only
+        # checks the persisted registry, so abandoned flows can sit and
+        # time out without blocking the next attempt.
+        if self._async_current_entries():
+            return self.async_abort(reason="already_configured")
 
         errors: dict[str, str] = {}
         if user_input is not None:
