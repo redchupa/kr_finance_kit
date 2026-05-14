@@ -114,7 +114,7 @@ Lookup sites: [Yahoo Finance Lookup](https://finance.yahoo.com/lookup) · [Googl
 
 OpenDart is Korea's FSS free disclosure API. Adding a key unlocks two things:
 
-- **Automatic company names** — `sensor.kr_finance_kit_kr_005930` shows up as "Samsung Electronics"
+- **Automatic company names** — `sensor.fi_kr_005930` shows up as "Samsung Electronics"
 - **New disclosure alerts** — a `binary_sensor` turns ON when a new filing is detected for a watched ticker
 
 **How to get one**:
@@ -165,7 +165,7 @@ A minimal example — **notify when a ticker drops 5% or more**:
 alias: "Samsung drop alert"
 trigger:
   - platform: numeric_state
-    entity_id: sensor.kr_finance_kit_kr_005930   # ← replace with your ticker
+    entity_id: sensor.fi_kr_005930   # ← replace with your ticker
     attribute: change_pct
     below: -5
 action:
@@ -302,14 +302,14 @@ Existing values are pre-filled — adjust tickers or the OpenDart key and save.
 
 ### Entities created
 
-- `sensor.kr_finance_kit_kospi` / `_kosdaq` — Korean indices
-- `sensor.kr_finance_kit_nasdaq` / `_dow` / `_sp500` — US indices (`^IXIC` / `^DJI` / `^GSPC`)
-- `sensor.kr_finance_kit_usdkrw` — FX
-- `sensor.kr_finance_kit_kr_<code>` — Korean ticker (attrs: `price`, `change`, `change_pct`, `asof`, `stale`)
-- `sensor.kr_finance_kit_us_<symbol>` — US ticker
-- `sensor.kr_finance_kit_other_<slug>` — crypto / FX / futures (e.g. `_btc_usd`, `_eth_usd`, `_eur_x`, `_gc_f`). 24/7 fetch.
-- `sensor.kr_finance_kit_portfolio_*` — six P/L sensors (KR/US/KRW-converted × value/pl)
-- `binary_sensor.kr_finance_kit_disclosure_<corp_code>` — 24h disclosure trigger
+- `sensor.fi_kospi` / `_kosdaq` — Korean indices
+- `sensor.fi_nasdaq` / `_dow` / `_sp500` — US indices (`^IXIC` / `^DJI` / `^GSPC`)
+- `sensor.fi_usdkrw` — FX
+- `sensor.fi_kr_<code>` — Korean ticker (attrs: `price`, `change`, `change_pct`, `asof`, `stale`)
+- `sensor.fi_us_<symbol>` — US ticker
+- `sensor.fi_other_<slug>` — crypto / FX / futures (e.g. `_btc_usd`, `_eth_usd`, `_eur_x`, `_gc_f`). 24/7 fetch.
+- `sensor.fi_portfolio_*` — six P/L sensors (KR/US/KRW-converted × value/pl)
+- `binary_sensor.fi_disclosure_<corp_code>` — 24h disclosure trigger
 
 ### LLM tool
 
@@ -344,16 +344,20 @@ A single `finance_query` function with 8 query types:
 
 ---
 
-## Migration to v0.1.32 (Korean → English entity_id)
+## Migration to v0.1.34 (entity_ids now use the short `sensor.fi_*` form)
 
-Before v0.1.32, the integration's device friendly-names were in Korean ("한국 시장 지표" etc.), so HA generated Korean-slug entity_ids like `sensor.hangug_sijang_jipyo_kospi`. v0.1.32 adds `_attr_suggested_object_id` to every sensor, forcing newly-registered entities to use the documented English slugs (`sensor.kr_finance_kit_kospi`, etc.). HA's entity registry keeps existing IDs as-is, so already-installed entries don't auto-rename.
+Starting in v0.1.34, every entity_id is generated with a short `sensor.fi_*` slug (e.g. `sensor.fi_kospi`, `sensor.fi_kr_005930`, `binary_sensor.fi_disclosure_<corp_code>`). The prefix shrank from `kr_finance_kit_` to `fi_` to keep dashboards readable and to reduce collisions with other finance/stock integrations in the same HA instance.
 
-To switch to the English IDs (one-time):
+⚠️ HA's entity registry preserves existing entity_ids permanently:
+- **New installs**: get the `sensor.fi_*` slug automatically.
+- **Existing installs (Korean slug from ≤v0.1.31, or `sensor.kr_finance_kit_*` from v0.1.32–v0.1.33)**: keep their current entity_ids. One manual pass renames them.
 
-1. **Easy**: Settings → Devices & services → KR Finance Kit → ⋮ → **Delete** → re-add. Re-enter holdings (quantity / cost basis) via the `kr_finance_kit.add_position` service afterward.
-2. **Manual**: Settings → Devices & services → Entities → click each entity → gear icon → edit entity ID. Update any automations that referenced the old IDs.
+### How to rename (pick one)
 
-After that, re-import the blueprints (or re-edit existing ones) and the ticker dropdown will show the clean English entity_ids.
+1. **Easy (recommended)**: Settings → Devices & services → KR Finance Kit → ⋮ → **Delete** → re-add. Re-enter holdings via the `kr_finance_kit.add_position` service.
+2. **Manual**: Settings → Devices & services → Entities → click each entity → gear icon → edit the entity ID (`sensor.kr_finance_kit_kospi` → `sensor.fi_kospi`, etc.). Update automation YAML that references old IDs.
+
+After that, re-import the blueprints (or re-edit existing ones) and the entity dropdowns will show the new IDs cleanly.
 
 ---
 

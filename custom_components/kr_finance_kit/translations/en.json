@@ -18,7 +18,7 @@
           "kr_tickers": "e.g. 005930, 000660 — 6-digit = KOSPI; add .KQ for KOSDAQ (e.g. 035720.KQ). With an OpenDart key, company names display automatically",
           "us_tickers": "e.g. AAPL, MSFT, TSLA",
           "other_tickers": "Crypto: BTC-USD, ETH-USD. FX: EUR=X, GBP=X. Futures: GC=F (gold), CL=F (oil). Fetched 24/7 regardless of market hours",
-          "include_us_indices": "Adds sensor.kr_finance_kit_nasdaq / dow / sp500"
+          "include_us_indices": "Adds sensor.fi_nasdaq / dow / sp500"
         }
       }
     },
@@ -49,9 +49,9 @@
           "kr_tickers": "e.g. 005930, 000660, 035720.KQ — comma-separated. Sensors follow add/remove automatically. With an OpenDart key, company names are auto-mapped",
           "us_tickers": "e.g. AAPL, MSFT, TSLA — US tickers are unaffected by OpenDart and always render as codes",
           "other_tickers": "Crypto / FX / futures in Yahoo ticker form. Fetched 24/7 regardless of market hours. Examples: BTC-USD, ETH-USD, EUR=X, GC=F",
-          "include_indices": "Disabling removes sensor.kr_finance_kit_kospi / kosdaq",
-          "include_us_indices": "Disabling removes sensor.kr_finance_kit_nasdaq / dow / sp500",
-          "include_fx": "Disabling removes sensor.kr_finance_kit_usdkrw. The USD→KRW-converted portfolio totals also go offline, so keep this on if you hold US tickers"
+          "include_indices": "Disabling removes sensor.fi_kospi / kosdaq",
+          "include_us_indices": "Disabling removes sensor.fi_nasdaq / dow / sp500",
+          "include_fx": "Disabling removes sensor.fi_usdkrw. The USD→KRW-converted portfolio totals also go offline, so keep this on if you hold US tickers"
         }
       }
     },

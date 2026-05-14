@@ -5,6 +5,15 @@ import logging
 from zoneinfo import ZoneInfo
 
 DOMAIN = "kr_finance_kit"
+
+# Short prefix used for entity_id slugs ONLY (not for unique_id, which
+# stays on DOMAIN so HA's registry uniqueness keeps working even if the
+# prefix ever changes). We intentionally use a 2-letter prefix to keep
+# entity_ids short and visually distinct from other finance/stock
+# integrations in the user's HA (sensor.fi_kospi vs.
+# sensor.yahoofinance_kospi etc).
+ENTITY_ID_PREFIX = "fi"
+
 LOGGER = logging.getLogger(__package__)
 TZ_KST = ZoneInfo("Asia/Seoul")
 

@@ -3,7 +3,7 @@
 - alias: "종목 5% 이상 하락 시 알림"
   trigger:
     - platform: numeric_state
-      entity_id: sensor.kr_finance_kit_kr_your_ticker
+      entity_id: sensor.fi_kr_your_ticker
       attribute: change_pct
       below: -5
   action:
@@ -15,7 +15,7 @@
 - alias: "관심 종목 신규 공시"
   trigger:
     - platform: state
-      entity_id: binary_sensor.kr_finance_kit_disclosure_your_corp_code
+      entity_id: binary_sensor.fi_disclosure_your_corp_code
       to: "on"
   action:
     - service: notify.persistent_notification
@@ -37,5 +37,5 @@
       data:
         title: "보유 평가 요약"
         message: >
-          평가금액 {{ states('sensor.kr_finance_kit_portfolio_value') }} /
-          평가손익 {{ states('sensor.kr_finance_kit_portfolio_pl') }}
+          평가금액 {{ states('sensor.fi_portfolio_krw_total') }} /
+          평가손익 {{ states('sensor.fi_portfolio_krw_pl') }}

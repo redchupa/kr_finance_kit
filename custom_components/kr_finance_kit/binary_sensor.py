@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, TZ_KST
+from .const import DOMAIN, ENTITY_ID_PREFIX, TZ_KST
 from .coordinator import DisclosureCoordinator
 from .device import disclosure_device
 
@@ -42,7 +42,7 @@ class DisclosureBinarySensor(CoordinatorEntity[DisclosureCoordinator], BinarySen
         super().__init__(coordinator)
         self._corp_code = corp_code
         self._attr_unique_id = f"{DOMAIN}_disclosure_{corp_code}"
-        self._attr_suggested_object_id = f"{DOMAIN}_disclosure_{corp_code}"
+        self._attr_suggested_object_id = f"{ENTITY_ID_PREFIX}_disclosure_{corp_code}"
         self._attr_name = "신규 공시"
         self._attr_device_info = disclosure_device(corp_code)
 

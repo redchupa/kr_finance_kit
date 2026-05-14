@@ -18,7 +18,7 @@
           "kr_tickers": "예: 005930, 000660 — KOSPI는 6자리 그대로, KOSDAQ은 .KQ 접미사 (예 035720.KQ). OpenDart 키가 있으면 종목명도 자동으로 표시됩니다",
           "us_tickers": "예: AAPL, MSFT, TSLA",
           "other_tickers": "암호화폐: BTC-USD, ETH-USD. 환율: EUR=X, GBP=X. 선물: GC=F(금), CL=F(원유). 시장 시간 무관 24/7 갱신",
-          "include_us_indices": "활성화하면 sensor.kr_finance_kit_nasdaq / dow / sp500 추가됩니다"
+          "include_us_indices": "활성화하면 sensor.fi_nasdaq / dow / sp500 추가됩니다"
         }
       }
     },
@@ -49,9 +49,9 @@
           "kr_tickers": "예: 005930, 000660, 035720.KQ — 쉼표로 구분. 추가/삭제 시 sensor도 자동으로 따라옵니다. OpenDart 키가 있으면 종목명도 자동 매핑",
           "us_tickers": "예: AAPL, MSFT, TSLA — 미국 시장은 OpenDart와 무관하므로 항상 코드 그대로 표시됩니다",
           "other_tickers": "암호화폐·환율·선물 등 Yahoo ticker 형식. 시장 시간 무관 24/7 갱신. 예: BTC-USD, ETH-USD, EUR=X, GC=F",
-          "include_indices": "비활성화 시 sensor.kr_finance_kit_kospi / kosdaq sensor가 제거됩니다",
-          "include_us_indices": "비활성화 시 sensor.kr_finance_kit_nasdaq / dow / sp500 sensor가 제거됩니다",
-          "include_fx": "비활성화 시 sensor.kr_finance_kit_usdkrw sensor가 제거됩니다. 단, USD/KRW 환산 포트폴리오 합산 센서도 함께 비활성화되니 미국 보유 종목이 있으면 켜두시는 게 좋습니다"
+          "include_indices": "비활성화 시 sensor.fi_kospi / kosdaq sensor가 제거됩니다",
+          "include_us_indices": "비활성화 시 sensor.fi_nasdaq / dow / sp500 sensor가 제거됩니다",
+          "include_fx": "비활성화 시 sensor.fi_usdkrw sensor가 제거됩니다. 단, USD/KRW 환산 포트폴리오 합산 센서도 함께 비활성화되니 미국 보유 종목이 있으면 켜두시는 게 좋습니다"
         }
       }
     },

@@ -68,12 +68,12 @@ action:
   - variables:
       indices_line: >-
         {% if inc_indices %}
-        코스피 {{ states('sensor.kr_finance_kit_kospi') }} ({{ state_attr('sensor.kr_finance_kit_kospi', 'change_pct') }}%) /
-        코스닥 {{ states('sensor.kr_finance_kit_kosdaq') }} ({{ state_attr('sensor.kr_finance_kit_kosdaq', 'change_pct') }}%)
+        코스피 {{ states('sensor.fi_kospi') }} ({{ state_attr('sensor.fi_kospi', 'change_pct') }}%) /
+        코스닥 {{ states('sensor.fi_kosdaq') }} ({{ state_attr('sensor.fi_kosdaq', 'change_pct') }}%)
         {% endif %}
       fx_line: >-
         {% if inc_fx %}
-        USD/KRW {{ states('sensor.kr_finance_kit_usdkrw') }}
+        USD/KRW {{ states('sensor.fi_usdkrw') }}
         {% endif %}
       tickers_line: >-
         {% if tickers | length > 0 %}
@@ -83,8 +83,8 @@ action:
         {% endif %}
       portfolio_line: >-
         {% if inc_portfolio %}
-        평가금액 {{ states('sensor.kr_finance_kit_portfolio_krw_total') }} KRW
-        (손익 {{ states('sensor.kr_finance_kit_portfolio_krw_pl') }} KRW)
+        평가금액 {{ states('sensor.fi_portfolio_krw_total') }} KRW
+        (손익 {{ states('sensor.fi_portfolio_krw_pl') }} KRW)
         {% endif %}
       message: |-
         📊 오늘의 시장 요약

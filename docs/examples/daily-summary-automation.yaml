@@ -16,13 +16,13 @@
       data:
         title: "오늘 시장"
         message: >
-          KOSPI {{ states('sensor.kr_finance_kit_kospi') }} ({{
-            state_attr('sensor.kr_finance_kit_kospi', 'change_pct') }}%),
-          KOSDAQ {{ states('sensor.kr_finance_kit_kosdaq') }} ({{
-            state_attr('sensor.kr_finance_kit_kosdaq', 'change_pct') }}%),
-          USD/KRW {{ states('sensor.kr_finance_kit_usdkrw') }}.
-          총 평가금액 {{ states('sensor.kr_finance_kit_portfolio_krw_total') }} KRW
-          (손익 {{ states('sensor.kr_finance_kit_portfolio_krw_pl') }} KRW)
+          KOSPI {{ states('sensor.fi_kospi') }} ({{
+            state_attr('sensor.fi_kospi', 'change_pct') }}%),
+          KOSDAQ {{ states('sensor.fi_kosdaq') }} ({{
+            state_attr('sensor.fi_kosdaq', 'change_pct') }}%),
+          USD/KRW {{ states('sensor.fi_usdkrw') }}.
+          총 평가금액 {{ states('sensor.fi_portfolio_krw_total') }} KRW
+          (손익 {{ states('sensor.fi_portfolio_krw_pl') }} KRW)
 
 - alias: "미국 장 마감 직후 보유 미국주 요약"
   trigger:
@@ -36,13 +36,13 @@
       data:
         title: "미국 장 마감"
         message: >
-          미국 보유 평가금액 ${{ states('sensor.kr_finance_kit_portfolio_us_value') }} /
-          평가손익 ${{ states('sensor.kr_finance_kit_portfolio_us_pl') }} USD
+          미국 보유 평가금액 ${{ states('sensor.fi_portfolio_us_value') }} /
+          평가손익 ${{ states('sensor.fi_portfolio_us_pl') }} USD
 
 - alias: "관심 종목 급등(+5% 이상) 알림"
   trigger:
     - platform: numeric_state
-      entity_id: sensor.kr_finance_kit_kr_your_ticker
+      entity_id: sensor.fi_kr_your_ticker
       attribute: change_pct
       above: 5
   action:
@@ -59,7 +59,7 @@
     # Loop over all KR Finance Kit disclosure binary_sensors. Adjust the
     # template if you only want a subset.
     - condition: template
-      value_template: "{{ trigger.entity_id.startswith('binary_sensor.kr_finance_kit_disclosure_') }}"
+      value_template: "{{ trigger.entity_id.startswith('binary_sensor.fi_disclosure_') }}"
     - service: your_notify_target
       data:
         title: "신규 공시"

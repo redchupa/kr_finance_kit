@@ -16,6 +16,7 @@ from .const import (
     CONF_INCLUDE_US_INDICES,
     CONF_KR_TICKER_NAMES,
     DOMAIN,
+    ENTITY_ID_PREFIX,
     FX_USDKRW,
     KR_INDICES,
     MARKET_KR,
@@ -102,11 +103,12 @@ class IndexSensor(_MarketBase):
         super().__init__(coordinator)
         self._index = index
         self._attr_unique_id = f"{DOMAIN}_index_{index.lower()}"
-        # Pin entity_id to an English slug regardless of the (Korean)
-        # device name — has_entity_name=True would otherwise produce
-        # `sensor.hangug_sijang_jipyo_kospi` style slugs that don't match
-        # what the README and the example automations document.
-        self._attr_suggested_object_id = f"{DOMAIN}_{index.lower()}"
+        # Pin entity_id to a short English slug (sensor.fi_kospi etc.).
+        # unique_id stays on DOMAIN so HA registry uniqueness survives,
+        # but entity_id is the shorter ENTITY_ID_PREFIX form to keep
+        # automations + dashboards readable and to dodge collisions
+        # with other finance integrations in the user's HA.
+        self._attr_suggested_object_id = f"{ENTITY_ID_PREFIX}_{index.lower()}"
         self._attr_name = index
         self._attr_device_info = us_market_device() if market == MARKET_US else market_device()
 
@@ -130,7 +132,7 @@ class FXSensor(_MarketBase):
         super().__init__(coordinator)
         self._pair = pair
         self._attr_unique_id = f"{DOMAIN}_fx_{pair.lower()}"
-        self._attr_suggested_object_id = f"{DOMAIN}_{pair.lower()}"
+        self._attr_suggested_object_id = f"{ENTITY_ID_PREFIX}_{pair.lower()}"
         self._attr_name = pair
         self._attr_device_info = market_device()
 
@@ -165,7 +167,7 @@ class QuoteSensor(_MarketBase):
         self._market = market
         self._ticker = ticker
         self._attr_unique_id = f"{DOMAIN}_{market.lower()}_{ticker}"
-        self._attr_suggested_object_id = f"{DOMAIN}_{market.lower()}_{ticker.lower()}"
+        self._attr_suggested_object_id = f"{ENTITY_ID_PREFIX}_{market.lower()}_{ticker.lower()}"
         # Device label is the single source of truth for the friendly
         # name: "삼성전자" when resolved, "KR 005930" otherwise. Both the
         # unique_id and entity_id stay code-based so automations don't
@@ -208,7 +210,7 @@ class _PortfolioBase(_MarketBase):
         super().__init__(coordinator)
         self._key = key
         self._attr_unique_id = f"{DOMAIN}_portfolio_{key}"
-        self._attr_suggested_object_id = f"{DOMAIN}_portfolio_{key.lower()}"
+        self._attr_suggested_object_id = f"{ENTITY_ID_PREFIX}_portfolio_{key.lower()}"
         self._attr_name = name
         self._attr_native_unit_of_measurement = unit
         self._attr_icon = icon
