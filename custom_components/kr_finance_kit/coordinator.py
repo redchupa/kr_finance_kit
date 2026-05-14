@@ -30,8 +30,10 @@ from .const import (
     CONF_INCLUDE_INDICES,
     CONF_INCLUDE_US_INDICES,
     CONF_KR_TICKERS,
+    CONF_OTHER_TICKER_LABELS,
     CONF_OTHER_TICKERS,
     CONF_POSITIONS,
+    CONF_US_TICKER_LABELS,
     CONF_US_TICKERS,
     FX_USDKRW,
     KR_INDICES,
@@ -76,6 +78,14 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     @property
     def other_tickers(self) -> list[str]:
         return list(self._config.get(CONF_OTHER_TICKERS, []))
+
+    @property
+    def other_ticker_labels(self) -> dict[str, str]:
+        return dict(self._config.get(CONF_OTHER_TICKER_LABELS, {}) or {})
+
+    @property
+    def us_ticker_labels(self) -> dict[str, str]:
+        return dict(self._config.get(CONF_US_TICKER_LABELS, {}) or {})
 
     @property
     def positions(self) -> list[dict[str, Any]]:

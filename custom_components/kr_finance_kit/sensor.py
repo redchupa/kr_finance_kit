@@ -129,12 +129,14 @@ async def async_setup_entry(
         entities.append(FXSensor(market, FX_USDKRW))
 
     kr_names: dict[str, str] = _entry_value(entry, CONF_KR_TICKER_NAMES, {}) or {}
+    us_labels = market.us_ticker_labels
+    other_labels = market.other_ticker_labels
     for ticker in market.kr_tickers:
         entities.append(QuoteSensor(market, MARKET_KR, ticker, label=kr_names.get(ticker)))
     for ticker in market.us_tickers:
-        entities.append(QuoteSensor(market, MARKET_US, ticker))
+        entities.append(QuoteSensor(market, MARKET_US, ticker, label=us_labels.get(ticker)))
     for ticker in market.other_tickers:
-        entities.append(QuoteSensor(market, MARKET_OTHER, ticker))
+        entities.append(QuoteSensor(market, MARKET_OTHER, ticker, label=other_labels.get(ticker)))
 
     if market.positions:
         entities += [

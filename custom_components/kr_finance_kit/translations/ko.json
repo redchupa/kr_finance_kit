@@ -17,8 +17,8 @@
         "data_description": {
           "opendart_api_key": "비워두면 공시 모니터링 + 종목명 자동 매핑이 비활성화됩니다 (시세는 정상 동작)",
           "kr_tickers": "예: 005930, 000660 — KOSPI는 6자리 그대로, KOSDAQ은 .KQ 접미사 (예 035720.KQ). OpenDart 키가 있으면 종목명도 자동으로 표시됩니다",
-          "us_tickers": "예: AAPL, MSFT, TSLA",
-          "other_tickers": "암호화폐: BTC-USD, ETH-USD. 환율: EUR=X, GBP=X. 선물: GC=F(금), CL=F(원유). 시장 시간 무관 24/7 갱신",
+          "us_tickers": "예: AAPL, MSFT, TSLA. 친절명을 직접 지정하려면 :라벨 추가 (예 AAPL:애플, TSLA:테슬라). 명시 안 하면 yfinance longName이 자동 매핑",
+          "other_tickers": "암호화폐: BTC-USD, ETH-USD. 환율: EUR=X, GBP=X. 선물: GC=F(금), CL=F(원유). 한글 라벨은 :라벨로 직접 지정 (예 BTC-USD:비트코인, GC=F:금). 명시 안 하면 yfinance longName이 자동 매핑. 시장 시간 무관 24/7 갱신",
           "include_us_indices": "활성화하면 sensor.fi_nasdaq / dow / sp500 추가됩니다",
           "include_detailed_attrs": "활성화하면 종목별로 yfinance .info를 추가로 호출 (폴링마다 1회 추가 HTTP). attribute에 fifty_two_week_high/low, fifty/two_hundred_day_average, regular_market_day_high/low/volume, dividend_*, forward_pe/trailing_pe, market_state, pre/post_market_price 노출"
         }
@@ -50,8 +50,8 @@
         "data_description": {
           "opendart_api_key": "변경 시 즉시 재검증됩니다. 키 폐기/재발급 시 새 키를 여기 붙여넣고 저장하세요. 비워두면 공시 + 종목명 매핑 비활성화",
           "kr_tickers": "예: 005930, 000660, 035720.KQ — 쉼표로 구분. 추가/삭제 시 sensor도 자동으로 따라옵니다. OpenDart 키가 있으면 종목명도 자동 매핑",
-          "us_tickers": "예: AAPL, MSFT, TSLA — 미국 시장은 OpenDart와 무관하므로 항상 코드 그대로 표시됩니다",
-          "other_tickers": "암호화폐·환율·선물 등 Yahoo ticker 형식. 시장 시간 무관 24/7 갱신. 예: BTC-USD, ETH-USD, EUR=X, GC=F",
+          "us_tickers": "예: AAPL, MSFT, TSLA. 한글 친절명을 직접 지정하려면 :라벨 추가 (예 AAPL:애플, TSLA:테슬라). 명시 안 하면 yfinance longName 자동 매핑",
+          "other_tickers": "암호화폐·환율·선물 Yahoo ticker 형식 (24/7 갱신). 한글 라벨은 :라벨로 직접 지정 (예 BTC-USD:비트코인, ETH-USD:이더리움, GC=F:금). 명시 안 하면 yfinance longName 자동 매핑",
           "include_indices": "비활성화 시 sensor.fi_kospi / kosdaq sensor가 제거됩니다",
           "include_us_indices": "비활성화 시 sensor.fi_nasdaq / dow / sp500 sensor가 제거됩니다",
           "include_fx": "비활성화 시 sensor.fi_usdkrw sensor가 제거됩니다. 단, USD/KRW 환산 포트폴리오 합산 센서도 함께 비활성화되니 미국 보유 종목이 있으면 켜두시는 게 좋습니다",

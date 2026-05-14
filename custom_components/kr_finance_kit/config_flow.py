@@ -39,8 +39,10 @@ from .const import (
     CONF_KR_TICKER_NAMES,
     CONF_KR_TICKERS,
     CONF_OPENDART_API_KEY,
+    CONF_OTHER_TICKER_LABELS,
     CONF_OTHER_TICKERS,
     CONF_POSITIONS,
+    CONF_US_TICKER_LABELS,
     CONF_US_TICKERS,
     DOMAIN,
 )
@@ -54,6 +56,83 @@ def _csv_to_list(raw: str | None) -> list[str]:
 
 def _list_to_csv(items: list[str] | None) -> str:
     return ", ".join(items or [])
+
+
+def _csv_to_tickers_and_labels(raw: str | None) -> tuple[list[str], dict[str, str]]:
+    """Parse a "TICKER:label, TICKER, TICKER:라벨" input.
+
+    Splits on the first colon per segment so multi-symbol tickers that
+    happen to contain "=" (FX: EUR=X) and "-" (crypto: BTC-USD) pass
+    through untouched. Returns ``(tickers, labels)`` where ``labels``
+    maps the upper-cased ticker code to its user-supplied friendly
+    label. Tickers without an explicit ":label" are still in the
+    ``tickers`` list but absent from ``labels`` — the integration will
+    fill those in from yfinance .info on save.
+    """
+    if not raw:
+        return [], {}
+    tickers: list[str] = []
+    labels: dict[str, str] = {}
+    for raw_seg in raw.split(","):
+        seg = raw_seg.strip()
+        if not seg:
+            continue
+        if ":" in seg:
+            code, _, lbl = seg.partition(":")
+            code = code.strip().upper()
+            lbl = lbl.strip()
+            if not code:
+                continue
+            tickers.append(code)
+            if lbl:
+                labels[code] = lbl
+        else:
+            tickers.append(seg.upper())
+    return tickers, labels
+
+
+def _serialize_tickers_with_labels(tickers: list[str] | None, labels: dict[str, str] | None) -> str:
+    """Render Options-flow pre-fill so the user sees what they typed.
+
+    Only labels the user explicitly supplied are surfaced — auto-fetched
+    longNames stay invisible so the screen looks the same as the last
+    submission. Edits to the visible label override; deleting the
+    ":label" segment frees the slot for the next yfinance fetch.
+    """
+    if not tickers:
+        return ""
+    out: list[str] = []
+    labels = labels or {}
+    for t in tickers:
+        lbl = labels.get(t)
+        out.append(f"{t}:{lbl}" if lbl else t)
+    return ", ".join(out)
+
+
+async def _enrich_other_labels(
+    hass,
+    tickers: list[str],
+    explicit_labels: dict[str, str],
+) -> dict[str, str]:
+    """Auto-fill missing labels from yfinance .info longName / shortName.
+
+    Mirrors the KR path's _enrich_kr_metadata: one network round-trip on
+    save, no per-poll overhead. We only fetch for tickers the user
+    didn't already label, so toggling an existing entry costs zero
+    requests.
+    """
+    missing = [t for t in tickers if t not in explicit_labels]
+    if not missing:
+        return dict(explicit_labels)
+    from .api import yfinance_wrap
+    raw = await yfinance_wrap.fetch_info(missing)
+    out = dict(explicit_labels)
+    for t in missing:
+        info = raw.get(t, {}) or {}
+        ln = info.get("longName") or info.get("shortName")
+        if ln:
+            out[t] = ln
+    return out
 
 
 def _kr_tickers_to_stock_codes(kr_tickers: list[str]) -> list[str]:
@@ -138,8 +217,10 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             api_key = (user_input.get(CONF_OPENDART_API_KEY) or "").strip()
             kr = _csv_to_list(user_input.get(CONF_KR_TICKERS))
-            us = _csv_to_list(user_input.get(CONF_US_TICKERS))
-            other = _csv_to_list(user_input.get(CONF_OTHER_TICKERS))
+            us, us_labels_explicit = _csv_to_tickers_and_labels(user_input.get(CONF_US_TICKERS))
+            other, other_labels_explicit = _csv_to_tickers_and_labels(
+                user_input.get(CONF_OTHER_TICKERS)
+            )
 
             if api_key and not await validate_api_key(self.hass, api_key):
                 errors[CONF_OPENDART_API_KEY] = "invalid_api_key"
@@ -147,12 +228,16 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 corp_codes, ticker_names = await _enrich_kr_metadata(
                     self.hass, api_key, kr
                 )
+                us_labels = await _enrich_other_labels(self.hass, us, us_labels_explicit)
+                other_labels = await _enrich_other_labels(self.hass, other, other_labels_explicit)
                 return self.async_create_entry(
                     title="KR Finance Kit",
                     data={
                         CONF_KR_TICKERS: kr,
                         CONF_US_TICKERS: us,
                         CONF_OTHER_TICKERS: other,
+                        CONF_US_TICKER_LABELS: us_labels,
+                        CONF_OTHER_TICKER_LABELS: other_labels,
                         CONF_OPENDART_API_KEY: api_key,
                         CONF_DISCLOSURE_CORP_CODES: corp_codes,
                         CONF_KR_TICKER_NAMES: ticker_names,
@@ -198,8 +283,10 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             api_key = (user_input.get(CONF_OPENDART_API_KEY) or "").strip()
             kr = _csv_to_list(user_input.get(CONF_KR_TICKERS))
-            us = _csv_to_list(user_input.get(CONF_US_TICKERS))
-            other = _csv_to_list(user_input.get(CONF_OTHER_TICKERS))
+            us, us_labels_explicit = _csv_to_tickers_and_labels(user_input.get(CONF_US_TICKERS))
+            other, other_labels_explicit = _csv_to_tickers_and_labels(
+                user_input.get(CONF_OTHER_TICKERS)
+            )
 
             if api_key and not await validate_api_key(self.hass, api_key):
                 errors[CONF_OPENDART_API_KEY] = "invalid_api_key"
@@ -207,12 +294,16 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
                 corp_codes, ticker_names = await _enrich_kr_metadata(
                     self.hass, api_key, kr
                 )
+                us_labels = await _enrich_other_labels(self.hass, us, us_labels_explicit)
+                other_labels = await _enrich_other_labels(self.hass, other, other_labels_explicit)
                 return self.async_create_entry(
                     title="",
                     data={
                         CONF_KR_TICKERS: kr,
                         CONF_US_TICKERS: us,
                         CONF_OTHER_TICKERS: other,
+                        CONF_US_TICKER_LABELS: us_labels,
+                        CONF_OTHER_TICKER_LABELS: other_labels,
                         CONF_OPENDART_API_KEY: api_key,
                         CONF_DISCLOSURE_CORP_CODES: corp_codes,
                         CONF_KR_TICKER_NAMES: ticker_names,
@@ -233,8 +324,14 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
         suggested = user_input if user_input is not None else {
             CONF_OPENDART_API_KEY: self._current(CONF_OPENDART_API_KEY, ""),
             CONF_KR_TICKERS: _list_to_csv(self._current(CONF_KR_TICKERS, [])),
-            CONF_US_TICKERS: _list_to_csv(self._current(CONF_US_TICKERS, [])),
-            CONF_OTHER_TICKERS: _list_to_csv(self._current(CONF_OTHER_TICKERS, [])),
+            CONF_US_TICKERS: _serialize_tickers_with_labels(
+                self._current(CONF_US_TICKERS, []),
+                self._current(CONF_US_TICKER_LABELS, {}),
+            ),
+            CONF_OTHER_TICKERS: _serialize_tickers_with_labels(
+                self._current(CONF_OTHER_TICKERS, []),
+                self._current(CONF_OTHER_TICKER_LABELS, {}),
+            ),
             CONF_INCLUDE_INDICES: self._current(CONF_INCLUDE_INDICES, True),
             CONF_INCLUDE_US_INDICES: self._current(CONF_INCLUDE_US_INDICES, True),
             CONF_INCLUDE_FX: self._current(CONF_INCLUDE_FX, True),
