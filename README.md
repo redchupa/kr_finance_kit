@@ -111,6 +111,8 @@
 
 **Settings → 개발자 도구(Developer Tools) → 동작(Actions) 탭** → 검색창에 `kr_finance_kit.add_position` 입력 → 폼이 자동으로 나타납니다.
 
+![보유 종목 추가 화면](docs/screenshots/add_position.png)
+
 > HA 2024.8+ 부터 기존 "서비스(Services)" 탭이 "동작(Actions)" 으로 명칭만 변경됐습니다. 같은 화면입니다.
 
 ### 2. 입력 필드
@@ -173,6 +175,36 @@ v0.1.53부터 sensor가 **1·5·15·30·60·90·120·180분** 8개 윈도우 att
 
 ### 알림 호환성
 모든 블루프린트는 `notify.send_message` (HA 2024.6+ 표준) 사용. mobile_app 자동 호환. service-only notify (일부 telegram_bot 모드 등) 사용자는 [docs/examples/](docs/examples/) 의 raw YAML 참고.
+
+---
+
+## 📊 끝내주는 대시보드
+
+8섹션 통합 대시보드 — 포트폴리오 요약 · 지수/환율 · 한국·미국 보유 종목 · OpenDart 공시 · 7일 가격 추세 · 빠른 링크.
+
+[![dashboard.yaml](https://img.shields.io/badge/copy-docs%2Fexamples%2Fdashboard.yaml-blue?logo=homeassistant)](docs/examples/dashboard.yaml)
+
+### 사용법
+
+1. [docs/examples/dashboard.yaml](docs/examples/dashboard.yaml) 의 view 블록 복사
+2. HA → Settings → Dashboards → ⋮ Edit → ⋮ **Raw configuration editor**
+3. `views:` 아래에 paste → Save
+4. 섹션 4 / 5 / 6 의 placeholder ticker (예 `sensor.fi_kr_005930`) 를 본인 종목 entity로 교체
+
+> 모든 entity 참조는 `sensor.fi_*` / `binary_sensor.fi_*` 형식. v0.1.54+ 자동 migration 후 즉시 동작합니다.
+
+### 구성 요소
+
+| 섹션 | 카드 종류 | 포함 entity |
+|---|---|---|
+| 1. Hero | markdown | 포트폴리오 총평가금액·총평가손익 (템플릿) + 지수 요약 |
+| 2. 포트폴리오 | tile × 7 | KRW 환산 합계 + 국가별 평가금액/평가손익 + P/L 알림 |
+| 3. 지수 & 환율 | tile × 6 | KOSPI / KOSDAQ / USDKRW / NASDAQ / DOW / SP500 |
+| 4. 🇰🇷 한국 보유 | tile × N | 본인 종목 placeholder |
+| 5. 🇺🇸 미국 보유 | tile × N | 본인 종목 placeholder |
+| 6. 신규 공시 | tile × N | OpenDart 공시 binary_sensor |
+| 7. 가격 추세 | history-graph × 3 | 7일 / 168시간 |
+| 8. 빠른 링크 | markdown | 보유 종목 추가·통합 옵션·자동화 페이지 |
 
 ---
 

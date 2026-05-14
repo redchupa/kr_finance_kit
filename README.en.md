@@ -111,6 +111,8 @@ Holdings (quantity + average cost) are entered as a **service call**, not on the
 
 **Settings → Developer Tools → Actions tab** → type `kr_finance_kit.add_position` in the search box → the form appears.
 
+![Add position dialog](docs/screenshots/add_position.png)
+
 > HA 2024.8+ renamed the old "Services" tab to "Actions". Same screen — only the label moved.
 
 ### 2. Fields
@@ -169,6 +171,36 @@ At a configurable time (defaults to KR market close, 15:30 KST), bundles indices
 
 ### Notify compatibility
 All three use `notify.send_message` (HA 2024.6+ standard). mobile_app auto-works. Service-only notify integrations (some telegram_bot modes) → see raw YAML in [docs/examples/](docs/examples/).
+
+---
+
+## 📊 Ready-made dashboard
+
+An eight-section sample dashboard — portfolio summary · indices & FX · KR/US holdings · OpenDart disclosures · 7-day price trends · quick links.
+
+[![dashboard.yaml](https://img.shields.io/badge/copy-docs%2Fexamples%2Fdashboard.yaml-blue?logo=homeassistant)](docs/examples/dashboard.yaml)
+
+### How to use
+
+1. Copy the view block from [docs/examples/dashboard.yaml](docs/examples/dashboard.yaml)
+2. HA → Settings → Dashboards → ⋮ Edit → ⋮ **Raw configuration editor**
+3. Paste under `views:` → Save
+4. In sections 4 / 5 / 6 replace the placeholder tickers (e.g. `sensor.fi_kr_005930`) with your own
+
+> All entity refs use the `sensor.fi_*` / `binary_sensor.fi_*` form. Works out of the box on v0.1.54+ after the migration runs.
+
+### Sections at a glance
+
+| Section | Card type | Entities |
+|---|---|---|
+| 1. Hero | markdown | total value / P/L via template + index summary |
+| 2. Portfolio | tile × 7 | KRW totals + per-country value/P/L + alert |
+| 3. Indices & FX | tile × 6 | KOSPI / KOSDAQ / USDKRW / NASDAQ / DOW / SP500 |
+| 4. 🇰🇷 KR holdings | tile × N | your tickers (placeholders) |
+| 5. 🇺🇸 US holdings | tile × N | your tickers (placeholders) |
+| 6. Disclosures | tile × N | OpenDart binary_sensors |
+| 7. Price trends | history-graph × 3 | 7 days / 168 hours |
+| 8. Quick links | markdown | add position · integration options · automations |
 
 ---
 

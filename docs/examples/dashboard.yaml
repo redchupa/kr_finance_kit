@@ -1,0 +1,213 @@
+# KR Finance Kit — sample dashboard (v0.1.54+)
+#
+# How to use:
+#   1. Settings → Dashboards → ⋮ Edit dashboard → ⋮ Raw configuration editor
+#   2. Paste this view into your dashboard's `views:` list
+#   3. Replace the placeholder tickers in section 4 / 5 / 6 with your own
+#      (the `kr_<code>`, `us_<symbol>`, `disclosure_<corp>` entity_ids that
+#      KR Finance Kit generated for you).
+#
+# Entity IDs assume v0.1.54+ migration applied — i.e. `sensor.fi_*` slugs.
+# If you are on an older install run HACS Update → HA Restart first so
+# the integration migrates legacy Korean slugs onto the fi_* form.
+
+title: KR Finance Kit
+path: kr-finance
+icon: mdi:chart-line
+type: sections
+max_columns: 4
+sections:
+
+  # ── 1. Hero summary ──────────────────────────────────────────────
+  - type: grid
+    cards:
+      - type: markdown
+        content: |
+          # 📊 KR Finance Kit
+          **한국·미국 주식, 환율, OpenDart 공시 통합 대시보드**
+
+          > 총 평가금액 **{{ states('sensor.fi_portfolio_krw_total') | float(0) | int }} 원**, 총 평가손익 **{{ states('sensor.fi_portfolio_krw_pl') | float(0) | int }} 원**
+
+          USD/KRW {{ states('sensor.fi_usdkrw') }} · KOSPI {{ states('sensor.fi_kospi') }} · NASDAQ {{ states('sensor.fi_nasdaq') }}
+
+  # ── 2. Portfolio breakdown ──────────────────────────────────────
+  - type: grid
+    cards:
+      - type: heading
+        heading: 💼 포트폴리오 현황
+        icon: mdi:briefcase-variant
+      - type: tile
+        entity: sensor.fi_portfolio_krw_total
+        name: 총 평가금액 (KRW)
+        icon: mdi:cash-multiple
+        color: blue
+        vertical: true
+      - type: tile
+        entity: sensor.fi_portfolio_krw_pl
+        name: 총 평가손익 (KRW)
+        icon: mdi:chart-line-variant
+        color: green
+        vertical: true
+      - type: tile
+        entity: sensor.fi_portfolio_kr_value
+        name: 🇰🇷 한국 평가금액
+        icon: mdi:briefcase
+        color: indigo
+      - type: tile
+        entity: sensor.fi_portfolio_kr_pl
+        name: 🇰🇷 한국 평가손익
+        icon: mdi:trending-up
+        color: teal
+      - type: tile
+        entity: sensor.fi_portfolio_us_value
+        name: 🇺🇸 미국 평가금액 (USD)
+        icon: mdi:briefcase
+        color: deep-purple
+      - type: tile
+        entity: sensor.fi_portfolio_us_pl
+        name: 🇺🇸 미국 평가손익 (USD)
+        icon: mdi:trending-up
+        color: purple
+      # Only renders if portfolio_pl_alert_pct > 0 in your integration options.
+      - type: tile
+        entity: binary_sensor.fi_portfolio_pl_alert
+        name: P/L 임계값 알림
+        icon: mdi:bell-alert
+        color: red
+
+  # ── 3. Indices & FX ─────────────────────────────────────────────
+  - type: grid
+    cards:
+      - type: heading
+        heading: 📈 주요 지수 & 환율
+        icon: mdi:chart-bell-curve
+      - type: tile
+        entity: sensor.fi_kospi
+        name: KOSPI
+        icon: mdi:flag-variant
+        color: blue
+      - type: tile
+        entity: sensor.fi_kosdaq
+        name: KOSDAQ
+        icon: mdi:flag-variant
+        color: light-blue
+      - type: tile
+        entity: sensor.fi_usdkrw
+        name: USD/KRW 환율
+        icon: mdi:currency-usd
+        color: amber
+      - type: tile
+        entity: sensor.fi_nasdaq
+        name: NASDAQ
+        icon: mdi:chart-line
+        color: deep-purple
+      - type: tile
+        entity: sensor.fi_dow
+        name: DOW
+        icon: mdi:chart-line
+        color: purple
+      - type: tile
+        entity: sensor.fi_sp500
+        name: S&P 500
+        icon: mdi:chart-line
+        color: pink
+
+  # ── 4. KR holdings (replace with your tickers) ──────────────────
+  - type: grid
+    cards:
+      - type: heading
+        heading: 🇰🇷 한국 보유 종목
+        icon: mdi:store
+      - type: tile
+        entity: sensor.fi_kr_005930   # 삼성전자
+        name: 삼성전자
+        icon: mdi:cellphone
+        color: blue
+      - type: tile
+        entity: sensor.fi_kr_000660   # SK하이닉스
+        name: SK하이닉스
+        icon: mdi:memory
+        color: red
+      - type: tile
+        entity: sensor.fi_kr_035420   # NAVER
+        name: NAVER
+        icon: mdi:web
+        color: green
+
+  # ── 5. US holdings (replace with your tickers) ──────────────────
+  - type: grid
+    cards:
+      - type: heading
+        heading: 🇺🇸 미국 보유 종목
+        icon: mdi:flag
+      - type: tile
+        entity: sensor.fi_us_aapl
+        name: Apple
+        icon: mdi:apple
+        color: grey
+      - type: tile
+        entity: sensor.fi_us_msft
+        name: Microsoft
+        icon: mdi:microsoft
+        color: blue
+      - type: tile
+        entity: sensor.fi_us_tsla
+        name: Tesla
+        icon: mdi:car-sports
+        color: red
+
+  # ── 6. Disclosures (OpenDart, replace corp_codes) ───────────────
+  - type: grid
+    cards:
+      - type: heading
+        heading: 📋 신규 공시 (OpenDart)
+        icon: mdi:file-document-alert
+      - type: tile
+        entity: binary_sensor.fi_disclosure_00126380   # 삼성전자
+        name: 삼성전자
+        icon: mdi:file-document
+        color: blue
+      - type: tile
+        entity: binary_sensor.fi_disclosure_00164779   # SK하이닉스
+        name: SK하이닉스
+        icon: mdi:file-document
+        color: red
+
+  # ── 7. Price trends ─────────────────────────────────────────────
+  - type: grid
+    cards:
+      - type: heading
+        heading: 📊 가격 추세 (7일)
+        icon: mdi:chart-areaspline
+      - type: history-graph
+        title: 🇰🇷 지수 + 환율
+        hours_to_show: 168
+        entities:
+          - entity: sensor.fi_kospi
+          - entity: sensor.fi_kosdaq
+          - entity: sensor.fi_usdkrw
+      - type: history-graph
+        title: 🇺🇸 미국 지수
+        hours_to_show: 168
+        entities:
+          - entity: sensor.fi_nasdaq
+          - entity: sensor.fi_dow
+          - entity: sensor.fi_sp500
+      - type: history-graph
+        title: 💰 포트폴리오 KRW
+        hours_to_show: 168
+        entities:
+          - entity: sensor.fi_portfolio_krw_total
+          - entity: sensor.fi_portfolio_krw_pl
+
+  # ── 8. Quick links ──────────────────────────────────────────────
+  - type: grid
+    cards:
+      - type: markdown
+        content: |
+          ### 🔗 빠른 링크
+          - [개발자 도구 → 동작 (보유 종목 추가)](/developer-tools/action?service=kr_finance_kit.add_position)
+          - [통합 옵션 (종목 추가/삭제)](/config/integrations)
+          - [블루프린트 자동화](/config/automation/dashboard)
+
+          **Tip** — 카드 우클릭 → *카드 편집* 으로 색상·아이콘·이름 자유롭게 변경 가능.
