@@ -16,9 +16,9 @@
         },
         "data_description": {
           "opendart_api_key": "Blank disables disclosure monitoring AND company-name labels (price sensors still work)",
-          "kr_tickers": "e.g. 005930, 000660 — 6-digit = KOSPI; add .KQ for KOSDAQ (e.g. 035720.KQ). With an OpenDart key, company names display automatically",
-          "us_tickers": "e.g. AAPL, MSFT, TSLA. Append :label to override the friendly name (e.g. AAPL:애플) — otherwise yfinance longName fills it in on save",
-          "other_tickers": "Crypto: BTC-USD, ETH-USD. FX: EUR=X, GBP=X. Futures: GC=F (gold), CL=F (oil). Append :label to set the friendly name (e.g. BTC-USD:비트코인). Without :label, yfinance longName fills it in on save. Fetched 24/7 regardless of market hours",
+          "kr_tickers": "Copy-paste example: 005930, 000660, 035420, 035720.KQ, 373220 — 6-digit = KOSPI, .KQ suffix = KOSDAQ. With an OpenDart key, company names auto-fill",
+          "us_tickers": "Copy-paste example: AAPL:Apple, MSFT:Microsoft, TSLA:Tesla, NVDA:NVIDIA — append :label to set the friendly name, or leave bare and yfinance longName auto-fills on save",
+          "other_tickers": "Copy-paste example: BTC-USD:Bitcoin, ETH-USD:Ethereum, EUR=X:EUR/USD, GC=F:Gold, CL=F:Oil — Yahoo ticker form, 24/7 fetch. Append :label or let yfinance longName auto-fill",
           "include_us_indices": "Adds sensor.fi_nasdaq / dow / sp500",
           "include_detailed_attrs": "Adds one yfinance .info call per ticker per poll. Surfaces fifty_two_week_high/low, fifty/two_hundred_day_average, regular_market_day_high/low/volume, dividend_*, forward_pe / trailing_pe, market_state, pre/post_market_price as sensor attributes"
         }
@@ -49,9 +49,9 @@
         },
         "data_description": {
           "opendart_api_key": "Re-validated on save. Paste a freshly rotated key here. Blank disables disclosures + name mapping",
-          "kr_tickers": "e.g. 005930, 000660, 035720.KQ — comma-separated. Sensors follow add/remove automatically. With an OpenDart key, company names are auto-mapped",
-          "us_tickers": "e.g. AAPL, MSFT, TSLA. Optionally append :label (e.g. AAPL:애플, TSLA:테슬라) to override the friendly name. Without :label, yfinance longName auto-fills on save",
-          "other_tickers": "Crypto / FX / futures in Yahoo ticker form (24/7 fetch). Optionally append :label to set the friendly name: BTC-USD:비트코인, ETH-USD:이더리움, GC=F:금. Without :label, yfinance longName auto-fills on save",
+          "kr_tickers": "Copy-paste example: 005930, 000660, 035420, 035720.KQ, 373220 — comma-separated, sensors follow add/remove. With an OpenDart key, company names auto-map",
+          "us_tickers": "Copy-paste example: AAPL:Apple, MSFT:Microsoft, TSLA:Tesla, NVDA:NVIDIA — append :label to override the friendly name. Bare codes get yfinance longName auto-fill on save. OpenDart unaffected",
+          "other_tickers": "Copy-paste example: BTC-USD:Bitcoin, ETH-USD:Ethereum, EUR=X:EUR/USD, GC=F:Gold, CL=F:Oil — Yahoo ticker form, 24/7 fetch. Append :label or let yfinance longName auto-fill",
           "include_indices": "Disabling removes sensor.fi_kospi / kosdaq",
           "include_us_indices": "Disabling removes sensor.fi_nasdaq / dow / sp500",
           "include_fx": "Disabling removes sensor.fi_usdkrw. The USD→KRW-converted portfolio totals also go offline, so keep this on if you hold US tickers",
