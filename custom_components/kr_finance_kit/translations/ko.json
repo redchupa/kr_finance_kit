@@ -24,7 +24,7 @@
           "us_tickers": "AAPL:애플, MSFT:마이크로소프트, TSLA:테슬라, NVDA:엔비디아",
           "other_tickers": "BTC-USD:비트코인, ETH-USD:이더리움, EUR=X:유로, GC=F:금, CL=F:원유",
           "include_us_indices": "활성화하면 sensor.fi_nasdaq / dow / sp500 추가됩니다",
-          "portfolio_pl_alert_pct": "예: 5로 설정 → 보유 종목 전체 평가손익(KRW 환산)이 ±5%를 넘으면 binary_sensor.fi_portfolio_pl_alert가 ON. 자동화 트리거(알림·메일 등)에서 그 binary_sensor 사용. 0으로 두면 sensor 자체 생성 안 됨",
+          "portfolio_pl_alert_pct": "예: 5로 설정 → 보유 종목 전체 평가손익(KRW 환산)이 ±5%를 넘으면 binary_sensor.fi_portfolio_pl_alert가 ON. 기준점은 kr_finance_kit.add_position 서비스로 입력한 평단가(avg_price) — 매수 원가 대비 손익 %. 자동화 트리거(알림·메일 등)에서 그 binary_sensor 사용. 0으로 두면 sensor 자체 생성 안 됨",
           "include_detailed_attrs": "활성화하면 종목별로 yfinance .info를 추가로 호출 (폴링마다 1회 추가 HTTP). attribute에 fifty_two_week_high/low, fifty/two_hundred_day_average, regular_market_day_high/low/volume, dividend_*, forward_pe/trailing_pe, market_state, pre/post_market_price 노출"
         }
       }
