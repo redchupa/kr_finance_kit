@@ -25,6 +25,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import opendart, yfinance_wrap
 from .const import (
+    CONF_INCLUDE_DETAILED_ATTRS,
     CONF_INCLUDE_FX,
     CONF_INCLUDE_INDICES,
     CONF_INCLUDE_US_INDICES,
@@ -32,6 +33,7 @@ from .const import (
     CONF_OTHER_TICKERS,
     CONF_POSITIONS,
     CONF_US_TICKERS,
+    FX_USDKRW,
     KR_INDICES,
     LOGGER,
     MARKET_KR,
@@ -42,6 +44,7 @@ from .const import (
     SCAN_INTERVAL_MARKET_IDLE,
     US_INDICES,
 )
+from .api.yfinance_wrap import INDEX_TICKERS, FX_TICKERS, normalize_kr_ticker
 from .market_hours import any_market_open, is_kr_market_open, is_us_market_open
 
 
@@ -129,6 +132,29 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             other_quotes = await yfinance_wrap.fetch_quotes(
                 self.other_tickers, MARKET_OTHER
             ) if self.other_tickers else {}
+
+            # Detailed yfinance .info attributes — toggled separately
+            # because each symbol adds one extra HTTP round-trip. We map
+            # each user-facing identifier (index name, FX pair, ticker)
+            # to the yfinance symbol so .info comes back keyed by what
+            # the sensor will look up.
+            info: dict[str, dict[str, Any]] = {}
+            if cfg.get(CONF_INCLUDE_DETAILED_ATTRS, False):
+                lookup: dict[str, str] = {}  # user-key -> yfinance symbol
+                for idx in wanted_indices:
+                    if idx in INDEX_TICKERS:
+                        lookup[idx] = INDEX_TICKERS[idx]
+                if include_fx:
+                    lookup[FX_USDKRW] = FX_TICKERS.get(FX_USDKRW, "KRW=X")
+                for t in self.kr_tickers:
+                    lookup[t] = normalize_kr_ticker(t)
+                for t in self.us_tickers:
+                    lookup[t] = t
+                for t in self.other_tickers:
+                    lookup[t] = t
+                if lookup:
+                    raw = await yfinance_wrap.fetch_info(list(lookup.values()))
+                    info = {key: raw.get(sym, {}) for key, sym in lookup.items()}
         except Exception as err:  # noqa: BLE001
             self._failures += 1
             if self._failures <= 5 and self.data is not None:
@@ -149,6 +175,7 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "kr_quotes": kr_quotes,
             "us_quotes": us_quotes,
             "other_quotes": other_quotes,
+            "info": info,
             "positions": self.positions,
             "kr_market_open": kr_open,
             "us_market_open": us_open,

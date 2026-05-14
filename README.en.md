@@ -70,6 +70,7 @@ All of this is free — no brokerage credentials required.
    | Include KOSPI / KOSDAQ indices | Adds Korean index sensors | ☑ |
    | Include NASDAQ / Dow / S&P 500 indices | Adds US index sensors | ☑ |
    | Include USD/KRW FX | Adds FX sensor | ☑ |
+   | **Include detailed attributes** | Surfaces 52w high/low, 50d/200d avg, day high/low, volume, dividend, PE, marketState. Costs 1 extra yfinance .info call per ticker per poll. | ☐ |
 
 4. **Submit** → done.
 
@@ -305,7 +306,9 @@ Existing values are pre-filled — adjust tickers or the OpenDart key and save.
 - `sensor.fi_kospi` / `_kosdaq` — Korean indices
 - `sensor.fi_nasdaq` / `_dow` / `_sp500` — US indices (`^IXIC` / `^DJI` / `^GSPC`)
 - `sensor.fi_usdkrw` — FX
-- `sensor.fi_kr_<code>` — Korean ticker (attrs: `price`, `change`, `change_pct`, `asof`, `stale`)
+- `sensor.fi_kr_<code>` — Korean ticker
+  - Default attrs: `change`, `change_pct`, `asof`, `prev_close`, `stale`
+  - **With detailed-attrs option ON**: `fifty_two_week_high/low` (+ `_change_pct`), `fifty_day_average` / `two_hundred_day_average` (+ `_change_pct`), `regular_market_day_high/low`, `regular_market_volume`, `market_state`, `currency`, `quote_type`, `long_name`, `short_name`, `average_daily_volume_10_day`, `average_volume`. Equity-only: `dividend_rate`, `dividend_yield`, `forward_pe`, `trailing_pe`, `pre_market_price`, `post_market_price` (when present)
 - `sensor.fi_us_<symbol>` — US ticker
 - `sensor.fi_other_<slug>` — crypto / FX / futures (e.g. `_btc_usd`, `_eth_usd`, `_eur_x`, `_gc_f`). 24/7 fetch.
 - `sensor.fi_portfolio_*` — six P/L sensors (KR/US/KRW-converted × value/pl)

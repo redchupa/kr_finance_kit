@@ -33,6 +33,65 @@ def _entry_value(entry: ConfigEntry, key: str, default: Any) -> Any:
     return (entry.options or entry.data).get(key, default)
 
 
+_INFO_KEY_MAP: dict[str, str] = {
+    "fiftyTwoWeekHigh": "fifty_two_week_high",
+    "fiftyTwoWeekLow": "fifty_two_week_low",
+    "fiftyDayAverage": "fifty_day_average",
+    "twoHundredDayAverage": "two_hundred_day_average",
+    "regularMarketDayHigh": "regular_market_day_high",
+    "regularMarketDayLow": "regular_market_day_low",
+    "regularMarketVolume": "regular_market_volume",
+    "marketState": "market_state",
+    "currency": "currency",
+    "quoteType": "quote_type",
+    "longName": "long_name",
+    "shortName": "short_name",
+    "averageDailyVolume10Day": "average_daily_volume_10_day",
+    "averageVolume": "average_volume",
+    # Equity-only — surfaced only when present in .info (None entries are
+    # dropped by the yfinance_wrap filter, so absence here means the asset
+    # class doesn't carry the field).
+    "dividendRate": "dividend_rate",
+    "dividendYield": "dividend_yield",
+    "trailingAnnualDividendRate": "trailing_annual_dividend_rate",
+    "dividendDate": "dividend_date",
+    "forwardPE": "forward_pe",
+    "trailingPE": "trailing_pe",
+    "preMarketPrice": "pre_market_price",
+    "postMarketPrice": "post_market_price",
+}
+
+
+def _info_attrs(coordinator: MarketCoordinator, key: str, price: float | None) -> dict[str, Any]:
+    """Translate yfinance .info into snake_case attrs + derived change_pct.
+
+    iprak/yahoofinance gets ``fiftyTwoWeekHighChangePercent`` etc. directly
+    from Yahoo's v7 quote API. yfinance's .info doesn't ship those derived
+    percentages so we compute them ourselves against the current price.
+    Returns ``{}`` when detailed-attrs is off or yfinance returned nothing
+    for this symbol.
+    """
+    info = (coordinator.data or {}).get("info", {}).get(key, {}) or {}
+    if not info:
+        return {}
+    out: dict[str, Any] = {}
+    for src, dst in _INFO_KEY_MAP.items():
+        v = info.get(src)
+        if v is not None:
+            out[dst] = v
+    if price is not None and price > 0:
+        for src, dst in (
+            ("fiftyTwoWeekHigh", "fifty_two_week_high_change_pct"),
+            ("fiftyTwoWeekLow", "fifty_two_week_low_change_pct"),
+            ("fiftyDayAverage", "fifty_day_average_change_pct"),
+            ("twoHundredDayAverage", "two_hundred_day_average_change_pct"),
+        ):
+            base = info.get(src)
+            if isinstance(base, (int, float)) and base > 0:
+                out[dst] = round((price / base - 1) * 100, 2)
+    return out
+
+
 def _finite(value: Any) -> float | None:
     """Defense-in-depth guard for native_value.
 
@@ -120,7 +179,9 @@ class IndexSensor(_MarketBase):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         data = (self.coordinator.data or {}).get("indices", {})
-        return {k: v for k, v in data.get(self._index, {}).items() if k != "price"}
+        base = {k: v for k, v in data.get(self._index, {}).items() if k != "price"}
+        base.update(_info_attrs(self.coordinator, self._index, self.native_value))
+        return base
 
 
 class FXSensor(_MarketBase):
@@ -144,7 +205,9 @@ class FXSensor(_MarketBase):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         data = (self.coordinator.data or {}).get("fx", {}).get(self._pair, {})
-        return {k: v for k, v in data.items() if k != "price"}
+        base = {k: v for k, v in data.items() if k != "price"}
+        base.update(_info_attrs(self.coordinator, self._pair, self.native_value))
+        return base
 
 
 class QuoteSensor(_MarketBase):
@@ -195,7 +258,9 @@ class QuoteSensor(_MarketBase):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {k: v for k, v in self._quote.items() if k != "price"}
+        base = {k: v for k, v in self._quote.items() if k != "price"}
+        base.update(_info_attrs(self.coordinator, self._ticker, self.native_value))
+        return base
 
 
 def _usdkrw(coord: MarketCoordinator) -> float | None:

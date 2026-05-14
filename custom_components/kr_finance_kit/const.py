@@ -27,6 +27,12 @@ CONF_KR_TICKER_NAMES = "kr_ticker_names"  # dict[stock_code, corp_name] for frie
 CONF_INCLUDE_INDICES = "include_indices"
 CONF_INCLUDE_US_INDICES = "include_us_indices"
 CONF_INCLUDE_FX = "include_fx"
+# When True, the coordinator pulls yfinance .info per ticker so sensors
+# expose richer attributes (52w high/low, 50d/200d MA, day high/low,
+# volumes, dividends, PE, marketState, pre/post-market prices). Costs
+# ~1 extra HTTP round-trip per ticker per poll, so it defaults OFF —
+# users who want the data turn it on in Options.
+CONF_INCLUDE_DETAILED_ATTRS = "include_detailed_attrs"
 
 SCAN_INTERVAL_MARKET = 60       # seconds — at least one market open
 SCAN_INTERVAL_MARKET_IDLE = 600  # seconds — both markets closed (overnight, weekends)

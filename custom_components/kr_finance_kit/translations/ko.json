@@ -11,14 +11,16 @@
           "other_tickers": "암호화폐·환율·선물 (CSV)",
           "include_indices": "코스피·코스닥 지수 포함",
           "include_us_indices": "나스닥·다우·S&P 500 지수 포함",
-          "include_fx": "USD/KRW 환율 포함"
+          "include_fx": "USD/KRW 환율 포함",
+          "include_detailed_attrs": "상세 attribute 포함 (52주 고/저, 50일·200일 평균, 일중 고/저, 거래량, 배당, PE, marketState)"
         },
         "data_description": {
           "opendart_api_key": "비워두면 공시 모니터링 + 종목명 자동 매핑이 비활성화됩니다 (시세는 정상 동작)",
           "kr_tickers": "예: 005930, 000660 — KOSPI는 6자리 그대로, KOSDAQ은 .KQ 접미사 (예 035720.KQ). OpenDart 키가 있으면 종목명도 자동으로 표시됩니다",
           "us_tickers": "예: AAPL, MSFT, TSLA",
           "other_tickers": "암호화폐: BTC-USD, ETH-USD. 환율: EUR=X, GBP=X. 선물: GC=F(금), CL=F(원유). 시장 시간 무관 24/7 갱신",
-          "include_us_indices": "활성화하면 sensor.fi_nasdaq / dow / sp500 추가됩니다"
+          "include_us_indices": "활성화하면 sensor.fi_nasdaq / dow / sp500 추가됩니다",
+          "include_detailed_attrs": "활성화하면 종목별로 yfinance .info를 추가로 호출 (폴링마다 1회 추가 HTTP). attribute에 fifty_two_week_high/low, fifty/two_hundred_day_average, regular_market_day_high/low/volume, dividend_*, forward_pe/trailing_pe, market_state, pre/post_market_price 노출"
         }
       }
     },
@@ -42,7 +44,8 @@
           "other_tickers": "암호화폐·환율·선물 (CSV)",
           "include_indices": "코스피·코스닥 지수 포함",
           "include_us_indices": "나스닥·다우·S&P 500 지수 포함",
-          "include_fx": "USD/KRW 환율 포함"
+          "include_fx": "USD/KRW 환율 포함",
+          "include_detailed_attrs": "상세 attribute 포함 (52주 고/저, 50일·200일 평균, 일중 고/저, 거래량, 배당, PE, marketState)"
         },
         "data_description": {
           "opendart_api_key": "변경 시 즉시 재검증됩니다. 키 폐기/재발급 시 새 키를 여기 붙여넣고 저장하세요. 비워두면 공시 + 종목명 매핑 비활성화",
@@ -51,7 +54,8 @@
           "other_tickers": "암호화폐·환율·선물 등 Yahoo ticker 형식. 시장 시간 무관 24/7 갱신. 예: BTC-USD, ETH-USD, EUR=X, GC=F",
           "include_indices": "비활성화 시 sensor.fi_kospi / kosdaq sensor가 제거됩니다",
           "include_us_indices": "비활성화 시 sensor.fi_nasdaq / dow / sp500 sensor가 제거됩니다",
-          "include_fx": "비활성화 시 sensor.fi_usdkrw sensor가 제거됩니다. 단, USD/KRW 환산 포트폴리오 합산 센서도 함께 비활성화되니 미국 보유 종목이 있으면 켜두시는 게 좋습니다"
+          "include_fx": "비활성화 시 sensor.fi_usdkrw sensor가 제거됩니다. 단, USD/KRW 환산 포트폴리오 합산 센서도 함께 비활성화되니 미국 보유 종목이 있으면 켜두시는 게 좋습니다",
+          "include_detailed_attrs": "활성화하면 종목별로 yfinance .info를 추가로 호출 (폴링마다 1회 추가 HTTP). attribute에 52주 고/저, 50일·200일 평균, 일중 고/저, 거래량, 배당, PE, market_state, pre/post_market_price 등 노출. 종목 많으면 트래픽 부담 ↑"
         }
       }
     },

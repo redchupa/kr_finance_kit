@@ -32,6 +32,7 @@ from .api.opendart import (
 )
 from .const import (
     CONF_DISCLOSURE_CORP_CODES,
+    CONF_INCLUDE_DETAILED_ATTRS,
     CONF_INCLUDE_FX,
     CONF_INCLUDE_INDICES,
     CONF_INCLUDE_US_INDICES,
@@ -109,6 +110,7 @@ _FORM_SCHEMA = vol.Schema(
         vol.Optional(CONF_INCLUDE_INDICES, default=True): bool,
         vol.Optional(CONF_INCLUDE_US_INDICES, default=True): bool,
         vol.Optional(CONF_INCLUDE_FX, default=True): bool,
+        vol.Optional(CONF_INCLUDE_DETAILED_ATTRS, default=False): bool,
     }
 )
 
@@ -157,6 +159,7 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_INCLUDE_INDICES: user_input.get(CONF_INCLUDE_INDICES, True),
                         CONF_INCLUDE_US_INDICES: user_input.get(CONF_INCLUDE_US_INDICES, True),
                         CONF_INCLUDE_FX: user_input.get(CONF_INCLUDE_FX, True),
+                        CONF_INCLUDE_DETAILED_ATTRS: user_input.get(CONF_INCLUDE_DETAILED_ATTRS, False),
                         CONF_POSITIONS: [],
                     },
                 )
@@ -216,6 +219,7 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
                         CONF_INCLUDE_INDICES: user_input.get(CONF_INCLUDE_INDICES, True),
                         CONF_INCLUDE_US_INDICES: user_input.get(CONF_INCLUDE_US_INDICES, True),
                         CONF_INCLUDE_FX: user_input.get(CONF_INCLUDE_FX, True),
+                        CONF_INCLUDE_DETAILED_ATTRS: user_input.get(CONF_INCLUDE_DETAILED_ATTRS, False),
                         # Holdings are service-managed; keep whatever we already have.
                         CONF_POSITIONS: self._current(CONF_POSITIONS, []),
                     },
@@ -234,6 +238,7 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
             CONF_INCLUDE_INDICES: self._current(CONF_INCLUDE_INDICES, True),
             CONF_INCLUDE_US_INDICES: self._current(CONF_INCLUDE_US_INDICES, True),
             CONF_INCLUDE_FX: self._current(CONF_INCLUDE_FX, True),
+            CONF_INCLUDE_DETAILED_ATTRS: self._current(CONF_INCLUDE_DETAILED_ATTRS, False),
         }
         return self.async_show_form(
             step_id="init",

@@ -231,6 +231,79 @@ async def _gather(symbols: list[str]) -> dict[str, dict[str, Any]]:
     return out
 
 
+_INFO_FIELDS_VERIFIED: tuple[str, ...] = (
+    # Verified present across EQUITY / INDEX / CRYPTOCURRENCY / CURRENCY in
+    # yfinance 0.2.x (see manual probe of AAPL, ^KS11, BTC-USD, 005930.KS,
+    # KRW=X). Fields not in this list are dropped silently — we never want
+    # the sensor to surface a key whose presence we haven't checked.
+    "fiftyTwoWeekHigh",
+    "fiftyTwoWeekLow",
+    "fiftyDayAverage",
+    "twoHundredDayAverage",
+    "regularMarketDayHigh",
+    "regularMarketDayLow",
+    "regularMarketVolume",
+    "marketState",
+    "currency",
+    "quoteType",
+    "longName",
+    "shortName",
+    "averageDailyVolume10Day",
+    "averageVolume",
+    # Equity-only (None for INDEX/CRYPTOCURRENCY/CURRENCY); we surface them
+    # when yfinance returns a finite number, drop otherwise.
+    "dividendRate",
+    "dividendYield",
+    "trailingAnnualDividendRate",
+    "dividendDate",
+    "forwardPE",
+    "trailingPE",
+    "preMarketPrice",
+    "postMarketPrice",
+)
+
+
+def _fetch_info_sync(symbol: str) -> dict[str, Any]:
+    """Pull yfinance .info for a single symbol and filter to verified keys.
+
+    Heavy call (extra HTTP round-trip vs. fast_info). Caller must gate
+    this behind the user's detailed-attrs option to avoid bloating the
+    polling budget.
+    """
+    import yfinance as yf
+    try:
+        info = yf.Ticker(symbol).info or {}
+    except Exception as err:  # noqa: BLE001
+        LOGGER.debug("yfinance .info(%s) failed: %s", symbol, err)
+        return {}
+    out: dict[str, Any] = {}
+    for key in _INFO_FIELDS_VERIFIED:
+        v = info.get(key)
+        if v is None:
+            continue
+        # NaN/inf guard for numeric fields (yfinance occasionally returns
+        # NaN for stale equity rows). String fields pass through.
+        if isinstance(v, (int, float)):
+            f = _safe_float(v)
+            if f is None:
+                continue
+            out[key] = f
+        else:
+            out[key] = v
+    return out
+
+
+async def fetch_info(symbols: list[str]) -> dict[str, dict[str, Any]]:
+    """Fetch yfinance .info for many symbols, sequentially in executor."""
+    if not symbols:
+        return {}
+    loop = asyncio.get_running_loop()
+    out: dict[str, dict[str, Any]] = {}
+    for sym in symbols:
+        out[sym] = await loop.run_in_executor(None, _fetch_info_sync, sym)
+    return out
+
+
 async def fetch_indices(names: list[str] | None = None) -> dict[str, dict[str, Any]]:
     """Fetch index quotes. ``names`` filters which subset to actually hit yfinance for.
 
