@@ -37,8 +37,12 @@ def ticker_device(market: str, ticker: str, label: str | None = None) -> DeviceI
     return _device(f"ticker_{market.lower()}_{ticker}", device_label)
 
 
-def disclosure_device(corp_code: str) -> DeviceInfo:
-    return _device(f"disclosure_{corp_code}", f"공시 {corp_code}")
+def disclosure_device(corp_code: str, label: str | None = None) -> DeviceInfo:
+    # When the OpenDart name resolver has a corp_name for this corp_code,
+    # use it as the device label so the HA UI surfaces "삼성전자 신규 공시"
+    # instead of "공시 00126380". Mirrors ticker_device's label-fallback.
+    device_label = label or f"공시 {corp_code}"
+    return _device(f"disclosure_{corp_code}", device_label)
 
 
 def portfolio_device() -> DeviceInfo:

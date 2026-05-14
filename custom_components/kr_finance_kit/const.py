@@ -25,6 +25,7 @@ CONF_OTHER_TICKER_LABELS = "other_ticker_labels"  # dict[ticker, friendly_label]
 CONF_US_TICKER_LABELS = "us_ticker_labels"  # dict[ticker, friendly_label] — same pattern as KR ticker names
 CONF_POSITIONS = "positions"  # list[{ticker, quantity, avg_price, market}]
 CONF_DISCLOSURE_CORP_CODES = "disclosure_corp_codes"
+CONF_DISCLOSURE_CORP_NAMES = "disclosure_corp_names"  # dict[corp_code, corp_name] for binary_sensor friendly label
 CONF_KR_TICKER_NAMES = "kr_ticker_names"  # dict[stock_code, corp_name] for friendly labels
 CONF_INCLUDE_INDICES = "include_indices"
 CONF_INCLUDE_US_INDICES = "include_us_indices"

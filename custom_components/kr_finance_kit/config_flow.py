@@ -32,6 +32,7 @@ from .api.opendart import (
 )
 from .const import (
     CONF_DISCLOSURE_CORP_CODES,
+    CONF_DISCLOSURE_CORP_NAMES,
     CONF_INCLUDE_DETAILED_ATTRS,
     CONF_INCLUDE_FX,
     CONF_INCLUDE_INDICES,
@@ -147,20 +148,26 @@ def _kr_tickers_to_stock_codes(kr_tickers: list[str]) -> list[str]:
 
 async def _enrich_kr_metadata(
     hass, api_key: str, kr_tickers: list[str]
-) -> tuple[list[str], dict[str, str]]:
+) -> tuple[list[str], dict[str, str], dict[str, str]]:
     """Resolve OpenDart corp_codes and Korean names for the user's KR tickers.
 
-    Both projections share the same cached corpCode.xml download, so this
-    is a single network round-trip (or zero, if cached). Returns
-    ``(corp_codes, names)`` where ``names`` maps the user's input string
-    (post-uppercase, including any ``.KS``/``.KQ`` suffix) to a Korean
-    company name.
+    All three projections share the same cached corpCode.xml download —
+    one network round-trip (or zero, if cached). Returns
+    ``(corp_codes, ticker_names, corp_names)``:
+
+    - ``corp_codes``: list[str] of unique 8-digit OpenDart corp codes
+      driving the disclosure binary_sensors.
+    - ``ticker_names``: dict[user_input_ticker → corp_name] feeding the
+      price-sensor friendly name (e.g. "035720.KQ" → "카카오").
+    - ``corp_names``: dict[corp_code → corp_name] feeding the disclosure
+      binary_sensor's device label so users see "삼성전자 신규 공시"
+      instead of "공시 00126380".
     """
     if not api_key or not kr_tickers:
-        return [], {}
+        return [], {}, {}
     stock_codes = _kr_tickers_to_stock_codes(kr_tickers)
     if not stock_codes:
-        return [], {}
+        return [], {}, {}
     corp_map = await resolve_corp_codes_by_stock(hass, api_key, stock_codes)
     name_map = await resolve_kr_ticker_names(hass, api_key, stock_codes)
     corp_codes = list(dict.fromkeys(corp_map.values()))  # preserve order, dedupe
@@ -172,7 +179,17 @@ async def _enrich_kr_metadata(
         bare = ticker.split(".")[0]
         if bare in name_map:
             keyed[ticker] = name_map[bare]
-    return corp_codes, keyed
+
+    # Build corp_code → corp_name so disclosure binary_sensors can label
+    # themselves with the human-readable company name. Both maps are keyed
+    # by the same stock_code, so a single zip-style merge gives us what
+    # the binary_sensor platform needs.
+    corp_names_by_code: dict[str, str] = {}
+    for stock, corp in corp_map.items():
+        nm = name_map.get(stock)
+        if nm:
+            corp_names_by_code[corp] = nm
+    return corp_codes, keyed, corp_names_by_code
 
 
 # Shared schema for both Config Flow's user step and Options Flow's init
@@ -225,7 +242,7 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if api_key and not await validate_api_key(self.hass, api_key):
                 errors[CONF_OPENDART_API_KEY] = "invalid_api_key"
             else:
-                corp_codes, ticker_names = await _enrich_kr_metadata(
+                corp_codes, ticker_names, corp_names = await _enrich_kr_metadata(
                     self.hass, api_key, kr
                 )
                 us_labels = await _enrich_other_labels(self.hass, us, us_labels_explicit)
@@ -240,6 +257,7 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_OTHER_TICKER_LABELS: other_labels,
                         CONF_OPENDART_API_KEY: api_key,
                         CONF_DISCLOSURE_CORP_CODES: corp_codes,
+                        CONF_DISCLOSURE_CORP_NAMES: corp_names,
                         CONF_KR_TICKER_NAMES: ticker_names,
                         CONF_INCLUDE_INDICES: user_input.get(CONF_INCLUDE_INDICES, True),
                         CONF_INCLUDE_US_INDICES: user_input.get(CONF_INCLUDE_US_INDICES, True),
@@ -291,7 +309,7 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
             if api_key and not await validate_api_key(self.hass, api_key):
                 errors[CONF_OPENDART_API_KEY] = "invalid_api_key"
             else:
-                corp_codes, ticker_names = await _enrich_kr_metadata(
+                corp_codes, ticker_names, corp_names = await _enrich_kr_metadata(
                     self.hass, api_key, kr
                 )
                 us_labels = await _enrich_other_labels(self.hass, us, us_labels_explicit)
@@ -306,6 +324,7 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
                         CONF_OTHER_TICKER_LABELS: other_labels,
                         CONF_OPENDART_API_KEY: api_key,
                         CONF_DISCLOSURE_CORP_CODES: corp_codes,
+                        CONF_DISCLOSURE_CORP_NAMES: corp_names,
                         CONF_KR_TICKER_NAMES: ticker_names,
                         CONF_INCLUDE_INDICES: user_input.get(CONF_INCLUDE_INDICES, True),
                         CONF_INCLUDE_US_INDICES: user_input.get(CONF_INCLUDE_US_INDICES, True),

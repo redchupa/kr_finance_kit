@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, ENTITY_ID_PREFIX, TZ_KST
+from .const import CONF_DISCLOSURE_CORP_NAMES, DOMAIN, ENTITY_ID_PREFIX, TZ_KST
 from .coordinator import DisclosureCoordinator
 from .device import disclosure_device
 
@@ -29,7 +29,15 @@ async def async_setup_entry(
         return
 
     corp_codes = entry.data.get("disclosure_corp_codes", []) or []
-    entities = [DisclosureBinarySensor(disclosure, code) for code in corp_codes]
+    # corp_name lookup feeds the binary_sensor device label so the HA UI
+    # shows "삼성전자 신규 공시" instead of "공시 00126380". Read via the
+    # entry's options-first projection so Options edits flow through.
+    config = {**entry.data, **(entry.options or {})}
+    corp_names: dict[str, str] = config.get(CONF_DISCLOSURE_CORP_NAMES, {}) or {}
+    entities = [
+        DisclosureBinarySensor(disclosure, code, label=corp_names.get(code))
+        for code in corp_codes
+    ]
     if entities:
         async_add_entities(entities)
 
@@ -38,13 +46,18 @@ class DisclosureBinarySensor(CoordinatorEntity[DisclosureCoordinator], BinarySen
     _attr_has_entity_name = True
     _attr_icon = "mdi:file-document-alert"
 
-    def __init__(self, coordinator: DisclosureCoordinator, corp_code: str) -> None:
+    def __init__(
+        self,
+        coordinator: DisclosureCoordinator,
+        corp_code: str,
+        label: str | None = None,
+    ) -> None:
         super().__init__(coordinator)
         self._corp_code = corp_code
         self._attr_unique_id = f"{DOMAIN}_disclosure_{corp_code}"
         self._attr_suggested_object_id = f"{ENTITY_ID_PREFIX}_disclosure_{corp_code}"
         self._attr_name = "신규 공시"
-        self._attr_device_info = disclosure_device(corp_code)
+        self._attr_device_info = disclosure_device(corp_code, label)
 
     def _latest(self) -> dict[str, Any] | None:
         for item in self.coordinator.data or []:
