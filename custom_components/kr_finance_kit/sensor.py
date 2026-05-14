@@ -396,6 +396,56 @@ class PortfolioKRWTotalSensor(_PortfolioBase):
         super().__init__(coordinator, "krw_total", "KRW", "mdi:briefcase-check")
 
 
+def _positions_breakdown(coord: "MarketCoordinator") -> list[dict[str, Any]]:
+    """Per-position enrichment: ticker → qty, avg, current, value, P/L, P/L%.
+
+    Read from coordinator.data (positions + quotes already populated).
+    Skips positions whose live quote isn't available yet (sensor is
+    still warming up). Returns a list ordered by market (KR first)
+    then ticker.
+    """
+    data = coord.data or {}
+    positions = data.get("positions", []) or []
+    kr_quotes = data.get("kr_quotes", {}) or {}
+    us_quotes = data.get("us_quotes", {}) or {}
+    out: list[dict[str, Any]] = []
+    for p in positions:
+        ticker = p.get("ticker")
+        market = p.get("market")
+        qty = float(p.get("quantity", 0) or 0)
+        avg = float(p.get("avg_price", 0) or 0)
+        quotes = kr_quotes if market == MARKET_KR else us_quotes
+        current = (quotes.get(ticker) or {}).get("price")
+        if current is None or qty <= 0:
+            continue
+        cost = avg * qty
+        value = float(current) * qty
+        pl = value - cost
+        pl_pct = (pl / cost * 100) if cost > 0 else None
+        out.append({
+            "ticker": ticker,
+            "market": market,
+            "quantity": qty,
+            "avg_price": avg,
+            "current_price": float(current),
+            "value": round(value, 2),
+            "cost": round(cost, 2),
+            "pl": round(pl, 2),
+            "pl_pct": round(pl_pct, 2) if pl_pct is not None else None,
+        })
+    out.sort(key=lambda x: (x["market"] != MARKET_KR, x["ticker"]))
+    return out
+
+
 class PortfolioKRWPLSensor(_PortfolioBase):
     def __init__(self, coordinator: MarketCoordinator) -> None:
         super().__init__(coordinator, "krw_pl", "KRW", "mdi:cash-multiple")
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        # Surfaces per-position breakdown so dashboards / Markdown
+        # cards can render a holdings table without needing a new
+        # entity per ticker. Attached to the KRW P/L sensor because
+        # that's the single "everything rolled up" handle most
+        # dashboards already template against.
+        return {"positions": _positions_breakdown(self.coordinator)}
