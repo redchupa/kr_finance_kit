@@ -14,13 +14,7 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import config_validation as cv
 
 from .const import (
-    CONF_DISCLOSURE_CORP_CODES,
-    CONF_INCLUDE_FX,
-    CONF_INCLUDE_INDICES,
-    CONF_KR_TICKERS,
-    CONF_OPENDART_API_KEY,
     CONF_POSITIONS,
-    CONF_US_TICKERS,
     DOMAIN,
     LOGGER,
     MARKET_KR,
@@ -53,21 +47,19 @@ def _first_entry(hass: HomeAssistant) -> ConfigEntry | None:
 
 
 def _save_positions(hass: HomeAssistant, entry: ConfigEntry, positions: list[dict[str, Any]]) -> None:
-    new_options = {
-        CONF_KR_TICKERS: entry.options.get(CONF_KR_TICKERS, entry.data.get(CONF_KR_TICKERS, [])),
-        CONF_US_TICKERS: entry.options.get(CONF_US_TICKERS, entry.data.get(CONF_US_TICKERS, [])),
-        CONF_DISCLOSURE_CORP_CODES: entry.options.get(
-            CONF_DISCLOSURE_CORP_CODES, entry.data.get(CONF_DISCLOSURE_CORP_CODES, [])
-        ),
-        CONF_OPENDART_API_KEY: entry.options.get(
-            CONF_OPENDART_API_KEY, entry.data.get(CONF_OPENDART_API_KEY, "")
-        ),
-        CONF_INCLUDE_INDICES: entry.options.get(
-            CONF_INCLUDE_INDICES, entry.data.get(CONF_INCLUDE_INDICES, True)
-        ),
-        CONF_INCLUDE_FX: entry.options.get(CONF_INCLUDE_FX, entry.data.get(CONF_INCLUDE_FX, True)),
-        CONF_POSITIONS: positions,
-    }
+    """Persist positions onto entry.options without dropping any other key.
+
+    Earlier this function rebuilt entry.options from scratch using an
+    explicit list of six keys. That silently nuked every other option
+    the user had set — other_tickers, ticker_labels, US/global index
+    toggles, P/L alert threshold, disclosure category filter,
+    detailed_attrs, target_currency_krw, etc. — turning those sensors
+    into "restored / unavailable" on the next reload because the
+    coordinator no longer saw the tickers and the platform skipped
+    them in add_entities. We now spread the existing options dict and
+    only overwrite the positions slot, so every other field survives.
+    """
+    new_options = {**(entry.options or {}), CONF_POSITIONS: positions}
     hass.config_entries.async_update_entry(entry, options=new_options)
 
 
