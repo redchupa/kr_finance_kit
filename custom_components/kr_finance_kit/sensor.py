@@ -36,6 +36,29 @@ def _entry_value(entry: ConfigEntry, key: str, default: Any) -> Any:
     return (entry.options or entry.data).get(key, default)
 
 
+_SHORT_WINDOW_MINUTES: tuple[tuple[int, str], ...] = (
+    (15, "change_pct_15min"),
+    (30, "change_pct_30min"),
+    (60, "change_pct_1h"),
+)
+
+
+def _short_window_attrs(coordinator: "MarketCoordinator", ticker: str) -> dict[str, Any]:
+    """Per-ticker rolling-window % change attributes.
+
+    Reads the coordinator's in-memory ring buffer. Each entry is dropped
+    when the buffer doesn't yet hold a sample old enough to anchor the
+    comparison — that keeps HA's history charts from filling with a
+    leading zero during the first ~hour after restart.
+    """
+    out: dict[str, Any] = {}
+    for minutes, attr in _SHORT_WINDOW_MINUTES:
+        pct = coordinator.price_change_pct(ticker, minutes)
+        if pct is not None:
+            out[attr] = pct
+    return out
+
+
 def _krw_attr(coordinator: "MarketCoordinator", market: str, price: float | None) -> dict[str, Any]:
     """Add a ``price_krw`` attribute for USD-denominated assets when the
     target-currency option is enabled.
@@ -295,6 +318,7 @@ class QuoteSensor(_MarketBase):
         base = {k: v for k, v in self._quote.items() if k != "price"}
         base.update(_info_attrs(self.coordinator, self._ticker, self.native_value))
         base.update(_krw_attr(self.coordinator, self._market, self.native_value))
+        base.update(_short_window_attrs(self.coordinator, self._ticker))
         return base
 
 

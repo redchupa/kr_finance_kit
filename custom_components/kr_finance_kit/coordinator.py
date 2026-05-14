@@ -16,7 +16,8 @@ data instead of marking the integration unavailable.
 """
 from __future__ import annotations
 
-from datetime import timedelta
+from collections import deque
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -67,6 +68,12 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         self._entry = entry
         self._failures = 0
+        # Ring buffer per ticker for short-window change_pct attributes.
+        # Capacity 70 entries × ~60s polling = ~70 min, comfortably covering
+        # the 60-minute window with a buffer for jitter / idle-mode dial-down.
+        # Entries: (utc_timestamp, price). Memory only — lost on HA restart,
+        # so the first ~hour after restart has change_pct_* attributes None.
+        self._price_history: dict[str, deque[tuple[datetime, float]]] = {}
 
     @property
     def _config(self) -> dict[str, Any]:
@@ -95,6 +102,43 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     @property
     def positions(self) -> list[dict[str, Any]]:
         return list(self._config.get(CONF_POSITIONS, []))
+
+    def _push_price_history(self, data: dict[str, Any]) -> None:
+        """Append current prices to the per-ticker ring buffer."""
+        now = datetime.now(timezone.utc)
+        for src in ("kr_quotes", "us_quotes", "other_quotes"):
+            for ticker, quote in (data.get(src) or {}).items():
+                price = quote.get("price") if isinstance(quote, dict) else None
+                if not isinstance(price, (int, float)):
+                    continue
+                buf = self._price_history.setdefault(ticker, deque(maxlen=70))
+                buf.append((now, float(price)))
+
+    def price_change_pct(self, ticker: str, minutes: int) -> float | None:
+        """Compute % change vs. the oldest sample within the last ``minutes``.
+
+        Returns None when the buffer hasn't accumulated enough data
+        (HA fresh restart, ticker just added), the oldest in-window
+        sample is zero, or the window is shorter than our polling
+        interval. Picks the sample closest to ``now - minutes`` from
+        the inside so we never use stale data outside the requested
+        window.
+        """
+        buf = self._price_history.get(ticker)
+        if not buf:
+            return None
+        latest_ts, latest_price = buf[-1]
+        if latest_price <= 0:
+            return None
+        cutoff = latest_ts - timedelta(minutes=minutes)
+        baseline = None
+        for ts, price in buf:
+            if ts >= cutoff and price > 0:
+                baseline = price
+                break
+        if baseline is None or baseline <= 0:
+            return None
+        return round((latest_price / baseline - 1) * 100, 2)
 
     def _retune_interval(self) -> None:
         target_secs = SCAN_INTERVAL_MARKET if any_market_open() else SCAN_INTERVAL_MARKET_IDLE
@@ -196,7 +240,7 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         self._failures = 0
         self._retune_interval()
-        return {
+        result = {
             "indices": indices,
             "fx": fx,
             "kr_quotes": kr_quotes,
@@ -207,6 +251,8 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "kr_market_open": kr_open,
             "us_market_open": us_open,
         }
+        self._push_price_history(result)
+        return result
 
 
 class DisclosureCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):

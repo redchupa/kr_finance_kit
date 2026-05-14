@@ -198,7 +198,19 @@ action:
 
 입력 항목: 알림 받을 종목(여러 개 선택) · 하락 임계값(예 -5) · 상승 임계값(예 5) · **알림 보낼 대상**(mobile_app 등 notify entity, 드롭다운에서 검색·선택).
 
-### 2. 일일 시장 요약
+### 2. 단기 변동률 알림 (15·30·60분 윈도우)
+
+선택한 종목이 지정 시간 안에 ±임계값을 넘으면 푸시. v0.1.45부터 coordinator가 ticker별 가격 history를 메모리에 저장해서 `change_pct_15min` / `_30min` / `_1h` attribute로 노출 — 그 attribute를 트리거로 사용.
+
+[![내 Home Assistant에서 블루프린트 import 열기](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fshort_window_alert.yaml)
+
+수동 import URL: `https://github.com/redchupa/kr_finance_kit/blob/main/blueprints/automation/kr_finance_kit/short_window_alert.yaml`
+
+입력 항목: 알림 받을 종목 · 윈도우(15/30/60분) · 하락 임계값(예 -2) · 상승 임계값(예 2) · 알림 보낼 대상.
+
+> **HA 재시작 직후 약 1시간**은 history buffer가 비어있어 트리거 안 됨. 60분 윈도우 기준 1시간 후부터 동작 정상.
+
+### 3. 일일 시장 요약
 
 지정한 시각(기본 한국 장 마감 15:30)에 코스피·코스닥·환율·선택 종목·보유 종목 평가손익을 한 메시지로 발송.
 

@@ -1,0 +1,102 @@
+blueprint:
+  name: KR Finance Kit — 단기 변동률 알림 (15·30·60분)
+  description: |
+    선택한 종목이 지정한 시간 윈도우 안에서 ±임계값을 넘으면 알림.
+    예) 30분 안에 ±2% 변동 → 알림.
+
+    동작 원리: KR Finance Kit이 폴링마다 각 종목 가격을 메모리에 저장하고
+    sensor attribute로 `change_pct_15min` / `change_pct_30min` /
+    `change_pct_1h`를 노출합니다. 이 블루프린트는 그 attribute를
+    numeric_state 트리거로 받습니다.
+
+    참고: HA를 재시작하면 가격 history가 비워져 첫 윈도우만큼 attribute가
+    None 상태. 60분 윈도우면 재시작 직후 약 1시간 동안 트리거 안 됨.
+  domain: automation
+  source_url: https://github.com/redchupa/kr_finance_kit/blob/main/blueprints/automation/kr_finance_kit/short_window_alert.yaml
+  input:
+    target_tickers:
+      name: 알림 받을 종목
+      description: KR Finance Kit이 만든 종목 시세 sensor를 선택하세요. 여러 개 선택 가능.
+      selector:
+        entity:
+          integration: kr_finance_kit
+          domain: sensor
+          multiple: true
+    window_attribute:
+      name: 변동률 윈도우
+      description: 어떤 시간 윈도우의 변동률을 트리거로 쓸지 선택.
+      default: change_pct_30min
+      selector:
+        select:
+          options:
+            - label: 15분
+              value: change_pct_15min
+            - label: 30분
+              value: change_pct_30min
+            - label: 1시간
+              value: change_pct_1h
+    drop_threshold_pct:
+      name: 하락 임계값 (%)
+      description: change_pct가 이 값 이하면 알림. 음수로 입력 (예 -2 = 2% 이상 하락).
+      default: -2
+      selector:
+        number:
+          min: -50
+          max: 0
+          step: 0.5
+          unit_of_measurement: "%"
+          mode: box
+    rise_threshold_pct:
+      name: 상승 임계값 (%)
+      description: change_pct가 이 값 이상이면 알림. 양수로 입력.
+      default: 2
+      selector:
+        number:
+          min: 0
+          max: 50
+          step: 0.5
+          unit_of_measurement: "%"
+          mode: box
+    notify_target:
+      name: 알림 보낼 대상
+      description: |
+        알림을 받을 모바일 앱(또는 다른 notify entity)을 검색·선택하세요.
+        mobile_app 같은 HA 2024.6+ entity-based notify와 호환됩니다.
+      selector:
+        target:
+          entity:
+            domain: notify
+
+mode: parallel
+max: 30
+
+trigger:
+  - platform: numeric_state
+    entity_id: !input target_tickers
+    attribute: !input window_attribute
+    above: !input rise_threshold_pct
+    id: rise
+  - platform: numeric_state
+    entity_id: !input target_tickers
+    attribute: !input window_attribute
+    below: !input drop_threshold_pct
+    id: drop
+
+variables:
+  window_attr: !input window_attribute
+
+action:
+  - variables:
+      pct: "{{ state_attr(trigger.entity_id, window_attr) }}"
+      price: "{{ states(trigger.entity_id) }}"
+      label: "{{ state_attr(trigger.entity_id, 'friendly_name') or trigger.entity_id }}"
+      direction: "{{ '급등' if trigger.id == 'rise' else '급락' }}"
+      window_label: >-
+        {% if window_attr == 'change_pct_15min' %}15분
+        {% elif window_attr == 'change_pct_30min' %}30분
+        {% else %}1시간{% endif %}
+  - service: notify.send_message
+    target: !input notify_target
+    data:
+      title: "KR Finance Kit · {{ window_label }} {{ direction }}"
+      message: "{{ label }} {{ window_label }} {{ pct }}% — 현재가 {{ price }}"
