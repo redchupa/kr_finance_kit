@@ -68,7 +68,6 @@ Each field label carries a paste-ready example after the colon.
 | Convert USD assets to KRW | Adds `price_krw` to USD QuoteSensors (default ☐) |
 | Portfolio P/L alert threshold % | 0 disables. Set 5 → binary_sensor flips when cost-basis P/L crosses ±5% |
 | Disclosure category filter | Multi-select from 10 OpenDart pblntf_ty codes. Empty = all |
-| Short-window minutes (CSV) | E.g. `15, 30, 60`. Need 31? Add `31` |
 
 ---
 
@@ -133,7 +132,7 @@ Triggers off `change_pct`. Inputs: tickers · drop threshold · rise threshold �
 ### 2. Short-window alert (user-defined minutes)
 [![import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fshort_window_alert.yaml)
 
-v0.1.52+: **free-form minute entry**. Want 31 minutes? Add `31` to the option-screen "Short-window minutes" field → set the blueprint's number to 31 → triggers off `change_pct_31min`.
+v0.1.53+: the sensor exposes **1, 5, 15, 30, 60, 90, 120, 180 minute** attributes out of the box (no option to configure). The blueprint's number input accepts any of those values; per-ticker different minutes = one blueprint instance per ticker.
 
 > 📥 **Warm-up after import** — the first alert needs one window's worth of samples
 > ⚠️ **HA restart caveat** — N-min window is None for ~N minutes after restart (memory-only buffer)
@@ -282,7 +281,8 @@ Sensors only. Pipe into [apexcharts-card](https://github.com/RomRider/apexcharts
 | v0.1.32–v0.1.33 → v0.1.34+ | `sensor.kr_finance_kit_*` → `sensor.fi_*`. Delete + re-add or rename entity_ids manually. |
 | ≤v0.1.43 → v0.1.44+ | Five new options (target_currency_krw, P/L alert, market_close events, global indices, disclosure filter) — open and save Options once. |
 | ≤v0.1.47 → v0.1.48+ | config_flow 500 error fix (frontend-compatible selectors). |
-| ≤v0.1.51 → v0.1.52+ | Short-window minutes now free-form — add the minutes you want to "Short-window minutes" option. |
+| ≤v0.1.51 → v0.1.52 | Short-window minutes was briefly a CSV option (now removed). |
+| ≤v0.1.52 → v0.1.53+ | Option dropped; sensor always emits 1/5/15/30/60/90/120/180-min attributes. Blueprint's number input picks one of those. |
 
 ---
 

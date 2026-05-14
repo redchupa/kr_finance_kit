@@ -1,23 +1,25 @@
 blueprint:
   name: KR Finance Kit — 단기 변동률 알림 (분 단위 자유 입력)
   description: |
-    선택한 종목이 사용자 지정 시간 윈도우 안에서 ±임계값을 넘으면 알림.
-    예) 31분 안에 ±2% 변동 → 알림.
+    선택한 종목이 지정한 시간 윈도우 안에서 ±임계값을 넘으면 알림.
+    예) 30분 안에 ±2% 변동 → 알림.
 
-    동작 원리: KR Finance Kit 옵션 화면의 "단기 변동률 윈도우 분" 항목에
-    원하는 분(예 "15, 30, 31, 60")을 CSV로 등록하면, 각 QuoteSensor에
-    `change_pct_15min` / `change_pct_31min` / `change_pct_60min` 같은
-    attribute가 자동 생성됩니다. 이 블루프린트는 그 attribute를
-    state 트리거 + template condition으로 받습니다.
+    KR Finance Kit의 모든 QuoteSensor는 1·5·15·30·60·90·120·180분
+    8개 윈도우의 `change_pct_<N>min` attribute를 자동으로 노출합니다.
+    이 블루프린트는 그 중 하나를 사용자 선택 → state + template
+    트리거로 받습니다.
 
     📥 **Import 직후 warm-up 필요** — 블루프린트는 즉시 등록되지만 첫
-    알림은 선택한 분만큼 가격 샘플이 쌓여야 옵니다 (예 31분 윈도우 =
-    HA 시작 후 약 31분).
+    알림은 선택한 분만큼 가격 샘플이 쌓여야 옵니다 (예 30분 윈도우 =
+    HA 시작 후 약 30분).
 
     ⚠️ **HA 재시작 시 주의** — 가격 history는 메모리에만 보관됩니다.
     HA Restart 직후 N분 윈도우는 약 N분 동안 attribute가 None →
-    자동화가 트리거되지 않습니다. coordinator ring buffer 최대 300분
-    (5시간) 까지 지원.
+    자동화가 트리거되지 않습니다.
+
+    💡 **종목별 다른 분 트리거**는 이 블루프린트로 자동화를 여러 개
+    만들면 됩니다 (자동화 1: 종목=[삼성전자], 윈도우=15 / 자동화 2:
+    종목=[비트코인], 윈도우=60 식).
   domain: automation
   source_url: https://github.com/redchupa/kr_finance_kit/blob/main/blueprints/automation/kr_finance_kit/short_window_alert.yaml
   input:
@@ -32,14 +34,14 @@ blueprint:
     window_minutes:
       name: 변동률 윈도우 (분)
       description: |
-        몇 분 윈도우의 변동률을 트리거로 쓸지. 옵션 화면에서 등록한
-        분과 일치해야 attribute가 존재합니다 (예: 31 입력하려면 옵션의
-        "단기 변동률 윈도우 분"에 31이 포함돼 있어야 함).
+        몇 분 윈도우의 변동률을 트리거로 쓸지. **1·5·15·30·60·90·120·180**
+        분 중에서 선택하세요. 다른 분(예 31)을 입력하면 해당 attribute가
+        sensor에 없어 트리거되지 않습니다.
       default: 30
       selector:
         number:
           min: 1
-          max: 300
+          max: 180
           step: 1
           unit_of_measurement: "min"
           mode: box
