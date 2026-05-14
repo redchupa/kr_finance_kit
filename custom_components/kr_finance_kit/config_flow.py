@@ -348,7 +348,19 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
         self._entry = entry
 
     def _current(self, key: str, default: Any = None) -> Any:
-        return (self._entry.options or self._entry.data).get(key, default)
+        """Look up a config value, options layered on top of data.
+
+        We merge instead of ``entry.options or entry.data`` because
+        options can hold a *partial* dict (e.g. only the toggles the
+        user has touched, with tickers never re-saved). Under the OR
+        form a single key in options shadows everything in data and
+        the options screen pre-fills with blanks — exactly the bug
+        that drove v0.1.56. Merging keeps options as the source of
+        truth for whatever it actually contains while letting data
+        cover the rest.
+        """
+        merged = {**(self._entry.data or {}), **(self._entry.options or {})}
+        return merged.get(key, default)
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         errors: dict[str, str] = {}

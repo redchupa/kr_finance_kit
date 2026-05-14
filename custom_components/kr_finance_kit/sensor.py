@@ -35,7 +35,17 @@ from .portfolio import compute_totals
 
 
 def _entry_value(entry: ConfigEntry, key: str, default: Any) -> Any:
-    return (entry.options or entry.data).get(key, default)
+    """Look up a config value, options layered on top of data.
+
+    Merge (not ``entry.options or entry.data``) so a partial options
+    dict — e.g. only the toggles the user has saved, with tickers and
+    labels still living in data — doesn't blackhole the entry.data
+    side. Matches coordinator._config and config_flow._current; under
+    the OR form a single key in options would shadow everything in
+    data and the sensor platform would skip half the entities.
+    """
+    merged = {**(entry.data or {}), **(entry.options or {})}
+    return merged.get(key, default)
 
 
 def _slug(value: str) -> str:
