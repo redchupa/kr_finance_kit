@@ -24,7 +24,14 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.selector import (
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+)
 
 from .api.opendart import (
     resolve_corp_codes_by_stock,
@@ -215,12 +222,22 @@ _FORM_SCHEMA = vol.Schema(
         vol.Optional(CONF_INCLUDE_FX, default=True): bool,
         vol.Optional(CONF_INCLUDE_DETAILED_ATTRS, default=False): bool,
         vol.Optional(CONF_TARGET_CURRENCY_KRW, default=False): bool,
-        vol.Optional(CONF_PORTFOLIO_PL_ALERT_PCT, default=0): vol.All(
-            vol.Coerce(float), vol.Range(min=0, max=100)
+        # NumberSelector + SelectSelector(multiple=True) are required because
+        # HA's voluptuous-serialize layer (which converts the flow schema to
+        # JSON for the frontend) doesn't know how to render arbitrary
+        # `vol.All(...)` wrappers. The v0.1.44 attempt to use `vol.All` for
+        # these two fields raised a 500 Internal Server Error when the
+        # frontend tried to load the form — selectors are the HA-blessed
+        # path for ranged numbers and multi-select lists.
+        vol.Optional(CONF_PORTFOLIO_PL_ALERT_PCT, default=0): NumberSelector(
+            NumberSelectorConfig(min=0, max=100, step=0.5, mode=NumberSelectorMode.BOX)
         ),
-        vol.Optional(CONF_DISCLOSURE_CATEGORIES, default=[]): vol.All(
-            cv.ensure_list,
-            [vol.In(list(DISCLOSURE_CATEGORY_CODES))],
+        vol.Optional(CONF_DISCLOSURE_CATEGORIES, default=[]): SelectSelector(
+            SelectSelectorConfig(
+                options=list(DISCLOSURE_CATEGORY_CODES),
+                multiple=True,
+                mode=SelectSelectorMode.DROPDOWN,
+            )
         ),
     }
 )
