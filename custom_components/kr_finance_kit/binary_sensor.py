@@ -75,7 +75,8 @@ class DisclosureBinarySensor(CoordinatorEntity[DisclosureCoordinator], BinarySen
         self._corp_code = corp_code
         self._attr_unique_id = f"{DOMAIN}_disclosure_{corp_code}"
         self._attr_suggested_object_id = f"{ENTITY_ID_PREFIX}_disclosure_{corp_code}"
-        self._attr_name = "신규 공시"
+        # Translation key — friendly name comes from translations/<lang>.json.
+        self._attr_translation_key = "new_disclosure"
         self._attr_device_info = disclosure_device(corp_code, label)
 
     def _latest(self) -> dict[str, Any] | None:
@@ -116,7 +117,7 @@ class PortfolioPLAlertBinarySensor(CoordinatorEntity[MarketCoordinator], BinaryS
 
     _attr_has_entity_name = True
     _attr_icon = "mdi:trending-up"
-    _attr_name = "평가손익 알림"
+    _attr_translation_key = "pl_alert"
 
     def __init__(self, coordinator: MarketCoordinator, threshold_pct: float) -> None:
         super().__init__(coordinator)

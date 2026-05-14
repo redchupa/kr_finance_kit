@@ -103,20 +103,45 @@ Each field label carries a paste-ready example after the colon.
 
 ---
 
-## Recording holdings (service)
+## Recording holdings (service / action)
 
-Holdings (quantity + average cost) go through a **service call**, not the option form, so they stay in HA's encrypted store.
+Holdings (quantity + average cost) are entered as a **service call**, not on the option form, so they stay in HA's encrypted store.
 
-**Developer tools → Services → `kr_finance_kit.add_position`**
+### 1. Where to enter them
 
-| Input | Example |
-|---|---|
-| ticker | `005930` / `AAPL` / `BTC-USD` |
-| quantity | `10` |
-| avg_price | `60000` (KR in KRW, US/Other in native currency) |
-| market | `KR` / `US` |
+**Settings → Developer Tools → Actions tab** → type `kr_finance_kit.add_position` in the search box → the form appears.
 
-Use `kr_finance_kit.remove_position` to remove. Recorded holdings drive the six portfolio sensors and the P/L alert binary_sensor.
+> HA 2024.8+ renamed the old "Services" tab to "Actions". Same screen — only the label moved.
+
+### 2. Fields
+
+| UI label | Key | Example | Notes |
+|---|---|---|---|
+| Ticker / symbol | `ticker` | `005930` / `AAPL` / `BTC-USD` | KR uses the 6-digit code, US uses the symbol |
+| Quantity | `quantity` | `10` | Number of shares |
+| Average price | `avg_price` | `60000` (KR=KRW) / `180.5` (US=USD) | In the market's native currency |
+| Market | `market` | `KR` or `US` | Radio button |
+
+After saving, the six portfolio sensors (`sensor.fi_portfolio_*`) and the P/L alert binary_sensor turn on automatically.
+
+### 3. Removing
+
+In the same screen pick `kr_finance_kit.remove_position` → enter `ticker` + `market` → run.
+
+### 4. Bulk-import via YAML (optional)
+
+If you want to record many tickers at once, click "Go to YAML mode" on the Actions tab:
+
+```yaml
+action: kr_finance_kit.add_position
+data:
+  ticker: "005930"
+  quantity: 10
+  avg_price: 60000
+  market: KR
+```
+
+Run the action once per ticker. Wrap them in a startup automation to repopulate on HA boot if you prefer.
 
 ---
 

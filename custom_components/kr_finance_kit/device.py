@@ -22,32 +22,37 @@ def _device(suffix: str, label: str) -> DeviceInfo:
     )
 
 
+# Device names are intentionally in English. HACS users come from many
+# locales, and device-name i18n in HA registry is per-install (user can
+# rename in the UI). Entity friendly names are translated via
+# translations/<lang>.json + _attr_translation_key.
 def market_device() -> DeviceInfo:
-    return _device("market", "한국 시장 지표")
+    return _device("market", "KR Indices")
 
 
 def us_market_device() -> DeviceInfo:
-    return _device("us_market", "미국 시장 지수")
+    return _device("us_market", "US Indices")
 
 
 def global_market_device() -> DeviceInfo:
-    return _device("global_market", "글로벌 시장 지수")
+    return _device("global_market", "Global Indices")
 
 
 def ticker_device(market: str, ticker: str, label: str | None = None) -> DeviceInfo:
-    # When we have a friendly label (e.g. "삼성전자"), surface it in the device
-    # panel; otherwise fall back to the raw "{MARKET} {TICKER}" form.
+    # When we have a friendly label (e.g. "삼성전자" or "Apple"), surface it.
+    # That label comes from the user's own input (kr_ticker_names /
+    # us_ticker_labels) and OpenDart corp resolution — so it stays in
+    # whatever language the user typed.
     device_label = label or f"{market} {ticker}"
     return _device(f"ticker_{market.lower()}_{ticker}", device_label)
 
 
 def disclosure_device(corp_code: str, label: str | None = None) -> DeviceInfo:
-    # When the OpenDart name resolver has a corp_name for this corp_code,
-    # use it as the device label so the HA UI surfaces "삼성전자 신규 공시"
-    # instead of "공시 00126380". Mirrors ticker_device's label-fallback.
-    device_label = label or f"공시 {corp_code}"
+    # When OpenDart resolved a corp_name for this corp_code, use it
+    # ("삼성전자 New disclosure"); otherwise fall back to the corp_code.
+    device_label = label or f"Disclosure {corp_code}"
     return _device(f"disclosure_{corp_code}", device_label)
 
 
 def portfolio_device() -> DeviceInfo:
-    return _device("portfolio", "보유 종목")
+    return _device("portfolio", "Portfolio")

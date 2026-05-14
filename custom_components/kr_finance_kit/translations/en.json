@@ -71,5 +71,39 @@
     "error": {
       "invalid_api_key": "OpenDart key is not valid. Verify it at opendart.fss.or.kr."
     }
+  },
+  "entity": {
+    "sensor": {
+      "portfolio_kr_value": {"name": "KR portfolio value"},
+      "portfolio_kr_pl": {"name": "KR portfolio P/L"},
+      "portfolio_us_value": {"name": "US portfolio value"},
+      "portfolio_us_pl": {"name": "US portfolio P/L"},
+      "portfolio_krw_total": {"name": "Total value (KRW)"},
+      "portfolio_krw_pl": {"name": "Total P/L (KRW)"}
+    },
+    "binary_sensor": {
+      "new_disclosure": {"name": "New disclosure"},
+      "pl_alert": {"name": "P/L alert"}
+    }
+  },
+  "services": {
+    "add_position": {
+      "name": "Add / update holding",
+      "description": "Add or update a holding (quantity + average purchase price). Stored in encrypted ConfigEntry options — never persisted to source files.",
+      "fields": {
+        "ticker": {"name": "Ticker / symbol", "description": "KR stock code (e.g. 005930) or US symbol (e.g. AAPL)."},
+        "quantity": {"name": "Quantity", "description": "Number of shares."},
+        "avg_price": {"name": "Average price", "description": "Average purchase price in market currency."},
+        "market": {"name": "Market", "description": "KR or US"}
+      }
+    },
+    "remove_position": {
+      "name": "Remove holding",
+      "description": "Remove a holding from the portfolio.",
+      "fields": {
+        "ticker": {"name": "Ticker / symbol", "description": "Ticker code or symbol to remove."},
+        "market": {"name": "Market", "description": "KR or US"}
+      }
+    }
   }
 }

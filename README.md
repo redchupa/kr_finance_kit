@@ -105,18 +105,43 @@
 
 ## 보유 종목 등록 (서비스)
 
-옵션 화면이 아닌 **서비스로 입력** — 평단가·수량은 HA 암호화 저장소에만.
+옵션 화면이 아닌 **HA 서비스(=동작)로 입력** — 평단가·수량은 HA 암호화 저장소에만 저장됩니다.
 
-**개발자 도구 → 서비스 → `kr_finance_kit.add_position`**
+### 1. 추가하는 위치
 
-| 입력 | 예시 |
-|---|---|
-| ticker | `005930` 또는 `AAPL` 또는 `BTC-USD` |
-| quantity | `10` |
-| avg_price | `60000` (KR 종목은 KRW, US/Other는 native currency) |
-| market | `KR` / `US` |
+**Settings → 개발자 도구(Developer Tools) → 동작(Actions) 탭** → 검색창에 `kr_finance_kit.add_position` 입력 → 폼이 자동으로 나타납니다.
 
-`kr_finance_kit.remove_position` 으로 제거. 등록된 종목은 6개 portfolio sensor + P/L alert binary_sensor의 기준.
+> HA 2024.8+ 부터 기존 "서비스(Services)" 탭이 "동작(Actions)" 으로 명칭만 변경됐습니다. 같은 화면입니다.
+
+### 2. 입력 필드
+
+| HA UI 라벨 | 키 | 예시 | 비고 |
+|---|---|---|---|
+| 종목 코드/심볼 | `ticker` | `005930` / `AAPL` / `BTC-USD` | KR은 6자리 숫자, US는 심볼 |
+| 수량 | `quantity` | `10` | 보유 주수 |
+| 평단가 | `avg_price` | `60000` (KR=KRW) / `180.5` (US=USD) | 시장 통화 그대로 |
+| 시장 | `market` | `KR` 또는 `US` | 라디오 버튼 |
+
+저장 후 6개 portfolio sensor (`sensor.fi_portfolio_*`) + P/L alert binary_sensor가 자동으로 활성화됩니다.
+
+### 3. 삭제
+
+같은 화면에서 `kr_finance_kit.remove_position` 선택 → `ticker` + `market` 입력 → 동작 수행.
+
+### 4. YAML로 일괄 등록 (선택)
+
+여러 종목을 한 번에 넣고 싶다면 개발자 도구 → 동작 → "YAML 모드로 이동":
+
+```yaml
+action: kr_finance_kit.add_position
+data:
+  ticker: "005930"
+  quantity: 10
+  avg_price: 60000
+  market: KR
+```
+
+종목별로 동작 1회씩 실행. 자동화 스크립트로 묶어두면 HA 시작 시 자동 등록도 가능.
 
 ---
 

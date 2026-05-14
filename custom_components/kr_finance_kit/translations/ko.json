@@ -71,5 +71,39 @@
     "error": {
       "invalid_api_key": "OpenDart 키가 유효하지 않습니다. opendart.fss.or.kr 에서 확인하세요."
     }
+  },
+  "entity": {
+    "sensor": {
+      "portfolio_kr_value": {"name": "한국 보유 평가금액"},
+      "portfolio_kr_pl": {"name": "한국 보유 평가손익"},
+      "portfolio_us_value": {"name": "미국 보유 평가금액"},
+      "portfolio_us_pl": {"name": "미국 보유 평가손익"},
+      "portfolio_krw_total": {"name": "총 평가금액 (KRW 환산)"},
+      "portfolio_krw_pl": {"name": "총 평가손익 (KRW 환산)"}
+    },
+    "binary_sensor": {
+      "new_disclosure": {"name": "신규 공시"},
+      "pl_alert": {"name": "평가손익 알림"}
+    }
+  },
+  "services": {
+    "add_position": {
+      "name": "보유 종목 추가/수정",
+      "description": "보유 종목(수량 + 평단가)을 추가하거나 수정합니다. ConfigEntry options에 암호화 저장 — 소스 파일에 기록되지 않습니다.",
+      "fields": {
+        "ticker": {"name": "종목 코드/심볼", "description": "한국 종목 코드 (예 005930) 또는 미국 심볼 (예 AAPL)."},
+        "quantity": {"name": "수량", "description": "보유 수량."},
+        "avg_price": {"name": "평단가", "description": "시장 통화 기준 평균 매입가."},
+        "market": {"name": "시장", "description": "KR 또는 US"}
+      }
+    },
+    "remove_position": {
+      "name": "보유 종목 삭제",
+      "description": "보유 종목을 삭제합니다.",
+      "fields": {
+        "ticker": {"name": "종목 코드/심볼", "description": "삭제할 종목 코드 또는 심볼."},
+        "market": {"name": "시장", "description": "KR 또는 US"}
+      }
+    }
   }
 }

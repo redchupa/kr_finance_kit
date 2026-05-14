@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+import re
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
@@ -35,6 +36,19 @@ from .portfolio import compute_totals
 
 def _entry_value(entry: ConfigEntry, key: str, default: Any) -> Any:
     return (entry.options or entry.data).get(key, default)
+
+
+def _slug(value: str) -> str:
+    """Sanitize a ticker/index into an entity_id-safe slug.
+
+    HA's entity_id grammar allows only ``[a-z0-9_]``. Tickers from
+    Yahoo carry hyphens, equals signs, and occasional whitespace
+    (``BTC-USD``, ``EUR=X``, ``GC=F``, ``Hang Seng``). We pre-collapse
+    every non-alphanumeric run — including spaces — to a single
+    underscore so every QuoteSensor lands on a predictable slug
+    (``sensor.fi_other_btc_usd``, ``sensor.fi_other_eur_x`` etc.).
+    """
+    return re.sub(r"[^a-z0-9_]+", "_", value.lower()).strip("_")
 
 
 def _short_window_attrs(coordinator: "MarketCoordinator", ticker: str) -> dict[str, Any]:
@@ -217,7 +231,7 @@ class IndexSensor(_MarketBase):
         # but entity_id is the shorter ENTITY_ID_PREFIX form to keep
         # automations + dashboards readable and to dodge collisions
         # with other finance integrations in the user's HA.
-        self._attr_suggested_object_id = f"{ENTITY_ID_PREFIX}_{index.lower()}"
+        self._attr_suggested_object_id = f"{ENTITY_ID_PREFIX}_{_slug(index)}"
         self._attr_name = index
         if market == MARKET_US:
             self._attr_device_info = us_market_device()
@@ -248,7 +262,7 @@ class FXSensor(_MarketBase):
         super().__init__(coordinator)
         self._pair = pair
         self._attr_unique_id = f"{DOMAIN}_fx_{pair.lower()}"
-        self._attr_suggested_object_id = f"{ENTITY_ID_PREFIX}_{pair.lower()}"
+        self._attr_suggested_object_id = f"{ENTITY_ID_PREFIX}_{_slug(pair)}"
         self._attr_name = pair
         self._attr_device_info = market_device()
 
@@ -285,7 +299,7 @@ class QuoteSensor(_MarketBase):
         self._market = market
         self._ticker = ticker
         self._attr_unique_id = f"{DOMAIN}_{market.lower()}_{ticker}"
-        self._attr_suggested_object_id = f"{ENTITY_ID_PREFIX}_{market.lower()}_{ticker.lower()}"
+        self._attr_suggested_object_id = f"{ENTITY_ID_PREFIX}_{market.lower()}_{_slug(ticker)}"
         # Device label is the single source of truth for the friendly
         # name: "삼성전자" when resolved, "KR 005930" otherwise. Both the
         # unique_id and entity_id stay code-based so automations don't
@@ -328,12 +342,15 @@ def _usdkrw(coord: MarketCoordinator) -> float | None:
 class _PortfolioBase(_MarketBase):
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, coordinator: MarketCoordinator, key: str, name: str, unit: str, icon: str) -> None:
+    def __init__(self, coordinator: MarketCoordinator, key: str, unit: str, icon: str) -> None:
         super().__init__(coordinator)
         self._key = key
         self._attr_unique_id = f"{DOMAIN}_portfolio_{key}"
         self._attr_suggested_object_id = f"{ENTITY_ID_PREFIX}_portfolio_{key.lower()}"
-        self._attr_name = name
+        # Friendly name resolved via translations/<lang>.json — keeps
+        # the entity readable in Korean for ko users AND English for
+        # everyone else, without changing the entity_id slug.
+        self._attr_translation_key = f"portfolio_{key}"
         self._attr_native_unit_of_measurement = unit
         self._attr_icon = icon
         self._attr_device_info = portfolio_device()
@@ -346,29 +363,29 @@ class _PortfolioBase(_MarketBase):
 
 class PortfolioKRValueSensor(_PortfolioBase):
     def __init__(self, coordinator: MarketCoordinator) -> None:
-        super().__init__(coordinator, "kr_value", "한국 보유 평가금액", "KRW", "mdi:briefcase-variant")
+        super().__init__(coordinator, "kr_value", "KRW", "mdi:briefcase-variant")
 
 
 class PortfolioKRPLSensor(_PortfolioBase):
     def __init__(self, coordinator: MarketCoordinator) -> None:
-        super().__init__(coordinator, "kr_pl", "한국 보유 평가손익", "KRW", "mdi:trending-up")
+        super().__init__(coordinator, "kr_pl", "KRW", "mdi:trending-up")
 
 
 class PortfolioUSValueSensor(_PortfolioBase):
     def __init__(self, coordinator: MarketCoordinator) -> None:
-        super().__init__(coordinator, "us_value", "미국 보유 평가금액", "USD", "mdi:briefcase-variant")
+        super().__init__(coordinator, "us_value", "USD", "mdi:briefcase-variant")
 
 
 class PortfolioUSPLSensor(_PortfolioBase):
     def __init__(self, coordinator: MarketCoordinator) -> None:
-        super().__init__(coordinator, "us_pl", "미국 보유 평가손익", "USD", "mdi:trending-up")
+        super().__init__(coordinator, "us_pl", "USD", "mdi:trending-up")
 
 
 class PortfolioKRWTotalSensor(_PortfolioBase):
     def __init__(self, coordinator: MarketCoordinator) -> None:
-        super().__init__(coordinator, "krw_total", "총 평가금액 (KRW 환산)", "KRW", "mdi:briefcase-check")
+        super().__init__(coordinator, "krw_total", "KRW", "mdi:briefcase-check")
 
 
 class PortfolioKRWPLSensor(_PortfolioBase):
     def __init__(self, coordinator: MarketCoordinator) -> None:
-        super().__init__(coordinator, "krw_pl", "총 평가손익 (KRW 환산)", "KRW", "mdi:cash-multiple")
+        super().__init__(coordinator, "krw_pl", "KRW", "mdi:cash-multiple")
