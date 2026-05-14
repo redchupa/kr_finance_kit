@@ -11,8 +11,12 @@
           "other_tickers": "Crypto / FX / futures : BTC-USD:Bitcoin, ETH-USD:Ethereum, EUR=X:EUR/USD, GC=F:Gold, CL=F:Oil",
           "include_indices": "Include KOSPI/KOSDAQ indices",
           "include_us_indices": "Include NASDAQ/Dow/S&P 500 indices",
+          "include_global_indices": "Include global indices (Nikkei, Hang Seng, FTSE, DAX)",
           "include_fx": "Include USD/KRW FX",
-          "include_detailed_attrs": "Include detailed attributes (52w high/low, 50d/200d avg, day high/low, volume, dividend, PE, marketState)"
+          "include_detailed_attrs": "Include detailed attributes (52w high/low, 50d/200d avg, day high/low, volume, dividend, PE, marketState)",
+          "target_currency_krw": "Convert USD assets to KRW (adds price_krw attribute)",
+          "portfolio_pl_alert_pct": "Portfolio P/L alert threshold % (0 = disabled)",
+          "disclosure_categories": "Disclosure category filter (empty = all)"
         },
         "data_description": {
           "opendart_api_key": "Blank disables disclosure monitoring AND company-name labels (price sensors still work)",
@@ -44,8 +48,12 @@
           "other_tickers": "Crypto / FX / futures : BTC-USD:Bitcoin, ETH-USD:Ethereum, EUR=X:EUR/USD, GC=F:Gold, CL=F:Oil",
           "include_indices": "Include KOSPI/KOSDAQ indices",
           "include_us_indices": "Include NASDAQ/Dow/S&P 500 indices",
+          "include_global_indices": "Include global indices (Nikkei, Hang Seng, FTSE, DAX)",
           "include_fx": "Include USD/KRW FX",
-          "include_detailed_attrs": "Include detailed attributes (52w high/low, 50d/200d avg, day high/low, volume, dividend, PE, marketState)"
+          "include_detailed_attrs": "Include detailed attributes (52w high/low, 50d/200d avg, day high/low, volume, dividend, PE, marketState)",
+          "target_currency_krw": "Convert USD assets to KRW (adds price_krw attribute)",
+          "portfolio_pl_alert_pct": "Portfolio P/L alert threshold % (0 = disabled)",
+          "disclosure_categories": "Disclosure category filter (empty = all)"
         },
         "data_description": {
           "opendart_api_key": "Re-validated on save. Paste a freshly rotated key here. Blank disables disclosures + name mapping",

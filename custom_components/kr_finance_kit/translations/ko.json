@@ -11,8 +11,12 @@
           "other_tickers": "암호화폐·환율·선물 : BTC-USD:비트코인, ETH-USD:이더리움, EUR=X:유로, GC=F:금, CL=F:원유",
           "include_indices": "코스피·코스닥 지수 포함",
           "include_us_indices": "나스닥·다우·S&P 500 지수 포함",
+          "include_global_indices": "글로벌 지수 포함 (닛케이·항생·FTSE·DAX)",
           "include_fx": "USD/KRW 환율 포함",
-          "include_detailed_attrs": "상세 attribute 포함 (52주 고/저, 50일·200일 평균, 일중 고/저, 거래량, 배당, PE, marketState)"
+          "include_detailed_attrs": "상세 attribute 포함 (52주 고/저, 50일·200일 평균, 일중 고/저, 거래량, 배당, PE, marketState)",
+          "target_currency_krw": "USD 자산을 KRW로 환산 (price_krw attribute 추가)",
+          "portfolio_pl_alert_pct": "포트폴리오 평가손익 알림 임계값 % (0=비활성)",
+          "disclosure_categories": "공시 카테고리 필터 (선택 안 하면 전체)"
         },
         "data_description": {
           "opendart_api_key": "비워두면 공시 모니터링 + 종목명 자동 매핑이 비활성화됩니다 (시세는 정상 동작)",
@@ -44,8 +48,12 @@
           "other_tickers": "암호화폐·환율·선물 : BTC-USD:비트코인, ETH-USD:이더리움, EUR=X:유로, GC=F:금, CL=F:원유",
           "include_indices": "코스피·코스닥 지수 포함",
           "include_us_indices": "나스닥·다우·S&P 500 지수 포함",
+          "include_global_indices": "글로벌 지수 포함 (닛케이·항생·FTSE·DAX)",
           "include_fx": "USD/KRW 환율 포함",
-          "include_detailed_attrs": "상세 attribute 포함 (52주 고/저, 50일·200일 평균, 일중 고/저, 거래량, 배당, PE, marketState)"
+          "include_detailed_attrs": "상세 attribute 포함 (52주 고/저, 50일·200일 평균, 일중 고/저, 거래량, 배당, PE, marketState)",
+          "target_currency_krw": "USD 자산을 KRW로 환산 (price_krw attribute 추가)",
+          "portfolio_pl_alert_pct": "포트폴리오 평가손익 알림 임계값 % (0=비활성)",
+          "disclosure_categories": "공시 카테고리 필터 (선택 안 하면 전체)"
         },
         "data_description": {
           "opendart_api_key": "변경 시 즉시 재검증됩니다. 키 폐기/재발급 시 새 키를 여기 붙여넣고 저장하세요. 비워두면 공시 + 종목명 매핑 비활성화",

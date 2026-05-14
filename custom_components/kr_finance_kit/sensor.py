@@ -12,12 +12,15 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     CONF_INCLUDE_FX,
+    CONF_INCLUDE_GLOBAL_INDICES,
     CONF_INCLUDE_INDICES,
     CONF_INCLUDE_US_INDICES,
     CONF_KR_TICKER_NAMES,
+    CONF_TARGET_CURRENCY_KRW,
     DOMAIN,
     ENTITY_ID_PREFIX,
     FX_USDKRW,
+    GLOBAL_INDICES,
     KR_INDICES,
     MARKET_KR,
     MARKET_OTHER,
@@ -25,12 +28,34 @@ from .const import (
     US_INDICES,
 )
 from .coordinator import MarketCoordinator
-from .device import market_device, portfolio_device, ticker_device, us_market_device
+from .device import global_market_device, market_device, portfolio_device, ticker_device, us_market_device
 from .portfolio import compute_totals
 
 
 def _entry_value(entry: ConfigEntry, key: str, default: Any) -> Any:
     return (entry.options or entry.data).get(key, default)
+
+
+def _krw_attr(coordinator: "MarketCoordinator", market: str, price: float | None) -> dict[str, Any]:
+    """Add a ``price_krw`` attribute for USD-denominated assets when the
+    target-currency option is enabled.
+
+    Applies to US and OTHER tickers — those are USD on yfinance for the
+    common cases (AAPL, BTC-USD, ETH-USD, GC=F). KR tickers are already
+    in KRW and are skipped. Non-USD OTHER tickers (e.g. EUR=X) would
+    produce a misleading number; users with those should leave the
+    option off or interpret the attribute accordingly.
+    """
+    if not coordinator._config.get(CONF_TARGET_CURRENCY_KRW, False):
+        return {}
+    if market not in (MARKET_US, MARKET_OTHER):
+        return {}
+    if price is None:
+        return {}
+    rate = _usdkrw(coordinator)
+    if rate is None:
+        return {}
+    return {"price_krw": round(price * rate, 2)}
 
 
 _INFO_KEY_MAP: dict[str, str] = {
@@ -125,6 +150,8 @@ async def async_setup_entry(
         entities += [IndexSensor(market, idx, MARKET_KR) for idx in KR_INDICES]
     if _entry_value(entry, CONF_INCLUDE_US_INDICES, True):
         entities += [IndexSensor(market, idx, MARKET_US) for idx in US_INDICES]
+    if _entry_value(entry, CONF_INCLUDE_GLOBAL_INDICES, False):
+        entities += [IndexSensor(market, idx, "GLOBAL") for idx in GLOBAL_INDICES]
     if _entry_value(entry, CONF_INCLUDE_FX, True):
         entities.append(FXSensor(market, FX_USDKRW))
 
@@ -171,7 +198,12 @@ class IndexSensor(_MarketBase):
         # with other finance integrations in the user's HA.
         self._attr_suggested_object_id = f"{ENTITY_ID_PREFIX}_{index.lower()}"
         self._attr_name = index
-        self._attr_device_info = us_market_device() if market == MARKET_US else market_device()
+        if market == MARKET_US:
+            self._attr_device_info = us_market_device()
+        elif market == "GLOBAL":
+            self._attr_device_info = global_market_device()
+        else:
+            self._attr_device_info = market_device()
 
     @property
     def native_value(self) -> float | None:
@@ -262,6 +294,7 @@ class QuoteSensor(_MarketBase):
     def extra_state_attributes(self) -> dict[str, Any]:
         base = {k: v for k, v in self._quote.items() if k != "price"}
         base.update(_info_attrs(self.coordinator, self._ticker, self.native_value))
+        base.update(_krw_attr(self.coordinator, self._market, self.native_value))
         return base
 
 

@@ -24,6 +24,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
+from homeassistant.helpers import config_validation as cv
 
 from .api.opendart import (
     resolve_corp_codes_by_stock,
@@ -31,10 +32,12 @@ from .api.opendart import (
     validate_api_key,
 )
 from .const import (
+    CONF_DISCLOSURE_CATEGORIES,
     CONF_DISCLOSURE_CORP_CODES,
     CONF_DISCLOSURE_CORP_NAMES,
     CONF_INCLUDE_DETAILED_ATTRS,
     CONF_INCLUDE_FX,
+    CONF_INCLUDE_GLOBAL_INDICES,
     CONF_INCLUDE_INDICES,
     CONF_INCLUDE_US_INDICES,
     CONF_KR_TICKER_NAMES,
@@ -42,9 +45,12 @@ from .const import (
     CONF_OPENDART_API_KEY,
     CONF_OTHER_TICKER_LABELS,
     CONF_OTHER_TICKERS,
+    CONF_PORTFOLIO_PL_ALERT_PCT,
     CONF_POSITIONS,
+    CONF_TARGET_CURRENCY_KRW,
     CONF_US_TICKER_LABELS,
     CONF_US_TICKERS,
+    DISCLOSURE_CATEGORY_CODES,
     DOMAIN,
 )
 
@@ -205,8 +211,17 @@ _FORM_SCHEMA = vol.Schema(
         vol.Optional(CONF_OTHER_TICKERS): str,
         vol.Optional(CONF_INCLUDE_INDICES, default=True): bool,
         vol.Optional(CONF_INCLUDE_US_INDICES, default=True): bool,
+        vol.Optional(CONF_INCLUDE_GLOBAL_INDICES, default=False): bool,
         vol.Optional(CONF_INCLUDE_FX, default=True): bool,
         vol.Optional(CONF_INCLUDE_DETAILED_ATTRS, default=False): bool,
+        vol.Optional(CONF_TARGET_CURRENCY_KRW, default=False): bool,
+        vol.Optional(CONF_PORTFOLIO_PL_ALERT_PCT, default=0): vol.All(
+            vol.Coerce(float), vol.Range(min=0, max=100)
+        ),
+        vol.Optional(CONF_DISCLOSURE_CATEGORIES, default=[]): vol.All(
+            cv.ensure_list,
+            [vol.In(list(DISCLOSURE_CATEGORY_CODES))],
+        ),
     }
 )
 
@@ -261,8 +276,12 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_KR_TICKER_NAMES: ticker_names,
                         CONF_INCLUDE_INDICES: user_input.get(CONF_INCLUDE_INDICES, True),
                         CONF_INCLUDE_US_INDICES: user_input.get(CONF_INCLUDE_US_INDICES, True),
+                        CONF_INCLUDE_GLOBAL_INDICES: user_input.get(CONF_INCLUDE_GLOBAL_INDICES, False),
                         CONF_INCLUDE_FX: user_input.get(CONF_INCLUDE_FX, True),
                         CONF_INCLUDE_DETAILED_ATTRS: user_input.get(CONF_INCLUDE_DETAILED_ATTRS, False),
+                        CONF_TARGET_CURRENCY_KRW: user_input.get(CONF_TARGET_CURRENCY_KRW, False),
+                        CONF_PORTFOLIO_PL_ALERT_PCT: user_input.get(CONF_PORTFOLIO_PL_ALERT_PCT, 0),
+                        CONF_DISCLOSURE_CATEGORIES: user_input.get(CONF_DISCLOSURE_CATEGORIES, []),
                         CONF_POSITIONS: [],
                     },
                 )
@@ -328,8 +347,12 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
                         CONF_KR_TICKER_NAMES: ticker_names,
                         CONF_INCLUDE_INDICES: user_input.get(CONF_INCLUDE_INDICES, True),
                         CONF_INCLUDE_US_INDICES: user_input.get(CONF_INCLUDE_US_INDICES, True),
+                        CONF_INCLUDE_GLOBAL_INDICES: user_input.get(CONF_INCLUDE_GLOBAL_INDICES, False),
                         CONF_INCLUDE_FX: user_input.get(CONF_INCLUDE_FX, True),
                         CONF_INCLUDE_DETAILED_ATTRS: user_input.get(CONF_INCLUDE_DETAILED_ATTRS, False),
+                        CONF_TARGET_CURRENCY_KRW: user_input.get(CONF_TARGET_CURRENCY_KRW, False),
+                        CONF_PORTFOLIO_PL_ALERT_PCT: user_input.get(CONF_PORTFOLIO_PL_ALERT_PCT, 0),
+                        CONF_DISCLOSURE_CATEGORIES: user_input.get(CONF_DISCLOSURE_CATEGORIES, []),
                         # Holdings are service-managed; keep whatever we already have.
                         CONF_POSITIONS: self._current(CONF_POSITIONS, []),
                     },
@@ -353,8 +376,12 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
             ),
             CONF_INCLUDE_INDICES: self._current(CONF_INCLUDE_INDICES, True),
             CONF_INCLUDE_US_INDICES: self._current(CONF_INCLUDE_US_INDICES, True),
+            CONF_INCLUDE_GLOBAL_INDICES: self._current(CONF_INCLUDE_GLOBAL_INDICES, False),
             CONF_INCLUDE_FX: self._current(CONF_INCLUDE_FX, True),
             CONF_INCLUDE_DETAILED_ATTRS: self._current(CONF_INCLUDE_DETAILED_ATTRS, False),
+            CONF_TARGET_CURRENCY_KRW: self._current(CONF_TARGET_CURRENCY_KRW, False),
+            CONF_PORTFOLIO_PL_ALERT_PCT: self._current(CONF_PORTFOLIO_PL_ALERT_PCT, 0),
+            CONF_DISCLOSURE_CATEGORIES: self._current(CONF_DISCLOSURE_CATEGORIES, []),
         }
         return self.async_show_form(
             step_id="init",

@@ -36,10 +36,15 @@ from typing import Any
 
 from ..const import (
     FX_USDKRW,
+    GLOBAL_INDICES,
+    INDEX_DAX,
     INDEX_DOW,
+    INDEX_FTSE,
+    INDEX_HANGSENG,
     INDEX_KOSDAQ,
     INDEX_KOSPI,
     INDEX_NASDAQ,
+    INDEX_NIKKEI,
     INDEX_SP500,
     KR_INDICES,
     LOGGER,
@@ -77,6 +82,12 @@ INDEX_TICKERS: dict[str, str] = {
     INDEX_NASDAQ: "^IXIC",
     INDEX_DOW: "^DJI",
     INDEX_SP500: "^GSPC",
+    # Global indices verified live against yfinance 0.2.x on
+    # 2026-05-14 — all return quoteType=INDEX with non-empty Close.
+    INDEX_NIKKEI: "^N225",
+    INDEX_HANGSENG: "^HSI",
+    INDEX_FTSE: "^FTSE",
+    INDEX_DAX: "^GDAXI",
 }
 FX_TICKERS: dict[str, str] = {
     FX_USDKRW: "KRW=X",

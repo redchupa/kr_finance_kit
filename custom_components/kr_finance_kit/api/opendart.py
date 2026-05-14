@@ -181,8 +181,22 @@ async def _load_corp_code_map(
 
 
 async def fetch_recent_disclosures(
-    hass: "HomeAssistant", api_key: str, corp_codes: list[str]
+    hass: "HomeAssistant", api_key: str, corp_codes: list[str],
+    categories: list[str] | None = None,
 ) -> list[dict[str, Any]]:
+    """Fetch today's disclosures for the given corp_codes.
+
+    ``categories`` filters by OpenDart's ``pblntf_ty`` parameter — the
+    8-bucket scheme on the OpenDart list.json endpoint (A=정기공시 …
+    J=공정위공시). When the list is empty / None we issue the request
+    without the filter, which returns disclosures across all categories
+    (the historical default).
+
+    The API only accepts a single ``pblntf_ty`` value per request, so
+    multi-category requests fan out into one call per category per
+    corp_code. With 1-2 corp_codes and a small category subset this is
+    still tiny traffic compared to the per-poll budget.
+    """
     if not api_key or not corp_codes:
         return []
     from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -190,17 +204,24 @@ async def fetch_recent_disclosures(
     bgn, end = _today_range()
     session = async_get_clientsession(hass)
     results: list[dict[str, Any]] = []
+    # Empty / None categories → single request per corp_code without filter.
+    category_filters: list[str | None] = list(categories) if categories else [None]
+    seen_rcept_no: set[str] = set()
     for code in corp_codes:
+      for category in category_filters:
+        params: dict[str, str] = {
+            "crtfc_key": api_key,
+            "corp_code": code,
+            "bgn_de": bgn,
+            "end_de": end,
+            "page_count": "10",
+        }
+        if category:
+            params["pblntf_ty"] = category
         try:
             async with session.get(
                 OPENDART_LIST_URL,
-                params={
-                    "crtfc_key": api_key,
-                    "corp_code": code,
-                    "bgn_de": bgn,
-                    "end_de": end,
-                    "page_count": "10",
-                },
+                params=params,
                 timeout=_TIMEOUT,
             ) as r:
                 payload = await r.json(content_type=None)
@@ -217,6 +238,15 @@ async def fetch_recent_disclosures(
             )
             continue
         for item in payload.get("list", []) or []:
+            # Same disclosure can be returned across overlapping category
+            # filters (rare but possible). Dedupe by OpenDart's rcept_no
+            # so the binary_sensor sees one entry per filing regardless of
+            # how many categories were requested.
+            rno = (item.get("rcept_no") or "").strip()
+            if rno and rno in seen_rcept_no:
+                continue
+            if rno:
+                seen_rcept_no.add(rno)
             results.append(_normalize(item))
     return results
 

@@ -25,8 +25,10 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import opendart, yfinance_wrap
 from .const import (
+    CONF_DISCLOSURE_CATEGORIES,
     CONF_INCLUDE_DETAILED_ATTRS,
     CONF_INCLUDE_FX,
+    CONF_INCLUDE_GLOBAL_INDICES,
     CONF_INCLUDE_INDICES,
     CONF_INCLUDE_US_INDICES,
     CONF_KR_TICKERS,
@@ -35,7 +37,10 @@ from .const import (
     CONF_POSITIONS,
     CONF_US_TICKER_LABELS,
     CONF_US_TICKERS,
+    EVENT_KR_MARKET_CLOSED,
+    EVENT_US_MARKET_CLOSED,
     FX_USDKRW,
+    GLOBAL_INDICES,
     KR_INDICES,
     LOGGER,
     MARKET_KR,
@@ -107,9 +112,19 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         cfg = self._config
         include_kr_indices = bool(cfg.get(CONF_INCLUDE_INDICES, True))
         include_us_indices = bool(cfg.get(CONF_INCLUDE_US_INDICES, True))
+        include_global_indices = bool(cfg.get(CONF_INCLUDE_GLOBAL_INDICES, False))
         include_fx = bool(cfg.get(CONF_INCLUDE_FX, True))
         kr_open = is_kr_market_open()
         us_open = is_us_market_open()
+
+        # Fire market-close events on the open→closed transition. Reading
+        # the previous tick's market state from self.data avoids spamming
+        # the bus every poll; only the edge fires.
+        prev_for_events = self.data or {}
+        if prev_for_events.get("kr_market_open") and not kr_open:
+            self.hass.bus.async_fire(EVENT_KR_MARKET_CLOSED, {})
+        if prev_for_events.get("us_market_open") and not us_open:
+            self.hass.bus.async_fire(EVENT_US_MARKET_CLOSED, {})
 
         try:
             # Skip per-market quote fetches when that market has been
@@ -121,6 +136,8 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 wanted_indices.extend(KR_INDICES)
             if include_us_indices:
                 wanted_indices.extend(US_INDICES)
+            if include_global_indices:
+                wanted_indices.extend(GLOBAL_INDICES)
             indices_task = (
                 yfinance_wrap.fetch_indices(wanted_indices) if wanted_indices else None
             )
@@ -200,6 +217,7 @@ class DisclosureCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         hass: HomeAssistant,
         api_key: str,
         corp_codes: list[str],
+        categories: list[str] | None = None,
     ) -> None:
         super().__init__(
             hass,
@@ -209,15 +227,19 @@ class DisclosureCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         )
         self._api_key = api_key
         self._corp_codes = list(corp_codes)
+        self._categories = list(categories or [])
         self._failures = 0
 
     def update_corp_codes(self, codes: list[str]) -> None:
         self._corp_codes = list(codes)
 
+    def update_categories(self, codes: list[str]) -> None:
+        self._categories = list(codes or [])
+
     async def _async_update_data(self) -> list[dict[str, Any]]:
         try:
             return await opendart.fetch_recent_disclosures(
-                self.hass, self._api_key, self._corp_codes
+                self.hass, self._api_key, self._corp_codes, self._categories
             )
         except Exception as err:  # noqa: BLE001
             self._failures += 1

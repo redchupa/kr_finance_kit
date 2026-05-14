@@ -22,7 +22,12 @@ def _config(entry) -> dict:
 async def async_setup_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> bool:
     from homeassistant.const import Platform
 
-    from .const import CONF_DISCLOSURE_CORP_CODES, CONF_OPENDART_API_KEY, DOMAIN
+    from .const import (
+        CONF_DISCLOSURE_CATEGORIES,
+        CONF_DISCLOSURE_CORP_CODES,
+        CONF_OPENDART_API_KEY,
+        DOMAIN,
+    )
     from .coordinator import DisclosureCoordinator, MarketCoordinator
     from .llm_tool import async_setup_llm_api
     from .services import async_register_services
@@ -35,9 +40,10 @@ async def async_setup_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> bool
     cfg = _config(entry)
     opendart_key = (cfg.get(CONF_OPENDART_API_KEY) or "").strip()
     corp_codes = list(cfg.get(CONF_DISCLOSURE_CORP_CODES, []) or [])
+    categories = list(cfg.get(CONF_DISCLOSURE_CATEGORIES, []) or [])
     disclosure: DisclosureCoordinator | None = None
     if opendart_key and corp_codes:
-        disclosure = DisclosureCoordinator(hass, opendart_key, corp_codes)
+        disclosure = DisclosureCoordinator(hass, opendart_key, corp_codes, categories)
         await disclosure.async_config_entry_first_refresh()
 
     store = {"market": market, "disclosure": disclosure}
