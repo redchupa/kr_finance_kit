@@ -44,6 +44,13 @@ CONF_PORTFOLIO_PL_ALERT_PCT = "portfolio_pl_alert_pct"
 #   A=정기공시, B=주요사항보고, C=발행공시, D=지분공시, E=기타공시,
 #   F=외부감사관련, G=펀드공시, H=자산유동화, I=거래소공시, J=공정위공시
 CONF_DISCLOSURE_CATEGORIES = "disclosure_categories"
+# CSV of integer minutes (e.g. "15, 30, 60, 120"). Each value becomes
+# a `change_pct_<N>min` attribute on every QuoteSensor and feeds the
+# short_window_alert blueprint's number-selector trigger. The
+# coordinator's ring buffer is sized to a fixed 70 minutes, so values
+# > 70 will silently report None until the buffer is enlarged.
+CONF_SHORT_WINDOW_MINUTES = "short_window_minutes"
+DEFAULT_SHORT_WINDOW_MINUTES = (15, 30, 60)
 # When True, the coordinator pulls yfinance .info per ticker so sensors
 # expose richer attributes (52w high/low, 50d/200d MA, day high/low,
 # volumes, dividends, PE, marketState, pre/post-market prices). Costs

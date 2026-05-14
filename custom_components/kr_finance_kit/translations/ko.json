@@ -16,7 +16,8 @@
           "include_detailed_attrs": "상세 attribute 포함 (52주 고/저, 50일·200일 평균, 일중 고/저, 거래량, 배당, PE, marketState)",
           "target_currency_krw": "USD 자산을 KRW로 환산 (price_krw attribute 추가)",
           "portfolio_pl_alert_pct": "포트폴리오 평가손익 알림 임계값 % (0=비활성)",
-          "disclosure_categories": "공시 카테고리 필터 (선택 안 하면 전체)"
+          "disclosure_categories": "공시 카테고리 필터 (선택 안 하면 전체)",
+          "short_window_minutes": "단기 변동률 윈도우 분 : 15, 30, 60"
         },
         "data_description": {
           "opendart_api_key": "비워두면 공시 모니터링 + 종목명 자동 매핑이 비활성화됩니다 (시세는 정상 동작)",
@@ -54,7 +55,8 @@
           "include_detailed_attrs": "상세 attribute 포함 (52주 고/저, 50일·200일 평균, 일중 고/저, 거래량, 배당, PE, marketState)",
           "target_currency_krw": "USD 자산을 KRW로 환산 (price_krw attribute 추가)",
           "portfolio_pl_alert_pct": "포트폴리오 평가손익 알림 임계값 % (0=비활성)",
-          "disclosure_categories": "공시 카테고리 필터 (선택 안 하면 전체)"
+          "disclosure_categories": "공시 카테고리 필터 (선택 안 하면 전체)",
+          "short_window_minutes": "단기 변동률 윈도우 분 : 15, 30, 60"
         },
         "data_description": {
           "opendart_api_key": "변경 시 즉시 재검증됩니다. 키 폐기/재발급 시 새 키를 여기 붙여넣고 저장하세요. 비워두면 공시 + 종목명 매핑 비활성화",

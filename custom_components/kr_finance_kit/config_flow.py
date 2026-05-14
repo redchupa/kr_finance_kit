@@ -54,6 +54,7 @@ from .const import (
     CONF_OTHER_TICKERS,
     CONF_PORTFOLIO_PL_ALERT_PCT,
     CONF_POSITIONS,
+    CONF_SHORT_WINDOW_MINUTES,
     CONF_TARGET_CURRENCY_KRW,
     CONF_US_TICKER_LABELS,
     CONF_US_TICKERS,
@@ -248,6 +249,11 @@ _FORM_SCHEMA = vol.Schema(
                 mode=SelectSelectorMode.DROPDOWN,
             )
         ),
+        # Plain text field. Parsing happens in sensor.py (_parse_minutes_csv)
+        # so a bad value falls back to the documented default instead of
+        # blocking the flow. We can't use NumberSelector here because the
+        # user is supplying a *list* of minute values, not a single number.
+        vol.Optional(CONF_SHORT_WINDOW_MINUTES, default="15, 30, 60"): str,
     }
 )
 
@@ -314,6 +320,7 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_INCLUDE_GLOBAL_INDICES: user_input.get(CONF_INCLUDE_GLOBAL_INDICES, False),
                         CONF_INCLUDE_FX: user_input.get(CONF_INCLUDE_FX, True),
                         CONF_INCLUDE_DETAILED_ATTRS: user_input.get(CONF_INCLUDE_DETAILED_ATTRS, False),
+                        CONF_SHORT_WINDOW_MINUTES: user_input.get(CONF_SHORT_WINDOW_MINUTES, "15, 30, 60"),
                         CONF_TARGET_CURRENCY_KRW: user_input.get(CONF_TARGET_CURRENCY_KRW, False),
                         CONF_PORTFOLIO_PL_ALERT_PCT: user_input.get(CONF_PORTFOLIO_PL_ALERT_PCT, 0),
                         CONF_DISCLOSURE_CATEGORIES: user_input.get(CONF_DISCLOSURE_CATEGORIES, []),
@@ -385,6 +392,7 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
                         CONF_INCLUDE_GLOBAL_INDICES: user_input.get(CONF_INCLUDE_GLOBAL_INDICES, False),
                         CONF_INCLUDE_FX: user_input.get(CONF_INCLUDE_FX, True),
                         CONF_INCLUDE_DETAILED_ATTRS: user_input.get(CONF_INCLUDE_DETAILED_ATTRS, False),
+                        CONF_SHORT_WINDOW_MINUTES: user_input.get(CONF_SHORT_WINDOW_MINUTES, "15, 30, 60"),
                         CONF_TARGET_CURRENCY_KRW: user_input.get(CONF_TARGET_CURRENCY_KRW, False),
                         CONF_PORTFOLIO_PL_ALERT_PCT: user_input.get(CONF_PORTFOLIO_PL_ALERT_PCT, 0),
                         CONF_DISCLOSURE_CATEGORIES: user_input.get(CONF_DISCLOSURE_CATEGORIES, []),
@@ -414,6 +422,7 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
             CONF_INCLUDE_GLOBAL_INDICES: self._current(CONF_INCLUDE_GLOBAL_INDICES, False),
             CONF_INCLUDE_FX: self._current(CONF_INCLUDE_FX, True),
             CONF_INCLUDE_DETAILED_ATTRS: self._current(CONF_INCLUDE_DETAILED_ATTRS, False),
+            CONF_SHORT_WINDOW_MINUTES: self._current(CONF_SHORT_WINDOW_MINUTES, "15, 30, 60"),
             CONF_TARGET_CURRENCY_KRW: self._current(CONF_TARGET_CURRENCY_KRW, False),
             CONF_PORTFOLIO_PL_ALERT_PCT: self._current(CONF_PORTFOLIO_PL_ALERT_PCT, 0),
             CONF_DISCLOSURE_CATEGORIES: self._current(CONF_DISCLOSURE_CATEGORIES, []),

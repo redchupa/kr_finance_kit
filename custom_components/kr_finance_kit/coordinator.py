@@ -69,11 +69,14 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._entry = entry
         self._failures = 0
         # Ring buffer per ticker for short-window change_pct attributes.
-        # Capacity 70 entries × ~60s polling = ~70 min, comfortably covering
-        # the 60-minute window with a buffer for jitter / idle-mode dial-down.
-        # Entries: (utc_timestamp, price). Memory only — lost on HA restart,
-        # so the first ~hour after restart has change_pct_* attributes None.
+        # Capacity 300 entries × ~60s polling = ~5 hours, large enough to
+        # cover any user-defined window minute (CONF_SHORT_WINDOW_MINUTES)
+        # up to 300 with headroom for jitter and the idle-mode interval
+        # dial-down. Entries: (utc_timestamp, price). Memory only — lost on
+        # HA restart, so attributes return None until the buffer refills
+        # to the requested window length.
         self._price_history: dict[str, deque[tuple[datetime, float]]] = {}
+        self._history_maxlen = 300
 
     @property
     def _config(self) -> dict[str, Any]:
@@ -111,7 +114,9 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 price = quote.get("price") if isinstance(quote, dict) else None
                 if not isinstance(price, (int, float)):
                     continue
-                buf = self._price_history.setdefault(ticker, deque(maxlen=70))
+                buf = self._price_history.setdefault(
+                    ticker, deque(maxlen=self._history_maxlen)
+                )
                 buf.append((now, float(price)))
 
     def price_change_pct(self, ticker: str, minutes: int) -> float | None:

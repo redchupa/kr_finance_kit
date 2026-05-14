@@ -16,7 +16,9 @@ from .const import (
     CONF_INCLUDE_INDICES,
     CONF_INCLUDE_US_INDICES,
     CONF_KR_TICKER_NAMES,
+    CONF_SHORT_WINDOW_MINUTES,
     CONF_TARGET_CURRENCY_KRW,
+    DEFAULT_SHORT_WINDOW_MINUTES,
     DOMAIN,
     ENTITY_ID_PREFIX,
     FX_USDKRW,
@@ -36,26 +38,50 @@ def _entry_value(entry: ConfigEntry, key: str, default: Any) -> Any:
     return (entry.options or entry.data).get(key, default)
 
 
-_SHORT_WINDOW_MINUTES: tuple[tuple[int, str], ...] = (
-    (15, "change_pct_15min"),
-    (30, "change_pct_30min"),
-    (60, "change_pct_1h"),
-)
+def _parse_minutes_csv(raw: Any) -> list[int]:
+    """Accept "15, 30, 60" or [15, 30, 60] and return [15, 30, 60].
+
+    Falls back to DEFAULT_SHORT_WINDOW_MINUTES when the option is
+    missing, blank, or syntactically broken — better to ship the
+    three documented attributes than to silently drop all of them.
+    Values outside 1..300 are dropped so a typo doesn't lock the
+    coordinator into never satisfying the lookup.
+    """
+    if isinstance(raw, (list, tuple)):
+        candidates = raw
+    elif isinstance(raw, str):
+        candidates = [c for c in raw.replace(" ", "").split(",") if c]
+    else:
+        candidates = []
+    out: list[int] = []
+    for c in candidates:
+        try:
+            n = int(c)
+        except (TypeError, ValueError):
+            continue
+        if 1 <= n <= 300 and n not in out:
+            out.append(n)
+    return out or list(DEFAULT_SHORT_WINDOW_MINUTES)
 
 
 def _short_window_attrs(coordinator: "MarketCoordinator", ticker: str) -> dict[str, Any]:
     """Per-ticker rolling-window % change attributes.
 
-    Reads the coordinator's in-memory ring buffer. Each entry is dropped
-    when the buffer doesn't yet hold a sample old enough to anchor the
-    comparison — that keeps HA's history charts from filling with a
-    leading zero during the first ~hour after restart.
+    Reads CONF_SHORT_WINDOW_MINUTES off the config entry and emits one
+    attribute per requested minute count, e.g. requesting 15, 31, 60
+    produces ``change_pct_15min``, ``change_pct_31min``, ``change_pct_60min``.
+    Values for which the ring buffer hasn't filled yet are dropped so
+    the sensor doesn't surface misleading leading zeros during the
+    HA-restart warm-up window.
     """
     out: dict[str, Any] = {}
-    for minutes, attr in _SHORT_WINDOW_MINUTES:
+    minutes_list = _parse_minutes_csv(
+        coordinator._config.get(CONF_SHORT_WINDOW_MINUTES)
+    )
+    for minutes in minutes_list:
         pct = coordinator.price_change_pct(ticker, minutes)
         if pct is not None:
-            out[attr] = pct
+            out[f"change_pct_{minutes}min"] = pct
     return out
 
 

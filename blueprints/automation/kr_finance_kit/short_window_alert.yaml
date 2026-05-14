@@ -1,21 +1,23 @@
 blueprint:
-  name: KR Finance Kit — 단기 변동률 알림 (15·30·60분)
+  name: KR Finance Kit — 단기 변동률 알림 (분 단위 자유 입력)
   description: |
-    선택한 종목이 지정한 시간 윈도우 안에서 ±임계값을 넘으면 알림.
-    예) 30분 안에 ±2% 변동 → 알림.
+    선택한 종목이 사용자 지정 시간 윈도우 안에서 ±임계값을 넘으면 알림.
+    예) 31분 안에 ±2% 변동 → 알림.
 
-    동작 원리: KR Finance Kit이 폴링마다 각 종목 가격을 메모리에 저장하고
-    sensor attribute로 `change_pct_15min` / `change_pct_30min` /
-    `change_pct_1h`를 노출합니다. 이 블루프린트는 그 attribute를
-    numeric_state 트리거로 받습니다.
+    동작 원리: KR Finance Kit 옵션 화면의 "단기 변동률 윈도우 분" 항목에
+    원하는 분(예 "15, 30, 31, 60")을 CSV로 등록하면, 각 QuoteSensor에
+    `change_pct_15min` / `change_pct_31min` / `change_pct_60min` 같은
+    attribute가 자동 생성됩니다. 이 블루프린트는 그 attribute를
+    state 트리거 + template condition으로 받습니다.
 
     📥 **Import 직후 warm-up 필요** — 블루프린트는 즉시 등록되지만 첫
-    알림은 선택한 윈도우만큼 기다려야 옵니다 (그만큼의 가격 샘플이
-    쌓여야 비교 가능).
+    알림은 선택한 분만큼 가격 샘플이 쌓여야 옵니다 (예 31분 윈도우 =
+    HA 시작 후 약 31분).
 
-    ⚠️ **HA 재시작 시 주의** — 가격 history는 메모리에만 보관되므로
-    HA Restart 직후 60분 윈도우는 약 1시간, 30분은 30분, 15분은 15분
-    동안 attribute가 None → 자동화가 트리거되지 않습니다.
+    ⚠️ **HA 재시작 시 주의** — 가격 history는 메모리에만 보관됩니다.
+    HA Restart 직후 N분 윈도우는 약 N분 동안 attribute가 None →
+    자동화가 트리거되지 않습니다. coordinator ring buffer 최대 300분
+    (5시간) 까지 지원.
   domain: automation
   source_url: https://github.com/redchupa/kr_finance_kit/blob/main/blueprints/automation/kr_finance_kit/short_window_alert.yaml
   input:
@@ -27,19 +29,20 @@ blueprint:
           integration: kr_finance_kit
           domain: sensor
           multiple: true
-    window_attribute:
-      name: 변동률 윈도우
-      description: 어떤 시간 윈도우의 변동률을 트리거로 쓸지 선택.
-      default: change_pct_30min
+    window_minutes:
+      name: 변동률 윈도우 (분)
+      description: |
+        몇 분 윈도우의 변동률을 트리거로 쓸지. 옵션 화면에서 등록한
+        분과 일치해야 attribute가 존재합니다 (예: 31 입력하려면 옵션의
+        "단기 변동률 윈도우 분"에 31이 포함돼 있어야 함).
+      default: 30
       selector:
-        select:
-          options:
-            - label: 15분
-              value: change_pct_15min
-            - label: 30분
-              value: change_pct_30min
-            - label: 1시간
-              value: change_pct_1h
+        number:
+          min: 1
+          max: 300
+          step: 1
+          unit_of_measurement: "min"
+          mode: box
     drop_threshold_pct:
       name: 하락 임계값 (%)
       description: change_pct가 이 값 이하면 알림. 음수로 입력 (예 -2 = 2% 이상 하락).
@@ -75,33 +78,30 @@ blueprint:
 mode: parallel
 max: 30
 
-trigger:
-  - platform: numeric_state
-    entity_id: !input target_tickers
-    attribute: !input window_attribute
-    above: !input rise_threshold_pct
-    id: rise
-  - platform: numeric_state
-    entity_id: !input target_tickers
-    attribute: !input window_attribute
-    below: !input drop_threshold_pct
-    id: drop
-
 variables:
-  window_attr: !input window_attribute
+  window_min: !input window_minutes
+  rise_t: !input rise_threshold_pct
+  drop_t: !input drop_threshold_pct
+  attr_key: "change_pct_{{ window_min | int }}min"
+
+trigger:
+  - platform: state
+    entity_id: !input target_tickers
+
+condition:
+  - condition: template
+    value_template: >-
+      {% set v = state_attr(trigger.entity_id, attr_key) %}
+      {{ v is not none and (v >= rise_t or v <= drop_t) }}
 
 action:
   - variables:
-      pct: "{{ state_attr(trigger.entity_id, window_attr) }}"
+      pct: "{{ state_attr(trigger.entity_id, attr_key) }}"
       price: "{{ states(trigger.entity_id) }}"
       label: "{{ state_attr(trigger.entity_id, 'friendly_name') or trigger.entity_id }}"
-      direction: "{{ '급등' if trigger.id == 'rise' else '급락' }}"
-      window_label: >-
-        {% if window_attr == 'change_pct_15min' %}15분
-        {% elif window_attr == 'change_pct_30min' %}30분
-        {% else %}1시간{% endif %}
+      direction: "{{ '급등' if pct | float >= 0 else '급락' }}"
   - service: notify.send_message
     target: !input notify_target
     data:
-      title: "KR Finance Kit · {{ window_label }} {{ direction }}"
-      message: "{{ label }} {{ window_label }} {{ pct }}% — 현재가 {{ price }}"
+      title: "KR Finance Kit · {{ window_min }}분 {{ direction }}"
+      message: "{{ label }} {{ window_min }}분 {{ pct }}% — 현재가 {{ price }}"
