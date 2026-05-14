@@ -5,20 +5,16 @@
         "title": "KR Finance Kit 설정",
         "description": "한 번에 모두 입력하시면 됩니다. 모든 항목은 선택이며 비워두면 해당 기능이 비활성화됩니다.\n\n**OpenDart 키**가 있고 **한국 종목**이 입력되어 있으면 → 시세 sensor + 공시 binary_sensor + 종목명(예 삼성전자) 매핑이 모두 자동으로 활성화됩니다.\n\n**OpenDart 키 발급** (무료·즉시):\n• [회원가입 — opendart.fss.or.kr/uss/umt/EgovMberInsertView.do]({opendart_signup_url})\n• [인증키 신청 — opendart.fss.or.kr/mng/apiUseStusUser.do]({opendart_key_url})\n\n**종목코드 검색 (클릭하면 바로 이동)**:\n• 🇰🇷 한국 (6자리 숫자):\n  [KRX 상장법인 목록 — kind.krx.co.kr/corpgeneral/corpList.do]({krx_search_url})\n  [네이버 금융 시세 — finance.naver.com/sise/sise_market_sum.naver]({naver_finance_url})\n• 🇺🇸 미국 (티커 심볼):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url})\n• 🪙 암호화폐·환율·선물 (Yahoo ticker 형식, 시장 시간 무관 24/7 갱신):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url}) (같은 검색)",
         "data": {
-          "opendart_api_key": "OpenDart API 키 (선택)",
-          "kr_tickers": "한국 종목 코드 (CSV)",
-          "us_tickers": "미국 종목 심볼 (CSV)",
-          "other_tickers": "암호화폐·환율·선물 (CSV)",
+          "opendart_api_key": "OpenDart API 키 : 약 40자리 키 입력",
+          "kr_tickers": "한국 종목 코드 : 005930, 000660, 035420, 035720.KQ, 373220",
+          "us_tickers": "미국 종목 심볼 : AAPL:애플, MSFT:마이크로소프트, TSLA:테슬라, NVDA:엔비디아",
+          "other_tickers": "암호화폐·환율·선물 : BTC-USD:비트코인, ETH-USD:이더리움, EUR=X:유로, GC=F:금, CL=F:원유",
           "include_indices": "코스피·코스닥 지수 포함",
           "include_us_indices": "나스닥·다우·S&P 500 지수 포함",
           "include_fx": "USD/KRW 환율 포함",
           "include_detailed_attrs": "상세 attribute 포함 (52주 고/저, 50일·200일 평균, 일중 고/저, 거래량, 배당, PE, marketState)"
         },
         "data_description": {
-          "opendart_api_key": "비워두면 공시 모니터링 + 종목명 자동 매핑이 비활성화됩니다 (시세는 정상 동작)",
-          "kr_tickers": "005930, 000660, 035420, 035720.KQ, 373220",
-          "us_tickers": "AAPL:애플, MSFT:마이크로소프트, TSLA:테슬라, NVDA:엔비디아",
-          "other_tickers": "BTC-USD:비트코인, ETH-USD:이더리움, EUR=X:유로, GC=F:금, CL=F:원유",
           "include_us_indices": "활성화하면 sensor.fi_nasdaq / dow / sp500 추가됩니다",
           "include_detailed_attrs": "활성화하면 종목별로 yfinance .info를 추가로 호출 (폴링마다 1회 추가 HTTP). attribute에 fifty_two_week_high/low, fifty/two_hundred_day_average, regular_market_day_high/low/volume, dividend_*, forward_pe/trailing_pe, market_state, pre/post_market_price 노출"
         }
@@ -38,20 +34,16 @@
         "title": "KR Finance Kit 옵션",
         "description": "설치 시 입력한 값을 자유롭게 수정할 수 있습니다. **저장하면 통합이 자동으로 재시작**되며 변경 사항이 즉시 반영됩니다.\n\n**무엇이 바뀌나**:\n• 한국 종목을 **추가하면** → 시세 sensor 즉시 생성. OpenDart 키가 있으면 공시 binary_sensor와 종목명(예 삼성전자)도 자동.\n• 한국 종목을 **삭제하면** → 해당 sensor 자동 제거.\n• **OpenDart 키를 비우면** → 공시 binary_sensor와 종목명 매핑이 비활성화됩니다 (가격 sensor는 그대로 동작).\n• **OpenDart 키를 새로 입력하면** → corpCode.xml을 다시 다운로드해 종목명·corp_code를 다시 매핑합니다.\n\n**종목코드 검색 (클릭하면 바로 이동)**:\n• 🇰🇷 한국 (6자리 숫자):\n  [KRX 상장법인 목록 — kind.krx.co.kr/corpgeneral/corpList.do]({krx_search_url})\n  [네이버 금융 시세 — finance.naver.com/sise/sise_market_sum.naver]({naver_finance_url})\n• 🇺🇸 미국 (티커 심볼):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url})\n• 🪙 암호화폐·환율·선물 (Yahoo ticker 형식, 시장 시간 무관 24/7 갱신):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url}) (같은 검색)\n\n**OpenDart 키 발급** (무료·즉시):\n• [회원가입 — opendart.fss.or.kr/uss/umt/EgovMberInsertView.do]({opendart_signup_url})\n• [인증키 신청 — opendart.fss.or.kr/mng/apiUseStusUser.do]({opendart_key_url})\n\n참고: 보유 종목 평가손익(수량·평단가)은 옵션 화면이 아닌 `kr_finance_kit.add_position` 서비스로 관리됩니다 — 이 화면에서 손대지 않아도 됩니다.",
         "data": {
-          "opendart_api_key": "OpenDart API 키 (선택)",
-          "kr_tickers": "한국 종목 코드 (CSV)",
-          "us_tickers": "미국 종목 심볼 (CSV)",
-          "other_tickers": "암호화폐·환율·선물 (CSV)",
+          "opendart_api_key": "OpenDart API 키 : 약 40자리 키 입력",
+          "kr_tickers": "한국 종목 코드 : 005930, 000660, 035420, 035720.KQ, 373220",
+          "us_tickers": "미국 종목 심볼 : AAPL:애플, MSFT:마이크로소프트, TSLA:테슬라, NVDA:엔비디아",
+          "other_tickers": "암호화폐·환율·선물 : BTC-USD:비트코인, ETH-USD:이더리움, EUR=X:유로, GC=F:금, CL=F:원유",
           "include_indices": "코스피·코스닥 지수 포함",
           "include_us_indices": "나스닥·다우·S&P 500 지수 포함",
           "include_fx": "USD/KRW 환율 포함",
           "include_detailed_attrs": "상세 attribute 포함 (52주 고/저, 50일·200일 평균, 일중 고/저, 거래량, 배당, PE, marketState)"
         },
         "data_description": {
-          "opendart_api_key": "변경 시 즉시 재검증됩니다. 키 폐기/재발급 시 새 키를 여기 붙여넣고 저장하세요. 비워두면 공시 + 종목명 매핑 비활성화",
-          "kr_tickers": "005930, 000660, 035420, 035720.KQ, 373220",
-          "us_tickers": "AAPL:애플, MSFT:마이크로소프트, TSLA:테슬라, NVDA:엔비디아",
-          "other_tickers": "BTC-USD:비트코인, ETH-USD:이더리움, EUR=X:유로, GC=F:금, CL=F:원유",
           "include_indices": "비활성화 시 sensor.fi_kospi / kosdaq sensor가 제거됩니다",
           "include_us_indices": "비활성화 시 sensor.fi_nasdaq / dow / sp500 sensor가 제거됩니다",
           "include_fx": "비활성화 시 sensor.fi_usdkrw sensor가 제거됩니다. 단, USD/KRW 환산 포트폴리오 합산 센서도 함께 비활성화되니 미국 보유 종목이 있으면 켜두시는 게 좋습니다",

@@ -5,20 +5,16 @@
         "title": "KR Finance Kit",
         "description": "Everything fits on one page. Each field is optional — leave blank to disable that feature.\n\nWhen an **OpenDart key** and **KR tickers** are both set, the same tickers automatically drive price sensors, disclosure binary_sensors, AND friendly company-name labels (e.g. \"삼성전자\" instead of \"005930\").\n\n**Get an OpenDart key** (free, instant):\n• [Sign up — opendart.fss.or.kr/uss/umt/EgovMberInsertView.do]({opendart_signup_url})\n• [Request API key — opendart.fss.or.kr/mng/apiUseStusUser.do]({opendart_key_url})\n\n**Where to find ticker codes (click to open)**:\n• 🇰🇷 KR (6-digit number):\n  [KRX listed company directory — kind.krx.co.kr/corpgeneral/corpList.do]({krx_search_url})\n  [Naver Finance market list — finance.naver.com/sise/sise_market_sum.naver]({naver_finance_url})\n• 🇺🇸 US (ticker symbol):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url})\n• 🪙 Crypto / FX / Futures (Yahoo ticker form, fetched 24/7 regardless of market hours):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url}) (same search)",
         "data": {
-          "opendart_api_key": "OpenDart API key (optional)",
-          "kr_tickers": "KR ticker codes (CSV)",
-          "us_tickers": "US ticker symbols (CSV)",
-          "other_tickers": "Crypto / FX / futures tickers (CSV)",
+          "opendart_api_key": "OpenDart API key : ~40-character key",
+          "kr_tickers": "KR ticker codes : 005930, 000660, 035420, 035720.KQ, 373220",
+          "us_tickers": "US ticker symbols : AAPL:Apple, MSFT:Microsoft, TSLA:Tesla, NVDA:NVIDIA",
+          "other_tickers": "Crypto / FX / futures : BTC-USD:Bitcoin, ETH-USD:Ethereum, EUR=X:EUR/USD, GC=F:Gold, CL=F:Oil",
           "include_indices": "Include KOSPI/KOSDAQ indices",
           "include_us_indices": "Include NASDAQ/Dow/S&P 500 indices",
           "include_fx": "Include USD/KRW FX",
           "include_detailed_attrs": "Include detailed attributes (52w high/low, 50d/200d avg, day high/low, volume, dividend, PE, marketState)"
         },
         "data_description": {
-          "opendart_api_key": "Blank disables disclosure monitoring AND company-name labels (price sensors still work)",
-          "kr_tickers": "005930, 000660, 035420, 035720.KQ, 373220",
-          "us_tickers": "AAPL:Apple, MSFT:Microsoft, TSLA:Tesla, NVDA:NVIDIA",
-          "other_tickers": "BTC-USD:Bitcoin, ETH-USD:Ethereum, EUR=X:EUR/USD, GC=F:Gold, CL=F:Oil",
           "include_us_indices": "Adds sensor.fi_nasdaq / dow / sp500",
           "include_detailed_attrs": "Adds one yfinance .info call per ticker per poll. Surfaces fifty_two_week_high/low, fifty/two_hundred_day_average, regular_market_day_high/low/volume, dividend_*, forward_pe / trailing_pe, market_state, pre/post_market_price as sensor attributes"
         }
@@ -38,20 +34,16 @@
         "title": "KR Finance Kit options",
         "description": "Edit any value you set at install. **Saving auto-reloads the integration** so changes take effect immediately.\n\n**What changes when**:\n• **Add a KR ticker** → its price sensor appears immediately. With an OpenDart key, the disclosure binary_sensor and Korean company-name label come along automatically.\n• **Remove a KR ticker** → its sensor is removed.\n• **Clear the OpenDart key** → disclosure binary_sensors and company-name labels are disabled (price sensors keep working).\n• **Enter a new OpenDart key** → corpCode.xml is re-downloaded and corp_codes / names are re-mapped.\n\n**Where to find ticker codes (click to open)**:\n• 🇰🇷 KR (6-digit number):\n  [KRX listed company directory — kind.krx.co.kr/corpgeneral/corpList.do]({krx_search_url})\n  [Naver Finance market list — finance.naver.com/sise/sise_market_sum.naver]({naver_finance_url})\n• 🇺🇸 US (ticker symbol):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url})\n• 🪙 Crypto / FX / Futures (Yahoo ticker form, fetched 24/7 regardless of market hours):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url}) (same search)\n\n**Get an OpenDart key** (free, instant):\n• [Sign up — opendart.fss.or.kr/uss/umt/EgovMberInsertView.do]({opendart_signup_url})\n• [Request API key — opendart.fss.or.kr/mng/apiUseStusUser.do]({opendart_key_url})\n\nNote: holdings (quantity / avg price) are managed via the `kr_finance_kit.add_position` service, not this screen — you don't need to touch them here.",
         "data": {
-          "opendart_api_key": "OpenDart API key (optional)",
-          "kr_tickers": "KR ticker codes (CSV)",
-          "us_tickers": "US ticker symbols (CSV)",
-          "other_tickers": "Crypto / FX / futures tickers (CSV)",
+          "opendart_api_key": "OpenDart API key : ~40-character key",
+          "kr_tickers": "KR ticker codes : 005930, 000660, 035420, 035720.KQ, 373220",
+          "us_tickers": "US ticker symbols : AAPL:Apple, MSFT:Microsoft, TSLA:Tesla, NVDA:NVIDIA",
+          "other_tickers": "Crypto / FX / futures : BTC-USD:Bitcoin, ETH-USD:Ethereum, EUR=X:EUR/USD, GC=F:Gold, CL=F:Oil",
           "include_indices": "Include KOSPI/KOSDAQ indices",
           "include_us_indices": "Include NASDAQ/Dow/S&P 500 indices",
           "include_fx": "Include USD/KRW FX",
           "include_detailed_attrs": "Include detailed attributes (52w high/low, 50d/200d avg, day high/low, volume, dividend, PE, marketState)"
         },
         "data_description": {
-          "opendart_api_key": "Re-validated on save. Paste a freshly rotated key here. Blank disables disclosures + name mapping",
-          "kr_tickers": "005930, 000660, 035420, 035720.KQ, 373220",
-          "us_tickers": "AAPL:Apple, MSFT:Microsoft, TSLA:Tesla, NVDA:NVIDIA",
-          "other_tickers": "BTC-USD:Bitcoin, ETH-USD:Ethereum, EUR=X:EUR/USD, GC=F:Gold, CL=F:Oil",
           "include_indices": "Disabling removes sensor.fi_kospi / kosdaq",
           "include_us_indices": "Disabling removes sensor.fi_nasdaq / dow / sp500",
           "include_fx": "Disabling removes sensor.fi_usdkrw. The USD→KRW-converted portfolio totals also go offline, so keep this on if you hold US tickers",
