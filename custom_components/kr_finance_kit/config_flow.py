@@ -34,6 +34,7 @@ from .const import (
     CONF_DISCLOSURE_CORP_CODES,
     CONF_INCLUDE_FX,
     CONF_INCLUDE_INDICES,
+    CONF_INCLUDE_US_INDICES,
     CONF_KR_TICKER_NAMES,
     CONF_KR_TICKERS,
     CONF_OPENDART_API_KEY,
@@ -104,6 +105,7 @@ _FORM_SCHEMA = vol.Schema(
         vol.Optional(CONF_KR_TICKERS): str,
         vol.Optional(CONF_US_TICKERS): str,
         vol.Optional(CONF_INCLUDE_INDICES, default=True): bool,
+        vol.Optional(CONF_INCLUDE_US_INDICES, default=True): bool,
         vol.Optional(CONF_INCLUDE_FX, default=True): bool,
     }
 )
@@ -149,6 +151,7 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_DISCLOSURE_CORP_CODES: corp_codes,
                         CONF_KR_TICKER_NAMES: ticker_names,
                         CONF_INCLUDE_INDICES: user_input.get(CONF_INCLUDE_INDICES, True),
+                        CONF_INCLUDE_US_INDICES: user_input.get(CONF_INCLUDE_US_INDICES, True),
                         CONF_INCLUDE_FX: user_input.get(CONF_INCLUDE_FX, True),
                         CONF_POSITIONS: [],
                     },
@@ -205,6 +208,7 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
                         CONF_DISCLOSURE_CORP_CODES: corp_codes,
                         CONF_KR_TICKER_NAMES: ticker_names,
                         CONF_INCLUDE_INDICES: user_input.get(CONF_INCLUDE_INDICES, True),
+                        CONF_INCLUDE_US_INDICES: user_input.get(CONF_INCLUDE_US_INDICES, True),
                         CONF_INCLUDE_FX: user_input.get(CONF_INCLUDE_FX, True),
                         # Holdings are service-managed; keep whatever we already have.
                         CONF_POSITIONS: self._current(CONF_POSITIONS, []),
@@ -221,6 +225,7 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
             CONF_KR_TICKERS: _list_to_csv(self._current(CONF_KR_TICKERS, [])),
             CONF_US_TICKERS: _list_to_csv(self._current(CONF_US_TICKERS, [])),
             CONF_INCLUDE_INDICES: self._current(CONF_INCLUDE_INDICES, True),
+            CONF_INCLUDE_US_INDICES: self._current(CONF_INCLUDE_US_INDICES, True),
             CONF_INCLUDE_FX: self._current(CONF_INCLUDE_FX, True),
         }
         return self.async_show_form(

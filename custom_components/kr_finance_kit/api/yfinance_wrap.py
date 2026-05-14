@@ -36,10 +36,15 @@ from typing import Any
 
 from ..const import (
     FX_USDKRW,
+    INDEX_DOW,
     INDEX_KOSDAQ,
     INDEX_KOSPI,
+    INDEX_NASDAQ,
+    INDEX_SP500,
+    KR_INDICES,
     LOGGER,
     MARKET_KR,
+    US_INDICES,
 )
 
 
@@ -69,6 +74,9 @@ def _safe_float(value: Any) -> float | None:
 INDEX_TICKERS: dict[str, str] = {
     INDEX_KOSPI: "^KS11",
     INDEX_KOSDAQ: "^KQ11",
+    INDEX_NASDAQ: "^IXIC",
+    INDEX_DOW: "^DJI",
+    INDEX_SP500: "^GSPC",
 }
 FX_TICKERS: dict[str, str] = {
     FX_USDKRW: "KRW=X",
@@ -223,10 +231,22 @@ async def _gather(symbols: list[str]) -> dict[str, dict[str, Any]]:
     return out
 
 
-async def fetch_indices() -> dict[str, dict[str, Any]]:
-    raw = await _gather(list(INDEX_TICKERS.values()))
-    # Re-key back to our domain symbol (KOSPI/KOSDAQ) for sensor lookup.
-    return {name: raw.get(tkr, {}) for name, tkr in INDEX_TICKERS.items()}
+async def fetch_indices(names: list[str] | None = None) -> dict[str, dict[str, Any]]:
+    """Fetch index quotes. ``names`` filters which subset to actually hit yfinance for.
+
+    Passing ``None`` keeps the legacy behavior (all known indices). Passing
+    an empty list returns ``{}`` without any network — used when the
+    coordinator wants to skip indices entirely under user options.
+    """
+    if names is None:
+        wanted = INDEX_TICKERS
+    else:
+        wanted = {n: INDEX_TICKERS[n] for n in names if n in INDEX_TICKERS}
+    if not wanted:
+        return {}
+    raw = await _gather(list(wanted.values()))
+    # Re-key back to our domain symbol for sensor lookup.
+    return {name: raw.get(tkr, {}) for name, tkr in wanted.items()}
 
 
 async def fetch_fx() -> dict[str, dict[str, Any]]:

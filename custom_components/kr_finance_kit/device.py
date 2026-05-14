@@ -26,6 +26,10 @@ def market_device() -> DeviceInfo:
     return _device("market", "한국 시장 지표")
 
 
+def us_market_device() -> DeviceInfo:
+    return _device("us_market", "미국 시장 지수")
+
+
 def ticker_device(market: str, ticker: str, label: str | None = None) -> DeviceInfo:
     # When we have a friendly label (e.g. "삼성전자"), surface it in the device
     # panel; otherwise fall back to the raw "{MARKET} {TICKER}" form.

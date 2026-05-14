@@ -13,16 +13,17 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import (
     CONF_INCLUDE_FX,
     CONF_INCLUDE_INDICES,
+    CONF_INCLUDE_US_INDICES,
     CONF_KR_TICKER_NAMES,
     DOMAIN,
     FX_USDKRW,
-    INDEX_KOSDAQ,
-    INDEX_KOSPI,
+    KR_INDICES,
     MARKET_KR,
     MARKET_US,
+    US_INDICES,
 )
 from .coordinator import MarketCoordinator
-from .device import market_device, portfolio_device, ticker_device
+from .device import market_device, portfolio_device, ticker_device, us_market_device
 from .portfolio import compute_totals
 
 
@@ -60,10 +61,9 @@ async def async_setup_entry(
     entities: list[SensorEntity] = []
 
     if _entry_value(entry, CONF_INCLUDE_INDICES, True):
-        entities += [
-            IndexSensor(market, INDEX_KOSPI),
-            IndexSensor(market, INDEX_KOSDAQ),
-        ]
+        entities += [IndexSensor(market, idx, MARKET_KR) for idx in KR_INDICES]
+    if _entry_value(entry, CONF_INCLUDE_US_INDICES, True):
+        entities += [IndexSensor(market, idx, MARKET_US) for idx in US_INDICES]
     if _entry_value(entry, CONF_INCLUDE_FX, True):
         entities.append(FXSensor(market, FX_USDKRW))
 
@@ -95,12 +95,17 @@ class IndexSensor(_MarketBase):
     _attr_icon = "mdi:chart-line"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, coordinator: MarketCoordinator, index: str) -> None:
+    def __init__(self, coordinator: MarketCoordinator, index: str, market: str = MARKET_KR) -> None:
         super().__init__(coordinator)
         self._index = index
         self._attr_unique_id = f"{DOMAIN}_index_{index.lower()}"
+        # Pin entity_id to an English slug regardless of the (Korean)
+        # device name — has_entity_name=True would otherwise produce
+        # `sensor.hangug_sijang_jipyo_kospi` style slugs that don't match
+        # what the README and the example automations document.
+        self._attr_suggested_object_id = f"{DOMAIN}_{index.lower()}"
         self._attr_name = index
-        self._attr_device_info = market_device()
+        self._attr_device_info = us_market_device() if market == MARKET_US else market_device()
 
     @property
     def native_value(self) -> float | None:
@@ -122,6 +127,7 @@ class FXSensor(_MarketBase):
         super().__init__(coordinator)
         self._pair = pair
         self._attr_unique_id = f"{DOMAIN}_fx_{pair.lower()}"
+        self._attr_suggested_object_id = f"{DOMAIN}_{pair.lower()}"
         self._attr_name = pair
         self._attr_device_info = market_device()
 
@@ -156,6 +162,7 @@ class QuoteSensor(_MarketBase):
         self._market = market
         self._ticker = ticker
         self._attr_unique_id = f"{DOMAIN}_{market.lower()}_{ticker}"
+        self._attr_suggested_object_id = f"{DOMAIN}_{market.lower()}_{ticker.lower()}"
         # Device label is the single source of truth for the friendly
         # name: "삼성전자" when resolved, "KR 005930" otherwise. Both the
         # unique_id and entity_id stay code-based so automations don't
@@ -189,6 +196,7 @@ class _PortfolioBase(_MarketBase):
         super().__init__(coordinator)
         self._key = key
         self._attr_unique_id = f"{DOMAIN}_portfolio_{key}"
+        self._attr_suggested_object_id = f"{DOMAIN}_portfolio_{key.lower()}"
         self._attr_name = name
         self._attr_native_unit_of_measurement = unit
         self._attr_icon = icon

@@ -42,6 +42,7 @@ class DisclosureBinarySensor(CoordinatorEntity[DisclosureCoordinator], BinarySen
         super().__init__(coordinator)
         self._corp_code = corp_code
         self._attr_unique_id = f"{DOMAIN}_disclosure_{corp_code}"
+        self._attr_suggested_object_id = f"{DOMAIN}_disclosure_{corp_code}"
         self._attr_name = "신규 공시"
         self._attr_device_info = disclosure_device(corp_code)
 

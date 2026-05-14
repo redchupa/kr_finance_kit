@@ -66,7 +66,8 @@ All of this is free — no brokerage credentials required.
    | **OpenDart API key** | Enables disclosure alerts + automatic company names (price-only without it) | `14ab...` (see below) |
    | **Korean tickers** | Tickers to watch, comma-separated | `005930, 000660, 035420` |
    | **US tickers** | US symbols, comma-separated | `AAPL, MSFT, TSLA` |
-   | Include KOSPI / KOSDAQ index | Adds index sensors | ☑ |
+   | Include KOSPI / KOSDAQ indices | Adds Korean index sensors | ☑ |
+   | Include NASDAQ / Dow / S&P 500 indices | Adds US index sensors | ☑ |
    | Include USD/KRW FX | Adds FX sensor | ☑ |
 
 4. **Submit** → done.
@@ -291,6 +292,7 @@ Existing values are pre-filled — adjust tickers or the OpenDart key and save.
 | Data | Source | API |
 |---|---|---|
 | KOSPI / KOSDAQ | yfinance | `^KS11`, `^KQ11` |
+| NASDAQ / Dow / S&P 500 | yfinance | `^IXIC`, `^DJI`, `^GSPC` |
 | USD/KRW | yfinance | `KRW=X` |
 | Korean tickers | yfinance | `005930.KS` / `.KQ` |
 | US tickers | yfinance | `AAPL` |
@@ -298,7 +300,8 @@ Existing values are pre-filled — adjust tickers or the OpenDart key and save.
 
 ### Entities created
 
-- `sensor.kr_finance_kit_kospi` / `_kosdaq` — indices
+- `sensor.kr_finance_kit_kospi` / `_kosdaq` — Korean indices
+- `sensor.kr_finance_kit_nasdaq` / `_dow` / `_sp500` — US indices (`^IXIC` / `^DJI` / `^GSPC`)
 - `sensor.kr_finance_kit_usdkrw` — FX
 - `sensor.kr_finance_kit_kr_<code>` — Korean ticker (attrs: `price`, `change`, `change_pct`, `asof`, `stale`)
 - `sensor.kr_finance_kit_us_<symbol>` — US ticker
@@ -335,6 +338,19 @@ A single `finance_query` function with 8 query types:
 - Backtesting
 
 </details>
+
+---
+
+## Migration to v0.1.32 (Korean → English entity_id)
+
+Before v0.1.32, the integration's device friendly-names were in Korean ("한국 시장 지표" etc.), so HA generated Korean-slug entity_ids like `sensor.hangug_sijang_jipyo_kospi`. v0.1.32 adds `_attr_suggested_object_id` to every sensor, forcing newly-registered entities to use the documented English slugs (`sensor.kr_finance_kit_kospi`, etc.). HA's entity registry keeps existing IDs as-is, so already-installed entries don't auto-rename.
+
+To switch to the English IDs (one-time):
+
+1. **Easy**: Settings → Devices & services → KR Finance Kit → ⋮ → **Delete** → re-add. Re-enter holdings (quantity / cost basis) via the `kr_finance_kit.add_position` service afterward.
+2. **Manual**: Settings → Devices & services → Entities → click each entity → gear icon → edit entity ID. Update any automations that referenced the old IDs.
+
+After that, re-import the blueprints (or re-edit existing ones) and the ticker dropdown will show the clean English entity_ids.
 
 ---
 

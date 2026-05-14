@@ -15,6 +15,7 @@ CONF_POSITIONS = "positions"  # list[{ticker, quantity, avg_price, market}]
 CONF_DISCLOSURE_CORP_CODES = "disclosure_corp_codes"
 CONF_KR_TICKER_NAMES = "kr_ticker_names"  # dict[stock_code, corp_name] for friendly labels
 CONF_INCLUDE_INDICES = "include_indices"
+CONF_INCLUDE_US_INDICES = "include_us_indices"
 CONF_INCLUDE_FX = "include_fx"
 
 SCAN_INTERVAL_MARKET = 60       # seconds — at least one market open
@@ -23,6 +24,11 @@ SCAN_INTERVAL_DISCLOSURE = 300   # seconds — OpenDart polling
 
 INDEX_KOSPI = "KOSPI"
 INDEX_KOSDAQ = "KOSDAQ"
+INDEX_NASDAQ = "NASDAQ"
+INDEX_DOW = "DOW"
+INDEX_SP500 = "SP500"
+KR_INDICES = (INDEX_KOSPI, INDEX_KOSDAQ)
+US_INDICES = (INDEX_NASDAQ, INDEX_DOW, INDEX_SP500)
 FX_USDKRW = "USDKRW"
 
 MARKET_KR = "KR"

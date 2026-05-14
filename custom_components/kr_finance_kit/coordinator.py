@@ -27,15 +27,18 @@ from .api import opendart, yfinance_wrap
 from .const import (
     CONF_INCLUDE_FX,
     CONF_INCLUDE_INDICES,
+    CONF_INCLUDE_US_INDICES,
     CONF_KR_TICKERS,
     CONF_POSITIONS,
     CONF_US_TICKERS,
+    KR_INDICES,
     LOGGER,
     MARKET_KR,
     MARKET_US,
     SCAN_INTERVAL_DISCLOSURE,
     SCAN_INTERVAL_MARKET,
     SCAN_INTERVAL_MARKET_IDLE,
+    US_INDICES,
 )
 from .market_hours import any_market_open, is_kr_market_open, is_us_market_open
 
@@ -83,7 +86,8 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _async_update_data(self) -> dict[str, Any]:
         cfg = self._config
-        include_indices = bool(cfg.get(CONF_INCLUDE_INDICES, True))
+        include_kr_indices = bool(cfg.get(CONF_INCLUDE_INDICES, True))
+        include_us_indices = bool(cfg.get(CONF_INCLUDE_US_INDICES, True))
         include_fx = bool(cfg.get(CONF_INCLUDE_FX, True))
         kr_open = is_kr_market_open()
         us_open = is_us_market_open()
@@ -93,7 +97,14 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # closed long enough that yfinance would return the same
             # prior-close repeatedly. Keep stale data so sensors stay
             # populated with last-known values.
-            indices_task = yfinance_wrap.fetch_indices() if include_indices else None
+            wanted_indices: list[str] = []
+            if include_kr_indices:
+                wanted_indices.extend(KR_INDICES)
+            if include_us_indices:
+                wanted_indices.extend(US_INDICES)
+            indices_task = (
+                yfinance_wrap.fetch_indices(wanted_indices) if wanted_indices else None
+            )
             fx_task = yfinance_wrap.fetch_fx() if include_fx else None
 
             indices = await indices_task if indices_task else {}
