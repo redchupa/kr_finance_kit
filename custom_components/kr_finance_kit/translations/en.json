@@ -101,7 +101,7 @@
         },
         "avg_price": {
           "name": "Average price (per share)",
-          "description": "⚠ Currency — enter in the market's native currency. 🇰🇷 KR in KRW (won) — Samsung 60,000 KRW → enter 60000. 🇺🇸 US in USD — Apple $180.5 → enter 180.5. Do NOT pre-convert. The integration handles the USD/KRW conversion itself and rolls the totals into sensor.fi_portfolio_krw_total / krw_pl. This is the per-share average, not the total cost basis."
+          "description": "⚠ Currency — enter the value in the market's native currency. 🇰🇷 KR positions are in KRW (won) — example: avg price of 60,000 KRW → enter `60000` (digits only, no comma or symbol). 🇺🇸 US positions are in USD — example: avg price of $180.5 → enter `180.5` (decimals OK). Do NOT pre-convert. The integration pulls USD/KRW itself and rolls the totals into sensor.fi_portfolio_krw_total / krw_pl. This is the **per-share** average, not the total cost basis."
         },
         "market": {
           "name": "Market",

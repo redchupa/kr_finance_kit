@@ -35,11 +35,13 @@ add_position:
     avg_price:
       name: Average price (per share)
       description: >
-        ⚠ 단위 주의 — 시장 통화 그대로 입력하세요. KR 종목은 **원 (KRW)**,
-        US 종목은 **달러 (USD)**. 예 — 삼성전자 60,000원 → 60000,
-        Apple 180.5 USD → 180.5. 환산값 (원/달러로 환산 후)을 미리 넣지
-        마세요 — 통합이 USD/KRW를 자동으로 가져와 KRW 합계에 합산합니다.
-        총 매입금액이 아닌 **1주당** 평균가 입니다.
+        ⚠ Unit — enter in the market's native currency. KR positions:
+        KRW (won). Example: avg price 60,000 KRW → enter `60000`
+        (digits only, no comma or currency symbol). US positions: USD.
+        Example: avg price $180.5 → enter `180.5` (decimals OK). Do
+        NOT pre-convert. The integration handles the USD/KRW
+        conversion itself and rolls the totals into KRW. This is the
+        per-share average, not the total cost basis.
       required: true
       example: "60000"
       selector:
