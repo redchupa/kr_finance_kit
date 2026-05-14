@@ -6,12 +6,13 @@ the user adds them explicitly at runtime.
 """
 from __future__ import annotations
 
+import math
+import re
 from typing import Any
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.helpers import config_validation as cv
 
 from .const import (
     CONF_POSITIONS,
@@ -25,17 +26,89 @@ SERVICE_REFRESH_NOW = "refresh_now"
 SERVICE_ADD_POSITION = "add_position"
 SERVICE_REMOVE_POSITION = "remove_position"
 
+# Ticker grammar: alnum start, then alnum or dot/hyphen. Covers the
+# real shapes — `005930`, `005930.KS`, `005930.KQ`, `AAPL`, `BRK-B`,
+# `RY.TO`. Hard-rejects whitespace, slashes, equals signs, currency
+# symbols, emoji, and SQL/HTML-style punctuation that a user might
+# accidentally paste from a broker site or screenshot OCR.
+_TICKER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.\-]{0,19}$")
+
+# Reasonable upper bound. yfinance prices have ranged from 0.0001 (sub-penny
+# OTC equities, micro-priced crypto) to ~$700,000 (Berkshire Hathaway A) —
+# 1e9 is comfortably above anything plausible, so anything hitting it is
+# almost certainly a unit-of-measurement mistake (e.g. someone pasted
+# total cost instead of unit cost).
+_MAX_NUMERIC = 1_000_000_000.0
+
+
+def _validate_ticker(value: Any) -> str:
+    """Sanitize + validate the ticker field.
+
+    Hard fails on:
+      • non-string input
+      • empty / whitespace-only strings
+      • anything outside ``[A-Za-z0-9.\\-]`` (special chars, spaces, emoji)
+      • > 20 chars
+
+    Yahoo's real-world ticker symbols all fit in this grammar; rejecting
+    the wider set protects the positions store from junk that would
+    silently never match a coordinator quote and leave a permanently
+    unavailable sensor.
+    """
+    if not isinstance(value, str):
+        raise vol.Invalid(
+            f"Ticker must be a string, got {type(value).__name__}."
+        )
+    v = value.strip().upper()
+    if not v:
+        raise vol.Invalid("Ticker is empty — enter a stock code like 005930 or AAPL.")
+    if not _TICKER_RE.match(v):
+        raise vol.Invalid(
+            f"Invalid ticker {value!r}. Only letters, digits, '.' and '-' are allowed "
+            "(e.g. 005930, 005930.KQ, AAPL, BRK-B). Spaces, currency symbols, "
+            "and other special characters are rejected."
+        )
+    return v
+
+
+def _finite_positive(value: Any) -> float:
+    """Coerce to a strictly positive, finite float.
+
+    ``vol.Coerce(float)`` alone passes ``float('nan')`` and
+    ``float('inf')`` — both would silently corrupt totals downstream
+    (sum * NaN = NaN forever). We reject them at the schema layer so
+    the user gets a clean error instead of a broken portfolio sensor.
+    """
+    try:
+        f = float(value)
+    except (TypeError, ValueError) as err:
+        raise vol.Invalid(f"Must be a number, got {value!r}.") from err
+    if not math.isfinite(f):
+        raise vol.Invalid(f"Must be a finite number, got {value!r}.")
+    if f <= 0:
+        raise vol.Invalid(
+            f"Must be positive (> 0), got {f}. Quantity and average price "
+            "are both strictly positive."
+        )
+    if f > _MAX_NUMERIC:
+        raise vol.Invalid(
+            f"{f} is too large (max {_MAX_NUMERIC:.0f}). If you meant the total "
+            "cost basis, divide by quantity first — avg_price is per-share."
+        )
+    return f
+
+
 _POSITION_SCHEMA = vol.Schema(
     {
-        vol.Required("ticker"): cv.string,
-        vol.Required("quantity"): vol.Coerce(float),
-        vol.Required("avg_price"): vol.Coerce(float),
+        vol.Required("ticker"): _validate_ticker,
+        vol.Required("quantity"): _finite_positive,
+        vol.Required("avg_price"): _finite_positive,
         vol.Required("market"): vol.In([MARKET_KR, MARKET_US]),
     }
 )
 _REMOVE_SCHEMA = vol.Schema(
     {
-        vol.Required("ticker"): cv.string,
+        vol.Required("ticker"): _validate_ticker,
         vol.Required("market"): vol.In([MARKET_KR, MARKET_US]),
     }
 )
@@ -85,15 +158,33 @@ def async_register_services(hass: HomeAssistant) -> None:
         cur = list(
             entry.options.get(CONF_POSITIONS, entry.data.get(CONF_POSITIONS, []))
         )
-        ticker = call.data["ticker"].strip().upper()
+        # ticker is already validated + uppercased by _validate_ticker.
+        ticker = call.data["ticker"]
         market = call.data["market"]
+        # Soft sanity check by market — log a hint when the ticker
+        # shape is implausible for that market, but still proceed so
+        # users with edge-case tickers aren't blocked.
+        if market == MARKET_KR and not ticker[:6].isdigit():
+            LOGGER.warning(
+                "add_position: KR ticker %r doesn't start with 6 digits — "
+                "this won't match a Korean stock quote. Use codes like "
+                "005930 or 035720.KQ.",
+                ticker,
+            )
+        elif market == MARKET_US and ticker.isdigit():
+            LOGGER.warning(
+                "add_position: US ticker %r is all digits — US symbols "
+                "are typically alphabetic (AAPL, MSFT). Did you mean to "
+                "set market=KR?",
+                ticker,
+            )
         # Upsert by (market, ticker).
         cur = [p for p in cur if not (p.get("ticker") == ticker and p.get("market") == market)]
         cur.append(
             {
                 "ticker": ticker,
-                "quantity": float(call.data["quantity"]),
-                "avg_price": float(call.data["avg_price"]),
+                "quantity": call.data["quantity"],
+                "avg_price": call.data["avg_price"],
                 "market": market,
             }
         )
@@ -106,7 +197,7 @@ def async_register_services(hass: HomeAssistant) -> None:
         cur = list(
             entry.options.get(CONF_POSITIONS, entry.data.get(CONF_POSITIONS, []))
         )
-        ticker = call.data["ticker"].strip().upper()
+        ticker = call.data["ticker"]
         market = call.data["market"]
         cur = [p for p in cur if not (p.get("ticker") == ticker and p.get("market") == market)]
         _save_positions(hass, entry, cur)

@@ -117,16 +117,18 @@
 
 ### 2. 입력 필드
 
-| HA UI 라벨 | 키 | 예시 | 비고 |
+| HA UI 라벨 | 키 | 예시 | 단위 / 비고 |
 |---|---|---|---|
-| 종목 코드/심볼 | `ticker` | `005930` / `AAPL` | KR은 6자리 숫자(코스닥은 `.KQ`), US는 심볼 |
-| 수량 | `quantity` | `10` | 보유 주수 |
-| **평단가** | `avg_price` | KR `60000` (원/KRW) · US `180.5` (달러/USD) | **시장 통화 그대로** 입력 — 환산 금지 |
-| 시장 | `market` | `KR` 또는 `US` | 라디오 버튼 |
+| 종목 코드/심볼 | `ticker` | 🇰🇷 `005930`, `035720.KQ` · 🇺🇸 `AAPL`, `BRK-B` | 영문/숫자/`.`/`-` 만. 공백·특수문자·이모지 → 거부 |
+| 수량 | `quantity` | `10`, `1.5` | 0보다 큰 양수. US fractional share OK |
+| **평단가 (1주당)** | `avg_price` | 🇰🇷 `60000` (원/KRW) · 🇺🇸 `180.5` (달러/USD) | **시장 통화 그대로** — 환산 금지 |
+| 시장 | `market` | `KR` (한국 주식) / `US` (미국 주식) | 라디오 버튼 |
 
-> ⚠ **암호화폐 / 환율 / 선물 (BTC-USD, EUR=X, GC=F …) 은 보유 종목 추적 미지원**. 시세 sensor (`sensor.fi_other_*`) 는 제공되지만 add_position 의 market 라디오에는 KR/US 만 있어요. 비트코인 평단가 입력하실 필요 없습니다.
+> ⚠ **암호화폐 / 환율 / 선물 (BTC-USD, EUR=X, GC=F …) 은 보유 종목 추적 미지원**. 시세 sensor (`sensor.fi_other_*`) 는 제공되지만 add_position 의 market 라디오에는 KR/US 만 있어요.
 
-> 💱 **환산 자동** — KR 종목은 원 그대로, US 종목은 달러 그대로 입력하시면 됩니다. USD/KRW 환율은 통합이 자동으로 가져와서 `sensor.fi_portfolio_krw_total` / `sensor.fi_portfolio_krw_pl` 에 합산합니다. 환산값을 미리 입력하면 이중 환산되어 망가져요.
+> 💱 **환산 자동** — KR 종목은 원 그대로, US 종목은 달러 그대로 입력. USD/KRW 환율은 통합이 자동으로 가져와서 `sensor.fi_portfolio_krw_total` / `sensor.fi_portfolio_krw_pl` 에 합산합니다. 환산값을 미리 넣으면 이중 환산되어 망가져요.
+
+> 🛡️ **입력 검증** — schema 단계에서 ticker는 정규식 `^[A-Za-z0-9][A-Za-z0-9.\-]{0,19}$` 필터, quantity·avg_price는 양수 + finite (NaN/Infinity 거부) + 최대 10억. 잘못된 값 (특수문자, 음수, 빈 칸, 한글 ticker, HTML/SQL 인젝션 시도 등) 은 서비스 호출이 시작 전에 명확한 에러 메시지와 함께 차단됩니다.
 
 저장 후 6개 portfolio sensor (`sensor.fi_portfolio_*`) + P/L alert binary_sensor가 자동으로 활성화됩니다.
 

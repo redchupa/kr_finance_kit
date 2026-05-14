@@ -117,16 +117,18 @@ Holdings (quantity + average cost) are entered as a **service call**, not on the
 
 ### 2. Fields
 
-| UI label | Key | Example | Notes |
+| UI label | Key | Example | Unit / notes |
 |---|---|---|---|
-| Ticker / symbol | `ticker` | `005930` / `AAPL` | KR = 6-digit code (KOSDAQ adds `.KQ`), US = symbol |
-| Quantity | `quantity` | `10` | Share count |
-| **Average price** | `avg_price` | KR `60000` (KRW) · US `180.5` (USD) | **Native market currency** — do NOT pre-convert |
-| Market | `market` | `KR` or `US` | Radio button |
+| Ticker / symbol | `ticker` | 🇰🇷 `005930`, `035720.KQ` · 🇺🇸 `AAPL`, `BRK-B` | Letters, digits, `.`, `-` only. Spaces, special chars, emoji → rejected |
+| Quantity | `quantity` | `10`, `1.5` | Strictly positive. US fractional shares OK |
+| **Average price (per share)** | `avg_price` | 🇰🇷 `60000` (KRW) · 🇺🇸 `180.5` (USD) | **Native market currency** — do NOT pre-convert |
+| Market | `market` | `KR` (Korean stocks) / `US` (US stocks) | Radio button |
 
-> ⚠ **Crypto / FX / futures (BTC-USD, EUR=X, GC=F …) are price-only.** Portfolio tracking isn't supported for them — the `market` radio only offers KR / US. Don't try to enter a Bitcoin position.
+> ⚠ **Crypto / FX / futures (BTC-USD, EUR=X, GC=F …) are price-only.** Portfolio tracking isn't supported — the market radio only offers KR / US.
 
-> 💱 **Auto-conversion** — enter KR positions in won, US positions in dollars. The integration pulls USD/KRW itself and rolls everything into `sensor.fi_portfolio_krw_total` / `sensor.fi_portfolio_krw_pl`. Pre-converting will double-count.
+> 💱 **Auto-conversion** — enter KR positions in won, US positions in dollars. The integration pulls USD/KRW itself and rolls everything into `sensor.fi_portfolio_krw_total` / `sensor.fi_portfolio_krw_pl`. Pre-converting double-counts.
+
+> 🛡️ **Input validation** — the schema filters ticker through `^[A-Za-z0-9][A-Za-z0-9.\-]{0,19}$`, requires quantity / avg_price to be strictly positive finite numbers ≤ 1e9, and rejects NaN / Infinity. Bad inputs (special chars, negatives, empties, Korean text, HTML/SQL injection attempts) are blocked at the schema layer with a clear error before the service handler runs.
 
 After saving, the six portfolio sensors (`sensor.fi_portfolio_*`) and the P/L alert binary_sensor turn on automatically.
 

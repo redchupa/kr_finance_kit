@@ -89,20 +89,32 @@
   "services": {
     "add_position": {
       "name": "보유 종목 추가/수정",
-      "description": "보유 종목(수량 + 평단가)을 추가하거나 수정합니다. ConfigEntry options에 암호화 저장 — 소스 파일에 기록되지 않습니다. ⚠ 한국·미국 주식만 지원 — 암호화폐·환율·선물(BTC-USD 등)은 시세 sensor만 제공되고 보유 추적은 안 됩니다.",
+      "description": "보유 종목(수량 + 평단가)을 추가하거나 수정합니다. ConfigEntry options에 암호화 저장 — 소스 파일에 기록되지 않습니다. ⚠ 한국·미국 주식만 지원 — 비트코인·암호화폐·환율·선물(BTC-USD, EUR=X 등)은 시세 sensor만 제공되고 보유 추적은 미지원입니다.",
       "fields": {
-        "ticker": {"name": "종목 코드/심볼", "description": "한국 종목 코드 (예 005930, 035720.KQ) 또는 미국 심볼 (예 AAPL)."},
-        "quantity": {"name": "수량", "description": "보유 수량 (주식 수)."},
-        "avg_price": {"name": "평단가", "description": "평균 매입가를 시장 통화 그대로 입력 — 한국 종목은 원(KRW), 미국 종목은 달러(USD). 환산은 자동으로 처리되니 환산값으로 넣지 마세요."},
-        "market": {"name": "시장", "description": "KR (한국) 또는 US (미국). 암호화폐·환율 ticker는 여기서 선택할 수 없습니다."}
+        "ticker": {
+          "name": "종목 코드/심볼",
+          "description": "🇰🇷 한국 — 6자리 종목코드 (예 005930 삼성전자, 035720.KQ 카카오·코스닥은 .KQ). 🇺🇸 미국 — 영문 심볼 (예 AAPL 애플, MSFT 마이크로소프트, BRK-B). 영문·숫자·'.'·'-' 외 특수문자·공백·이모지는 거부됩니다."
+        },
+        "quantity": {
+          "name": "수량",
+          "description": "보유 주식 수 (0보다 큰 양수). 미국 fractional share도 OK (예 1.5)."
+        },
+        "avg_price": {
+          "name": "평단가 (1주당)",
+          "description": "⚠ 단위 주의 — 시장 통화 그대로 입력하세요. 🇰🇷 한국 종목은 원 (KRW) — 예 삼성전자 60,000원 → 60000. 🇺🇸 미국 종목은 달러 (USD) — 예 Apple 180.5달러 → 180.5. 환산값 (원→달러 등)으로 미리 변환하지 마세요. 통합이 USD/KRW를 자동으로 가져와서 sensor.fi_portfolio_krw_total / krw_pl 에 합산합니다. 총 매입금액이 아닌 1주당 평균가입니다."
+        },
+        "market": {
+          "name": "시장",
+          "description": "KR — 한국 주식 (코스피·코스닥). US — 미국 주식 (NYSE·NASDAQ). 비트코인·암호화폐·환율·선물은 여기서 선택 불가 — 옵션 화면의 \"암호화폐·환율·선물\" 필드로 시세만 추적하세요."
+        }
       }
     },
     "remove_position": {
       "name": "보유 종목 삭제",
-      "description": "보유 종목을 삭제합니다. ticker + market 조합으로 매칭됩니다.",
+      "description": "보유 종목을 삭제합니다. ticker + market 조합으로 매칭 — add_position 때 입력한 그대로 다시 넣어주세요.",
       "fields": {
-        "ticker": {"name": "종목 코드/심볼", "description": "삭제할 종목 코드 또는 심볼."},
-        "market": {"name": "시장", "description": "KR (한국) 또는 US (미국)."}
+        "ticker": {"name": "종목 코드/심볼", "description": "삭제할 종목 코드 또는 심볼 (예 005930, AAPL)."},
+        "market": {"name": "시장", "description": "KR (한국 주식) 또는 US (미국 주식). add_position 시 입력한 것과 동일해야 합니다."}
       }
     }
   }

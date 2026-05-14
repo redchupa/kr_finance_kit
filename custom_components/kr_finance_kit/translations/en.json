@@ -89,20 +89,32 @@
   "services": {
     "add_position": {
       "name": "Add / update holding",
-      "description": "Add or update a holding (quantity + average purchase price). Stored in encrypted ConfigEntry options — never persisted to source files. ⚠ KR / US stocks only — crypto, FX, futures (BTC-USD, EUR=X, GC=F …) expose price sensors only; portfolio tracking is not supported for them.",
+      "description": "Add or update a holding (quantity + average purchase price). Stored in encrypted ConfigEntry options — never persisted to source files. ⚠ KR / US stocks only — crypto, FX, futures (BTC-USD, EUR=X, GC=F …) expose price sensors but are not tracked as positions; select from the Market radio (KR or US).",
       "fields": {
-        "ticker": {"name": "Ticker / symbol", "description": "KR stock code (e.g. 005930, 035720.KQ) or US symbol (e.g. AAPL)."},
-        "quantity": {"name": "Quantity", "description": "Number of shares."},
-        "avg_price": {"name": "Average price", "description": "Average purchase price in the market's native currency — KR positions in KRW (won), US positions in USD. Don't pre-convert; the integration does the FX conversion for the KRW totals."},
-        "market": {"name": "Market", "description": "KR (Korea) or US (United States). Crypto / FX tickers can't be selected here."}
+        "ticker": {
+          "name": "Ticker / symbol",
+          "description": "🇰🇷 KR — 6-digit code, KOSDAQ adds the .KQ suffix (e.g. 005930 Samsung, 035720.KQ Kakao). 🇺🇸 US — symbol (e.g. AAPL, MSFT, BRK-B). Only letters, digits, '.' and '-' are accepted — spaces, currency symbols, and other special characters are rejected."
+        },
+        "quantity": {
+          "name": "Quantity",
+          "description": "Number of shares held (must be > 0). Fractional shares are accepted for US (e.g. 1.5)."
+        },
+        "avg_price": {
+          "name": "Average price (per share)",
+          "description": "⚠ Currency — enter in the market's native currency. 🇰🇷 KR in KRW (won) — Samsung 60,000 KRW → enter 60000. 🇺🇸 US in USD — Apple $180.5 → enter 180.5. Do NOT pre-convert. The integration handles the USD/KRW conversion itself and rolls the totals into sensor.fi_portfolio_krw_total / krw_pl. This is the per-share average, not the total cost basis."
+        },
+        "market": {
+          "name": "Market",
+          "description": "KR — Korean stocks (KOSPI, KOSDAQ). US — US stocks (NYSE, NASDAQ). Crypto, FX, and futures (BTC-USD, EUR=X, GC=F) can't be selected here — register them via the integration options screen for price tracking only."
+        }
       }
     },
     "remove_position": {
       "name": "Remove holding",
-      "description": "Remove a holding from the portfolio. Matched by ticker + market.",
+      "description": "Remove a previously added position. Matched by ticker + market — re-enter the same values you used in add_position.",
       "fields": {
-        "ticker": {"name": "Ticker / symbol", "description": "Ticker code or symbol to remove."},
-        "market": {"name": "Market", "description": "KR (Korea) or US (United States)."}
+        "ticker": {"name": "Ticker / symbol", "description": "Ticker code or symbol to remove (e.g. 005930, AAPL)."},
+        "market": {"name": "Market", "description": "KR (Korean stocks) or US (US stocks). Must match the market the position was added under."}
       }
     }
   }

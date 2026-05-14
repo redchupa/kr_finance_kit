@@ -7,49 +7,61 @@ add_position:
   description: >
     Add or update a holding (quantity + average purchase price). Stored
     in encrypted ConfigEntry options — never persisted to source files.
-    ⚠ KR / US stocks only — crypto, FX, futures (BTC-USD, EUR=X, GC=F …)
-    expose price sensors only; portfolio tracking is not supported.
+    Supports Korean (KR) and US stocks only. Crypto, FX, and futures
+    (BTC-USD, EUR=X, GC=F, …) expose price sensors but are not tracked
+    as positions — pick from the "market" radio (KR or US).
   fields:
     ticker:
       name: Ticker / symbol
-      description: KR stock code (e.g. 005930, 035720.KQ) or US symbol (e.g. AAPL).
+      description: >
+        KR — 6-digit code, KOSDAQ adds the .KQ suffix (e.g. 005930,
+        005930.KS, 035720.KQ). US — symbol (e.g. AAPL, MSFT, BRK-B).
+        Only letters, digits, '.' and '-' are accepted — spaces,
+        currency symbols, and other special characters are rejected.
       required: true
       example: "005930"
       selector:
         text:
     quantity:
       name: Quantity
-      description: Number of shares.
+      description: Number of shares held (must be > 0).
       required: true
       example: "10"
       selector:
         number:
-          min: 0
+          min: 0.0001
           max: 1000000000
           mode: box
     avg_price:
-      name: Average price
+      name: Average price (per share)
       description: >
-        Average purchase price in the market's native currency — KR
-        positions in KRW (won), US positions in USD. Don't pre-convert;
-        the integration does the FX conversion for KRW totals.
+        ⚠ 단위 주의 — 시장 통화 그대로 입력하세요. KR 종목은 **원 (KRW)**,
+        US 종목은 **달러 (USD)**. 예 — 삼성전자 60,000원 → 60000,
+        Apple 180.5 USD → 180.5. 환산값 (원/달러로 환산 후)을 미리 넣지
+        마세요 — 통합이 USD/KRW를 자동으로 가져와 KRW 합계에 합산합니다.
+        총 매입금액이 아닌 **1주당** 평균가 입니다.
       required: true
       example: "60000"
       selector:
         number:
-          min: 0
+          min: 0.0001
           max: 1000000000
           mode: box
     market:
       name: Market
-      description: KR (Korea) or US (United States). Crypto / FX tickers can't be selected here.
+      description: >
+        KR — 한국 주식 (코스피·코스닥). US — 미국 주식 (NYSE·NASDAQ).
+        암호화폐·환율·선물 (예 BTC-USD, EUR=X, GC=F) 은 보유 추적 미지원 —
+        해당 종목은 옵션 화면의 "암호화폐·환율·선물" 필드로 시세만 등록하세요.
       required: true
       default: "KR"
       selector:
         select:
           options:
-            - KR
-            - US
+            - label: "KR (한국 주식)"
+              value: "KR"
+            - label: "US (미국 주식)"
+              value: "US"
 
 remove_position:
   name: Remove holding
@@ -57,18 +69,20 @@ remove_position:
   fields:
     ticker:
       name: Ticker / symbol
-      description: Ticker code or symbol to remove.
+      description: Ticker code or symbol to remove (e.g. 005930, AAPL).
       required: true
       example: "005930"
       selector:
         text:
     market:
       name: Market
-      description: KR (Korea) or US (United States).
+      description: KR (한국 주식) or US (미국 주식). Must match the market the position was added under.
       required: true
       default: "KR"
       selector:
         select:
           options:
-            - KR
-            - US
+            - label: "KR (한국 주식)"
+              value: "KR"
+            - label: "US (미국 주식)"
+              value: "US"
