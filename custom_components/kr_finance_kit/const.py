@@ -80,6 +80,23 @@ EVENT_US_MARKET_CLOSED = f"{DOMAIN}_us_market_closed"
 # the filter through to api.opendart.fetch_recent_disclosures.
 DISCLOSURE_CATEGORY_CODES = ("A", "B", "C", "D", "E", "F", "G", "H", "I", "J")
 
+# Korean labels for the OpenDart pblntf_ty codes, used by the
+# SelectSelector in config_flow so the dropdown shows
+# "A — 정기공시" instead of a bare "A". Code value stays unchanged
+# (entry.data + OpenDart request keep using the single-letter form).
+DISCLOSURE_CATEGORY_LABELS = {
+    "A": "A — 정기공시",
+    "B": "B — 주요사항보고",
+    "C": "C — 발행공시",
+    "D": "D — 지분공시",
+    "E": "E — 기타공시",
+    "F": "F — 외부감사관련",
+    "G": "G — 펀드공시",
+    "H": "H — 자산유동화",
+    "I": "I — 거래소공시",
+    "J": "J — 공정위공시",
+}
+
 MARKET_KR = "KR"
 MARKET_US = "US"
 MARKET_OTHER = "OTHER"  # crypto, forex, futures, commodities — Yahoo ticker passed through

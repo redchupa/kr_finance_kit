@@ -58,6 +58,7 @@ from .const import (
     CONF_US_TICKER_LABELS,
     CONF_US_TICKERS,
     DISCLOSURE_CATEGORY_CODES,
+    DISCLOSURE_CATEGORY_LABELS,
     DOMAIN,
 )
 
@@ -234,7 +235,15 @@ _FORM_SCHEMA = vol.Schema(
         ),
         vol.Optional(CONF_DISCLOSURE_CATEGORIES, default=[]): SelectSelector(
             SelectSelectorConfig(
-                options=list(DISCLOSURE_CATEGORY_CODES),
+                # Inline value+label pairs so the dropdown reads
+                # "A — 정기공시" instead of a bare "A". HA's
+                # SelectSelector accepts the SelectOptionDict shape
+                # (value/label) and the wire format stays the single
+                # letter so OpenDart requests don't need to change.
+                options=[
+                    {"value": code, "label": DISCLOSURE_CATEGORY_LABELS[code]}
+                    for code in DISCLOSURE_CATEGORY_CODES
+                ],
                 multiple=True,
                 mode=SelectSelectorMode.DROPDOWN,
             )
