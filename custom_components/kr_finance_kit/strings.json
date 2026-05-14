@@ -24,6 +24,7 @@
           "us_tickers": "AAPL:Apple, MSFT:Microsoft, TSLA:Tesla, NVDA:NVIDIA",
           "other_tickers": "BTC-USD:Bitcoin, ETH-USD:Ethereum, EUR=X:EUR/USD, GC=F:Gold, CL=F:Oil",
           "include_us_indices": "Adds sensor.fi_nasdaq / dow / sp500",
+          "portfolio_pl_alert_pct": "E.g. set to 5 → binary_sensor.fi_portfolio_pl_alert turns ON whenever the KRW-converted total portfolio P/L crosses ±5%. Wire that binary_sensor into a notify automation. 0 = sensor not created at all",
           "include_detailed_attrs": "Adds one yfinance .info call per ticker per poll. Surfaces fifty_two_week_high/low, fifty/two_hundred_day_average, regular_market_day_high/low/volume, dividend_*, forward_pe / trailing_pe, market_state, pre/post_market_price as sensor attributes"
         }
       }
