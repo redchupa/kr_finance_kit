@@ -119,7 +119,7 @@ Holdings (quantity + average cost) are entered as a **service call**, not on the
 
 | UI label | Key | Example | Unit / notes |
 |---|---|---|---|
-| Ticker / symbol | `ticker` | 🇰🇷 `005930`, `035720.KQ` · 🇺🇸 `AAPL`, `BRK-B` | Letters, digits, `.`, `-` only. Spaces, special chars, emoji → rejected |
+| Ticker / symbol | `ticker` | 🇰🇷 `005930`, `035720.KS` · 🇺🇸 `AAPL`, `BRK-B` | Letters, digits, `.`, `-` only. Spaces, special chars, emoji → rejected |
 | Quantity | `quantity` | `10`, `1.5` | Strictly positive. US fractional shares OK |
 | **Average price (per share)** | `avg_price` | 🇰🇷 `60000` (KRW) · 🇺🇸 `180.5` (USD) | **Native market currency** — do NOT pre-convert |
 | Market | `market` | `KR` (Korean stocks) / `US` (US stocks) | Radio button |

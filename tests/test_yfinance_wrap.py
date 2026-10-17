@@ -27,13 +27,13 @@ def test_normalize_kr_ticker_appends_ks_for_6_digit_code():
 
 
 def test_normalize_kr_ticker_preserves_existing_suffix():
-    assert normalize_kr_ticker("035720.KQ") == "035720.KQ"
+    assert normalize_kr_ticker("247540.KQ") == "247540.KQ"
     assert normalize_kr_ticker("005930.KS") == "005930.KS"
 
 
 def test_normalize_kr_ticker_uppercases_lowercase_suffix():
     # Users sometimes type lowercase — we uppercase for yfinance's sake.
-    assert normalize_kr_ticker("035720.kq") == "035720.KQ"
+    assert normalize_kr_ticker("247540.kq") == "247540.KQ"
 
 
 def test_normalize_kr_ticker_passthrough_for_non_numeric():

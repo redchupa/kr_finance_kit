@@ -172,7 +172,7 @@ async def _enrich_kr_metadata(
     - ``corp_codes``: list[str] of unique 8-digit OpenDart corp codes
       driving the disclosure binary_sensors.
     - ``ticker_names``: dict[user_input_ticker → corp_name] feeding the
-      price-sensor friendly name (e.g. "035720.KQ" → "카카오").
+      price-sensor friendly name (e.g. "035720.KS" → "카카오").
     - ``corp_names``: dict[corp_code → corp_name] feeding the disclosure
       binary_sensor's device label so users see "삼성전자 신규 공시"
       instead of "공시 00126380".
@@ -187,7 +187,7 @@ async def _enrich_kr_metadata(
     corp_codes = list(dict.fromkeys(corp_map.values()))  # preserve order, dedupe
 
     # Re-key names by the original user input so sensors can look up by
-    # exactly what the user typed (e.g. "035720.KQ" → "카카오").
+    # exactly what the user typed (e.g. "035720.KS" → "카카오").
     keyed: dict[str, str] = {}
     for ticker in kr_tickers:
         bare = ticker.split(".")[0]

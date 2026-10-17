@@ -168,7 +168,7 @@ def async_register_services(hass: HomeAssistant) -> None:
             LOGGER.warning(
                 "add_position: KR ticker %r doesn't start with 6 digits — "
                 "this won't match a Korean stock quote. Use codes like "
-                "005930 or 035720.KQ.",
+                "005930 or 035720.KS.",
                 ticker,
             )
         elif market == MARKET_US and ticker.isdigit():

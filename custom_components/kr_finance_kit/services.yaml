@@ -15,7 +15,7 @@ add_position:
       name: Ticker / symbol
       description: >
         KR — 6-digit code, KOSDAQ adds the .KQ suffix (e.g. 005930,
-        005930.KS, 035720.KQ). US — symbol (e.g. AAPL, MSFT, BRK-B).
+        005930.KS, 035720.KS). US — symbol (e.g. AAPL, MSFT, BRK-B).
         Only letters, digits, '.' and '-' are accepted — spaces,
         currency symbols, and other special characters are rejected.
       required: true

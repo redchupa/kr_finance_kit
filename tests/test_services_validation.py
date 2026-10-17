@@ -37,7 +37,7 @@ from kr_finance_kit.services import (  # noqa: E402
     [
         "005930",         # KR KOSPI bare
         "005930.KS",      # KR explicit KOSPI suffix
-        "035720.KQ",      # KR KOSDAQ
+        "247540.KQ",      # KR KOSDAQ
         "AAPL",           # US
         "MSFT",           # US
         "BRK-B",          # US with hyphen
