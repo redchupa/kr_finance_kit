@@ -111,8 +111,13 @@ async def async_setup_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> bool
     # Korean entity_id on restart).
     await _migrate_legacy_entity_ids(hass)
 
+    # The coordinator's first data fetch is scheduled as a background task
+    # at the end of setup (see below), NOT awaited here. A blocking
+    # async_config_entry_first_refresh() used to hold up Home Assistant
+    # startup by ~1 minute: the market fetch walks dozens of symbols
+    # serially through yfinance (one HTTP round-trip each, doubled when
+    # detailed attrs are on). Deferring it keeps HA start fast.
     market = MarketCoordinator(hass, entry)
-    await market.async_config_entry_first_refresh()
 
     cfg = _config(entry)
     opendart_key = (cfg.get(CONF_OPENDART_API_KEY) or "").strip()
@@ -132,6 +137,15 @@ async def async_setup_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> bool
     )
     async_register_services(hass)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+
+    # Non-blocking first market fetch. Entities are already added above and
+    # tolerate coordinator.data being None — they render "unknown" until
+    # this refresh lands, then update in place. Running it as a background
+    # task (auto-cancelled on unload) means a slow or unreachable yfinance
+    # endpoint no longer delays Home Assistant startup.
+    entry.async_create_background_task(
+        hass, market.async_refresh(), f"{DOMAIN}_market_first_refresh"
+    )
     return True
 
 
