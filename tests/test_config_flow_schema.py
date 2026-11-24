@@ -1,7 +1,7 @@
 """Frontend-serialize guard for the config_flow schema.
 
 HA's add-integration dialog turns the voluptuous schema returned by
-``async_show_form`` into JSON via ``voluptuous_serialize.convert``,
+``async_show_form`` into JSON via ``probatio.to_field_list``,
 passing ``homeassistant.helpers.config_validation.custom_serializer``
 to handle HA-specific types (selectors, ConfigType, etc.).
 
@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 
 import pytest
-import voluptuous_serialize
+import probatio
 
 # Make custom_components/kr_finance_kit importable
 _ROOT = Path(__file__).resolve().parent.parent / "custom_components"
@@ -42,13 +42,13 @@ def schema():
 
 
 def test_form_schema_is_frontend_serializable(schema):
-    """The flow schema must survive voluptuous_serialize.convert with HA's
+    """The flow schema must survive probatio.to_field_list with HA's
     custom_serializer — exactly the path the add-integration dialog uses.
     A failure here would surface in the UI as
     ``500 Internal Server Error Server got itself in trouble``.
     """
     form_schema, custom_serializer = schema
-    result = voluptuous_serialize.convert(form_schema, custom_serializer=custom_serializer)
+    result = probatio.to_field_list(form_schema, custom_serializer=custom_serializer)
     assert isinstance(result, list)
     assert len(result) > 0
 
@@ -59,7 +59,7 @@ def test_form_schema_each_field_has_a_type_or_selector(schema):
     render and the dialog silently breaks.
     """
     form_schema, custom_serializer = schema
-    result = voluptuous_serialize.convert(form_schema, custom_serializer=custom_serializer)
+    result = probatio.to_field_list(form_schema, custom_serializer=custom_serializer)
     for entry in result:
         assert "name" in entry, f"field missing name: {entry}"
         assert "type" in entry or "selector" in entry, (
