@@ -40,6 +40,9 @@
     }
   },
   "options": {
+    "abort": {
+      "config_changed": "Settings changed while the form was open. Reopen it and try again."
+    },
     "step": {
       "init": {
         "title": "Finance Kit options",

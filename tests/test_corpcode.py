@@ -139,3 +139,19 @@ def test_resolve_kr_ticker_names_returns_empty_when_no_api_key():
         resolve_kr_ticker_names(hass=None, api_key="", stock_codes=["005930"])
     )
     assert result == {}
+
+
+def test_api_validation_log_does_not_include_request_details(monkeypatch, caplog):
+    from homeassistant.helpers import aiohttp_client
+    from custom_components.kr_finance_kit.api import opendart
+    import logging
+
+    marker = "synthetic-log-marker"
+    class FailedRequest:
+        def get(self, *args, **kwargs):
+            raise RuntimeError(marker)
+    monkeypatch.setattr(aiohttp_client, "async_get_clientsession", lambda hass: FailedRequest())
+    with caplog.at_level(logging.DEBUG):
+        assert not asyncio.run(opendart.validate_api_key(None, marker))
+    assert "RuntimeError" in caplog.text
+    assert marker not in caplog.text

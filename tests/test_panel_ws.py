@@ -518,3 +518,16 @@ async def test_anonymous_llm_context_omits_portfolio():
     assert result == {"error": "permission_denied"}
     summary = await tool.async_call(hass, SimpleNamespace(tool_args={"query_type": "market_summary"}), ctx)
     assert all(value is None for value in summary["portfolio_totals"].values())
+
+@sync
+async def test_options_open_before_watchlist_change_cannot_overwrite_it():
+    from custom_components.kr_finance_kit.config_flow import KRFinanceKitOptionsFlow
+
+    entry = _entry()
+    flow = KRFinanceKitOptionsFlow(entry)
+    flow.hass = _hass(entry)
+    flow.async_abort = lambda reason: {"reason": reason}
+    entry.options = {CONF_US_TICKERS: ["SAMPLE"]}
+    result = await flow.async_step_init({})
+    assert result == {"reason": "config_changed"}
+    assert entry.options[CONF_US_TICKERS] == ["SAMPLE"]

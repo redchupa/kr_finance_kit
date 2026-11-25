@@ -395,6 +395,12 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, entry: config_entries.ConfigEntry) -> None:
         self._entry = entry
+        self._opened_config = self._editable_config()
+
+    def _editable_config(self):
+        current = {**self._entry.data, **self._entry.options}
+        current.pop(CONF_POSITIONS, None)
+        return current
 
     def _current(self, key: str, default: Any = None) -> Any:
         """Look up a config value, options layered on top of data.
@@ -429,6 +435,9 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
                 )
                 us_labels = await _enrich_other_labels(self.hass, us, us_labels_explicit)
                 other_labels = await _enrich_other_labels(self.hass, other, other_labels_explicit)
+                encrypted_key = await seal(self.hass, api_key)
+                if self._editable_config() != self._opened_config:
+                    return self.async_abort(reason="config_changed")
                 return self.async_create_entry(
                     title="",
                     data={
@@ -437,7 +446,7 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
                         CONF_OTHER_TICKERS: other,
                         CONF_US_TICKER_LABELS: us_labels,
                         CONF_OTHER_TICKER_LABELS: other_labels,
-                        CONF_OPENDART_API_KEY: await seal(self.hass, api_key),
+                        CONF_OPENDART_API_KEY: encrypted_key,
                         CONF_DISCLOSURE_CORP_CODES: corp_codes,
                         CONF_DISCLOSURE_CORP_NAMES: corp_names,
                         CONF_KR_TICKER_NAMES: ticker_names,
