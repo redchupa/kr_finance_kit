@@ -10,7 +10,7 @@
  * open sheet (with inputs the user is typing into) is never clobbered.
  */
 
-const PANEL_VERSION = "0.2.15";
+const PANEL_VERSION = "0.2.16";
 const LS_KEY = "kr_finance_kit.prefs";
 
 const I18N = {
@@ -19,7 +19,8 @@ const I18N = {
     loading: "데이터를 불러오는 중…",
     initial_failed: "첫 조회를 완료하지 못했습니다. 자동으로 다시 시도합니다.",
     partial: "첫 조회 중입니다. 도착한 시세부터 표시합니다.",
-    warming: "첫 시세를 가져오는 중입니다. 잠시만 기다려 주세요.",
+    warming: "첫 시세를 조회 중입니다. 시작 분산 대기는 최대 30초이며 응답 시간은 별도입니다.",
+    next_check: "{n}초 후 화면을 자동으로 확인합니다.",
     not_configured: "Finance Kit 통합이 아직 설정되지 않았습니다. 설정 → 기기 및 서비스에서 추가해 주세요.",
     refresh: "새로고침",
     settings: "설정",
@@ -135,7 +136,8 @@ const I18N = {
     loading: "Loading…",
     initial_failed: "The first refresh could not finish. Finance Kit will retry automatically.",
     partial: "First refresh in progress. Showing quotes as they arrive.",
-    warming: "Fetching the first quotes. Symbols are fetched one at a time.",
+    warming: "Fetching the first quote. Startup pacing can take up to 30 seconds, plus provider response time.",
+    next_check: "Checking for new data in {n}s.",
     not_configured: "Finance Kit isn't set up yet. Add it under Settings → Devices & services.",
     refresh: "Refresh",
     settings: "Settings",
@@ -433,8 +435,15 @@ class KRFinancePanel extends HTMLElement {
   _startTimers() {
     this._stopTimers();
     const every = Math.max(10, this._prefs.refresh_sec || 30) * 1000;
-    this._timers.push(setInterval(() => { if (!document.hidden) this._loadSnapshot(); }, every));
-    this._timers.push(setInterval(() => this._tick(), 1000));
+    this._nextSnapshotAt = Date.now() + every;
+    this._timers.push(setInterval(() => {
+      this._tick();
+      if (document.hidden || this._snapshotPending) return;
+      const remaining = Math.max(0, Math.ceil((this._nextSnapshotAt - Date.now()) / 1000));
+      const counter = this.shadowRoot.querySelector("[data-next-check]");
+      if (counter) counter.textContent = this.t("next_check", { n: remaining });
+      if (!remaining) this._loadSnapshot();
+    }, 1000));
     // Long-lived wall tablets: let mini charts refresh twice an hour.
     this._timers.push(setInterval(() => { this._spark = {}; this._sparkFailed.clear(); this._sparkLimited.clear(); this._ensureSparks(); }, 30 * 60 * 1000));
     this._onVis = () => { if (!document.hidden) this._loadSnapshot(); };
@@ -447,7 +456,8 @@ class KRFinancePanel extends HTMLElement {
   }
 
   async _loadSnapshot() {
-    if (!this._hass) return;
+    if (!this._hass || this._snapshotPending) return;
+    this._snapshotPending = true;
     try {
       const snap = await this._hass.callWS({ type: "kr_finance_kit/snapshot" });
       this._error = null;
@@ -464,6 +474,9 @@ class KRFinancePanel extends HTMLElement {
     } catch (e) {
       this._error = e?.message || String(e);
     }
+    this._snapshotPending = false;
+    const seconds = this._snap?.initial_sync ? 10 : Math.max(10, this._prefs.refresh_sec || 30);
+    this._nextSnapshotAt = Date.now() + seconds * 1000;
     this._renderHeader();
     this._renderContent();
     if (this._sheet?.type === "detail") this._refreshDetailLive();
@@ -788,6 +801,10 @@ class KRFinancePanel extends HTMLElement {
       if ((!s.ready || s.initial_sync) && !s.provider_wait_minutes?.yahoo) {
         const status = !s.last_update_success ? "initial_failed" : s.ready ? "partial" : "warming";
         html += `<div class="banner" role="status">${esc(this._error || this.t(status))}</div>`;
+      }
+      if (s.initial_sync) {
+        const n = Math.max(0, Math.ceil((this._nextSnapshotAt - Date.now()) / 1000));
+        html += `<div class="muted small pad" data-next-check>${esc(this.t("next_check", { n }))}</div>`;
       }
       if (!this.isAdmin) html += `<div class="banner subtle">🔒 ${esc(this.t("readonly"))}</div>`;
       for (const id of visible) {
