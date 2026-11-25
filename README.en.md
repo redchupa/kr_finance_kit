@@ -2,406 +2,165 @@
 
 English · **[한국어](README.md)**
 
-> Korean and US equities, FX, crypto, and OpenDart disclosures — all surfaced as native Home Assistant sensors.
-> Free APIs only, no brokerage credentials, voice-assist friendly.
+Track Korean and US stocks, crypto, FX, holdings P/L, and corporate disclosures right inside Home Assistant — on your wall tablet or phone.
+No dashboard YAML to write, and no brokerage account login required.
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-FF8C00?style=flat-square&logo=homeassistantcommunitystore&logoColor=white)](https://hacs.xyz)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.6%2B-03A9F4?style=flat-square&logo=home-assistant&logoColor=white)](https://www.home-assistant.io)
-[![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org)
-
-[![Validate](https://img.shields.io/github/actions/workflow/status/redchupa/kr_finance_kit/validate.yml?label=validate&style=flat-square&logo=github)](https://github.com/redchupa/kr_finance_kit/actions/workflows/validate.yml)
-[![Tests](https://img.shields.io/github/actions/workflow/status/redchupa/kr_finance_kit/test.yml?label=tests&style=flat-square&logo=github)](https://github.com/redchupa/kr_finance_kit/actions/workflows/test.yml)
-[![Data: yfinance](https://img.shields.io/badge/data-yfinance-7B1FA2?style=flat-square&logo=yahoo&logoColor=white)](https://github.com/ranaroussi/yfinance)
-[![Disclosures: OpenDart](https://img.shields.io/badge/disclosures-OpenDart-E53935?style=flat-square)](https://opendart.fss.or.kr)
-[![Made for HA](https://img.shields.io/badge/Made%20for-Home%20Assistant-18BCF2?style=flat-square&logo=home-assistant&logoColor=white)](https://www.home-assistant.io)
-
-[Releases](https://github.com/redchupa/kr_finance_kit/releases)
+[![Releases](https://img.shields.io/github/v/release/redchupa/kr_finance_kit?style=flat-square)](https://github.com/redchupa/kr_finance_kit/releases)
 
 ---
 
-## What you can do
+## What makes it useful
 
-- 📱 **Sidebar app (v0.2.0)** — indices, watchlist, crypto, holdings and filings on one screen, no dashboard YAML needed
-- ☕ KOSPI, your tickers, FX, Bitcoin — all on the living-room wall panel
-- 📉 Push the moment a holding moves ±5% from your average cost
-- ⏱️ Trigger on "moved ±2% in the last 30 minutes"
-- 🗣️ "Hey Google, what's Samsung trading at?"
-- 🔔 OpenDart new-disclosure alerts (category-filtered)
-- 📊 Daily summary auto-sent right after market close
-
-All on **free APIs** (yfinance + OpenDart free key), no brokerage account needed.
-
----
-
-## 📱 Sidebar panel (v0.2.0)
-
-After install, a **Finance Kit** entry appears in the Home Assistant sidebar — usable right away, no dashboard to build.
-Leave the ticker fields blank during setup and it starts with **sample symbols** (Samsung Electronics, SK hynix, Apple, NVIDIA, Microsoft, Bitcoin, Ethereum); add or remove symbols any time with the **＋** button at the top right.
-
-- **➕ Add symbol** — 🇰🇷 Korea / 🇺🇸 US / 🪙 Crypto / 🌐 Other (FX, gold, oil), with name search
-- **⚙️ Settings** — 13 card themes × 6 layouts (cards, list, compact, big number, heatmap, ticker tape), gain color (🔴 Korean / 🟢 global), section order & visibility, mini charts, refresh interval
-- **KO / EN** toggle — preferences are stored per user, so they follow you across phone and tablet
-- **Mobile-first** — bottom tab bar, floating ➕ button, bottom sheets, scrub the chart with a finger
-- **Symbol detail** — 1D–1Y chart, 52-week range, holding quantity / average price, jump to HA history
-- Add both `BTC-KRW` and `BTC-USD` and the panel shows the **kimchi premium**
-
-> Only administrators can add or remove symbols; other users get a read-only view.
-
----
-
-## 5-minute install
-
-### Prerequisites
-- Home Assistant + [HACS](https://hacs.xyz)
-
-### Step 1 · Add HACS repository
-
-Click the button to open this repository in HACS on your own Home Assistant — no URL copy-paste needed.
-
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=redchupa&repository=kr_finance_kit&category=integration)
-
-If the button doesn't work, add it manually:
-
-1. HACS → ⋮ → **Custom repositories**
-2. URL `https://github.com/redchupa/kr_finance_kit`, Type `Integration` → Add
-
-### Step 2 · Download
-1. Search **Finance Kit** in HACS → Download
-2. **Restart Home Assistant fully** (Restart, not Reload)
-
-### Step 3 · Add integration
-**Settings → Devices & services → + Add integration → "Finance Kit"**
-
----
-
-## Option screen at a glance (v0.1.52)
-
-Each field label carries a paste-ready example after the colon.
-
-| Option | What it does |
-|---|---|
-| OpenDart API key | (optional) Unlocks disclosure alerts + auto company-name labels |
-| Korean ticker codes | CSV. 6-digit = KOSPI, `.KQ` suffix = KOSDAQ |
-| US ticker symbols | CSV. `AAPL:Apple` for explicit friendly name (else yfinance longName auto-fills) |
-| Crypto / FX / Futures | Yahoo ticker form (`BTC-USD`, `EUR=X`, `GC=F`). 24/7 fetch |
-| Include KOSPI/KOSDAQ indices | Toggle (default ☑) |
-| Include NASDAQ/Dow/S&P 500 indices | Toggle (default ☑) |
-| Include global indices | Nikkei / Hang Seng / FTSE / DAX (default ☐) |
-| Include USD/KRW FX | Toggle (default ☑) |
-| Include detailed attributes | 52w high/low, 200d avg, dividend, PE etc. (extra traffic, default ☐) |
-| Convert USD assets to KRW | Adds `price_krw` to USD QuoteSensors (default ☐) |
-| Portfolio P/L alert threshold % | 0 disables. Set 5 → binary_sensor flips when cost-basis P/L crosses ±5% |
-| Disclosure category filter | Multi-select from 10 OpenDart pblntf_ty codes. Empty = all |
-
----
-
-## Generated sensors
-
-### Market indicators (opt-in toggles)
-- `sensor.fi_kospi` / `sensor.fi_kosdaq` — Korean indices
-- `sensor.fi_nasdaq` / `_dow` / `_sp500` — US indices
-- `sensor.fi_nikkei` / `_hangseng` / `_ftse` / `_dax` — global indices
-- `sensor.fi_usdkrw` — USD/KRW FX
-
-### Ticker quotes
-- `sensor.fi_kr_<6digit>` — Korean (e.g. `_kr_005930`)
-- `sensor.fi_us_<symbol>` — US (e.g. `_us_aapl`)
-- `sensor.fi_other_<slug>` — Crypto / FX / futures (24/7, e.g. `_other_btc_usd`)
-
-### Quote-sensor attributes
-- Default: `price`, `change`, `change_pct` (vs. previous close), `prev_close`, `asof`, `stale`
-- Detailed-attrs ON: `fifty_two_week_high/low`, `fifty/two_hundred_day_average`, day high/low/volume, `market_state`, `currency`, `quote_type`, `long_name`; equities also `dividend_*`, `forward_pe`, `trailing_pe`
-- KRW-convert ON (USD assets only): `price_krw`
-- Per CSV minute entry: `change_pct_<N>min` (e.g. config `15, 30, 60` → 3 attributes)
-
-### Portfolio (after adding positions via service)
-- `sensor.fi_portfolio_kr_value` / `_kr_pl` / `_us_value` / `_us_pl` / `_krw_total` / `_krw_pl`
-- `binary_sensor.fi_portfolio_pl_alert` — ON when cost-basis P/L crosses ±threshold
-
-### Disclosures (OpenDart key + KR tickers)
-- `binary_sensor.fi_disclosure_<corp_code>` — 24h window, device label is the corp_name (e.g. `삼성전자`)
-
-### HA event bus (no toggle, always fires)
-- `kr_finance_kit_kr_market_closed` — fires on KR market close edge
-- `kr_finance_kit_us_market_closed` — fires on US market close edge
-
----
-
-## Recording holdings (service / action)
-
-Holdings (quantity + average cost) are entered as a **service call**, not on the option form, so they stay in HA's encrypted store.
-
-### 1. Where to enter them
-
-**Settings → Developer Tools → Actions tab** → type `kr_finance_kit.add_position` in the search box → the form appears.
-
-![Add position dialog](docs/screenshots/add_position.png)
-
-> HA 2024.8+ renamed the old "Services" tab to "Actions". Same screen — only the label moved.
-
-### 2. Fields
-
-| UI label | Key | Example | Unit / notes |
-|---|---|---|---|
-| Ticker / symbol | `ticker` | 🇰🇷 `005930`, `035720.KS` · 🇺🇸 `AAPL`, `BRK-B` | Letters, digits, `.`, `-` only. Spaces, special chars, emoji → rejected |
-| Quantity | `quantity` | `10`, `1.5` | Strictly positive. US fractional shares OK |
-| **Average price (per share)** | `avg_price` | 🇰🇷 `60000` (KRW) · 🇺🇸 `180.5` (USD) | **Native market currency** — do NOT pre-convert |
-| Market | `market` | `KR` (Korean stocks) / `US` (US stocks) | Radio button |
-
-> ⚠ **Crypto / FX / futures (BTC-USD, EUR=X, GC=F …) are price-only.** Portfolio tracking isn't supported — the market radio only offers KR / US.
-
-> 💱 **Auto-conversion** — enter KR positions in won, US positions in dollars. The integration pulls USD/KRW itself and rolls everything into `sensor.fi_portfolio_krw_total` / `sensor.fi_portfolio_krw_pl`. Pre-converting double-counts.
-
-> 🛡️ **Input validation** — the schema filters ticker through `^[A-Za-z0-9][A-Za-z0-9.\-]{0,19}$`, requires quantity / avg_price to be strictly positive finite numbers ≤ 1e9, and rejects NaN / Infinity. Bad inputs (special chars, negatives, empties, Korean text, HTML/SQL injection attempts) are blocked at the schema layer with a clear error before the service handler runs.
-
-After saving, the six portfolio sensors (`sensor.fi_portfolio_*`) and the P/L alert binary_sensor turn on automatically.
-
-### 3. Removing
-
-In the same screen pick `kr_finance_kit.remove_position` → enter `ticker` + `market` → run.
-
-### 4. Bulk-import via YAML (optional)
-
-If you want to record many tickers at once, click "Go to YAML mode" on the Actions tab:
-
-```yaml
-action: kr_finance_kit.add_position
-data:
-  ticker: "005930"
-  quantity: 10
-  avg_price: 60000
-  market: KR
-```
-
-Run the action once per ticker. Wrap them in a startup automation to repopulate on HA boot if you prefer.
-
----
-
-## Three automation blueprints
-
-Register many tickers in the integration, then check which ones each blueprint should watch. No need to recreate automations when the watch list changes.
-
-### 1. Price change alert (vs. previous close)
-[![import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fprice_change_alert.yaml)
-
-Triggers off `change_pct`. Inputs: tickers · drop threshold · rise threshold · notify target.
-
-### 2. Short-window alert (user-defined minutes)
-[![import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fshort_window_alert.yaml)
-
-v0.1.53+: the sensor exposes **1, 5, 15, 30, 60, 90, 120, 180 minute** attributes out of the box (no option to configure). The blueprint's number input accepts any of those values; per-ticker different minutes = one blueprint instance per ticker.
-
-> 📥 **Warm-up after import** — the first alert needs one window's worth of samples
-> ⚠️ **HA restart caveat** — N-min window is None for ~N minutes after restart (memory-only buffer)
-
-### 3. Daily market summary
-[![import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fdaily_summary.yaml)
-
-At a configurable time (defaults to KR market close, 15:30 KST), bundles indices + FX + tickers + portfolio totals into one message.
-
-### Notify compatibility
-All three use `notify.send_message` (HA 2024.6+ standard). mobile_app auto-works. Service-only notify integrations (some telegram_bot modes) → see raw YAML in [docs/examples/](docs/examples/).
-
----
-
-## 📊 Dashboard example
-
-A slim vertical-stack example built from Markdown tables — tweak it to taste. Only one ApexCharts card; every other section is a built-in Markdown card.
-
-[![dashboard.yaml](https://img.shields.io/badge/copy-docs%2Fexamples%2Fdashboard.yaml-blue?logo=homeassistant)](docs/examples/dashboard.yaml)
+- **Ready-to-use sidebar screen** — Installing Finance Kit adds a dedicated entry to your Home Assistant sidebar with indices, watchlist, crypto, holdings, and filings on one page. No custom dashboard required.
+- **Browse and add symbols in one tap** — Pick from categorized Korean stocks and ETFs, US tech and ETFs, major crypto coins, gold, oil, and FX pairs without memorizing ticker codes. With a free OpenDart key, you can search all 2,600+ KRX listed companies by Korean name.
+- **Holdings P/L and price alerts** — Open any stock to enter your shares, average price, and optional target or stop-loss price. Your total value and P/L are rolled up in KRW automatically, and you get highlighted alerts on screen and via phone notifications when a target is hit.
+- **Automatic Kimchi Premium** — Add both `BTC-KRW` and `BTC-USD` to see the live Korean exchange premium right at the top of the screen.
+- **Make it yours** — Choose from 13 card themes, 6 layouts (cards, list, compact, big number, heatmap, ticker tape), gain colors (red-up or green-up), section order, and mini charts. Preferences are saved per user across phone and tablet.
+- **Voice assistant and daily briefings** — Ask Home Assistant Assist for quotes or market summaries, or have daily close recaps and price alerts pushed to your phone.
+- **Free public data only** — Uses free public market quotes and OpenDart's free key. Never asks for brokerage passwords or account access.
 
 <table>
 <tr>
-<td width="33%"><img src="docs/screenshots/보유종목현황.png" alt="Holdings table"></td>
-<td width="33%"><img src="docs/screenshots/지수.png" alt="Indices & FX table"></td>
-<td width="33%"><img src="docs/screenshots/종목.png" alt="Tickers table"></td>
+<td width="33%"><img src="docs/screenshots/보유종목현황.png" alt="Holdings overview"></td>
+<td width="33%"><img src="docs/screenshots/지수.png" alt="Indices and FX"></td>
+<td width="33%"><img src="docs/screenshots/종목.png" alt="Watchlist quotes"></td>
 </tr>
 </table>
 
-### How to use
+---
 
-1. Copy the view block from [docs/examples/dashboard.yaml](docs/examples/dashboard.yaml)
-2. HA → Settings → Dashboards → ⋮ Edit → ⋮ **Raw configuration editor**
-3. Paste under `views:` → Save
-4. Replace section 6 ticker entity_ids and section 7 disclosure entity_ids with your own
+## Installation
 
-> Entity refs use the `sensor.fi_*` / `binary_sensor.fi_*` form. The holdings table needs the `positions` attribute added in v0.1.61.
+Requires Home Assistant with [HACS](https://hacs.xyz).
 
-### HACS card dependencies
+### 1. Add the repository to HACS
 
-| Card | Used for | Replaceable |
-|---|---|---|
-| [`apexcharts-card`](https://github.com/RomRider/apexcharts-card) | Portfolio 30-day trend (single chart) | Drop the section to skip the dependency |
+Click the button below to open this repository directly in HACS on your Home Assistant instance:
 
-Everything else is HA built-in (`markdown` card only).
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=redchupa&repository=kr_finance_kit&category=integration)
 
-### Sections at a glance
+Or add it manually via HACS menu → **Custom repositories**:
+- Repository: `https://github.com/redchupa/kr_finance_kit`
+- Category: `Integration`
 
-| Section | Card | Data |
-|---|---|---|
-| 1. Hero | markdown | Header |
-| 2. 💼 Portfolio KPI table | markdown | KR · US · KRW totals (3 rows) |
-| 3. 📦 Holdings table | markdown | `sensor.fi_portfolio_krw_pl` `positions` attribute (qty / avg / current / P/L %) |
-| 4. 📈 Portfolio 30-day chart | apexcharts-card | `sensor.fi_portfolio_krw_total` area chart |
-| 5. 🌐 Indices & FX table | markdown | KOSPI · KOSDAQ · USD/KRW · NASDAQ · DOW · S&P 500 · NIKKEI · HANGSENG · FTSE · DAX |
-| 6. 📊 Ticker prices table | markdown | KR + US + crypto/FX/futures in one table (14 placeholder rows) |
-| 7. 📋 Disclosures live list | markdown | OpenDart binary_sensors — ON rows surface report title / date / link |
-| 8. 🔗 Quick links | markdown | Developer Tools · integration options · automations |
+### 2. Download and restart
+
+1. Search for **Finance Kit** in HACS and download it.
+2. **Restart** Home Assistant.
+
+### 3. Add the integration
+
+Go to **Settings → Devices & services → Add integration → Finance Kit**.
+
+You can leave the ticker fields blank on first install — it starts with a sample watchlist (Samsung Electronics, SK hynix, Apple, NVIDIA, Microsoft, Bitcoin, Ethereum) that you can edit any time from the sidebar.
 
 ---
 
-## Hand-rolled automations (yaml)
+## Using the sidebar panel
 
-### Portfolio P/L alert
-```yaml
-trigger:
-  - platform: state
-    entity_id: binary_sensor.fi_portfolio_pl_alert
-    to: "on"
-action:
-  - service: notify.mobile_app_my_phone
-    data:
-      title: "Portfolio alert"
-      message: >
-        P/L {{ state_attr('binary_sensor.fi_portfolio_pl_alert', 'current_pl_pct') }}%
-        crossed ±{{ state_attr('binary_sensor.fi_portfolio_pl_alert', 'threshold_pct') }}%
-```
+Once installed, open **Finance Kit** from the Home Assistant sidebar.
 
-### Right after KR market close
+- **Add symbols**: Tap **+ Add symbol** in the top right to browse Korea, US, Crypto, and Other categories with one-tap add buttons, search by name or code, or jump straight to KRX, Naver Finance, or Yahoo Finance to look up codes.
+- **Holdings and price alerts**: Tap any stock to view its chart (1D, 5D, 1M, 6M, 1Y) and fill in **My position** — quantity, average price, and optional **Target (≥)** / **Stop-loss (≤)** alert prices.
+  - Enter Korean stocks in KRW and US stocks in USD; currency conversion into your KRW total is handled automatically.
+  - Alert prices appear right in your holdings list and light up as soon as a threshold is reached.
+- **Customize**: Tap the settings icon to switch themes, layouts, gain colors, section order, and language (English / Korean).
+
+> Only Home Assistant administrators can add or remove symbols and edit holdings; other household members get a safe read-only view.
+
+---
+
+## Phone notifications and automations
+
+### Ready-made blueprints
+
+Import any of these blueprints with one click and pick the symbols and phone you want to notify:
+
+1. **Daily price move alert** — Notify when a symbol moves up or down by your chosen percentage from the previous close.
+   [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fprice_change_alert.yaml)
+2. **Short-window alert** — Catch fast moves such as ±2% within 15 minutes (supports 1, 5, 15, 30, 60, 90, 120, and 180 minutes).
+   [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fshort_window_alert.yaml)
+3. **Daily market summary** — Send one tidy recap of indices, FX, watchlist, and portfolio P/L after market close.
+   [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fdaily_summary.yaml)
+
+### Target and stop-loss price alert
+
+One short automation covers every holding that has a target or stop-loss price set in the sidebar:
+
 ```yaml
 trigger:
   - platform: event
-    event_type: kr_finance_kit_kr_market_closed
+    event_type: kr_finance_kit_price_alert
 action:
-  - service: notify.notify
+  - action: notify.mobile_app_my_phone
     data:
-      message: "KOSPI close {{ states('sensor.fi_kospi') }}"
+      title: "{{ trigger.event.data.name }} price alert"
+      message: >
+        {{ 'Target hit' if trigger.event.data.direction == 'high' else 'Stop-loss hit' }}:
+        now {{ trigger.event.data.current_price }} (alert {{ trigger.event.data.target_price }})
 ```
 
-More examples: [docs/examples/](docs/examples/)
+More automation and custom dashboard examples are available in [docs/examples/](docs/examples/).
 
 ---
 
-## Voice assist
+## Voice assistant
 
-Auto-registers a `finance_query` LLM tool with HA Assist. Eight query types:
-- index / fx / quote / portfolio / disclosures / disclosure_for_ticker / top_movers / market_summary
+When connected to Home Assistant Assist with an LLM conversation agent, you can ask naturally:
 
-Try:
-- "What's KOSPI at?"
-- "Samsung Electronics quote"
-- "Today's biggest gainer?"
-- "Summarize the market"
-- "Any new disclosures on my watchlist?"
-
-Works with Google Assistant / Alexa / ChatGPT voice / local Whisper — any LLM-backed HA Assist setup.
+- "What's KOSPI at right now?"
+- "How much is Samsung Electronics?"
+- "What's my biggest gainer today?"
+- "Give me a quick market summary."
+- "Any new filings on my watchlist?"
 
 ---
 
 ## FAQ
 
 <details>
-<summary><b>Does it touch a brokerage account?</b></summary>
+<summary><b>Does this connect to my brokerage account?</b></summary>
 
-**No.** Unofficial brokerage APIs carry security and TOS risk and are deliberately excluded. yfinance (Yahoo Finance public chart) + OpenDart (FSS official) + your own avg_price/quantity entries.
+No. It relies only on public market data and the share counts / average prices you enter yourself.
 </details>
 
 <details>
-<summary><b>Is it free?</b></summary>
+<summary><b>Is it free to use?</b></summary>
 
-Yes — yfinance and OpenDart are both free with personal-use limits. Integration itself is MIT.
+Yes. Both the market data and OpenDart's disclosure API are free for personal use, and the integration is open source under the MIT license.
 </details>
 
 <details>
-<summary><b>Does it work after-hours / on weekends?</b></summary>
+<summary><b>What happens on weekends and holidays?</b></summary>
 
-Shows the last available close. KR and US holidays auto-detected. Crypto + FX update 24/7.
+Stock sensors display the last available closing price and handle Korean and US holidays automatically. Crypto, FX, and commodities continue updating 24/7.
 </details>
 
 <details>
-<summary><b>Why is the short-window value None right after HA restart?</b></summary>
+<summary><b>Do I need an OpenDart API key?</b></summary>
 
-The ring buffer is memory-only by design. An N-minute window stays None for ~N minutes — then resumes normally. 60-min window = ~1 hour warm-up.
+No — stock prices, crypto, FX, holdings P/L, and price alerts all work without one. Adding a free OpenDart key unlocks Korean corporate disclosure alerts and full KRX company search.
 </details>
 
 <details>
 <summary><b>How do I change options later?</b></summary>
 
-Settings → Devices & services → Finance Kit → ⚙ Options. Saving auto-reloads the integration.
+Go to **Settings → Devices & services → Finance Kit → Configure**. Saving applies your changes automatically.
 </details>
 
 <details>
-<summary><b>Charts?</b></summary>
+<summary><b>Not seeing updated prices or new screens?</b></summary>
 
-Sensors only. Pipe into [apexcharts-card](https://github.com/RomRider/apexcharts-card) (separate HACS) or HA's built-in statistics card.
+After updating via HACS, restart Home Assistant and hard-refresh your browser (`Ctrl+Shift+R`). See [docs/installation-en.md](docs/installation-en.md) for more details.
 </details>
 
 ---
 
-<details>
-<summary>⚙️ Technical details</summary>
+## Support
 
-### Data sources
-| Data | Source | yfinance ticker |
-|---|---|---|
-| KOSPI / KOSDAQ | yfinance | `^KS11`, `^KQ11` |
-| NASDAQ / Dow / S&P 500 | yfinance | `^IXIC`, `^DJI`, `^GSPC` |
-| Nikkei / Hang Seng / FTSE / DAX | yfinance | `^N225`, `^HSI`, `^FTSE`, `^GDAXI` |
-| USD/KRW | yfinance | `KRW=X` |
-| Korean tickers | yfinance | `005930.KS` / `.KQ` |
-| US tickers | yfinance | `AAPL` |
-| Crypto | yfinance | `BTC-USD` (24/7) |
-| FX / futures | yfinance | `EUR=X`, `GC=F` (24/7) |
-| Disclosures + name map | OpenDart | `list.json`, `corpCode.xml` |
-
-### Polling cadence
-- Either market open: **60 s**
-- Both closed (overnight / weekend): **600 s** (auto dial-down)
-- Crypto / FX / futures: **always 60 s** (market hours ignored)
-
-### Ring buffer (short-window attributes)
-- In-memory, deque(maxlen=300) per ticker ≈ 5 hours of history
-- Cleared on HA restart (intentional trade-off)
-
-### Dependency
-`yfinance>=0.2.40` only. HA installs it.
-
-### Out of scope (by design)
-- ❌ Automated trading
-- ❌ Direct brokerage integration
-- ❌ Chart cards (use apexcharts-card)
-- ❌ Backtesting
-
-</details>
-
----
-
-## 🔄 Migration guide
-
-| From → To | Action |
-|---|---|
-| ≤v0.1.31 → v0.1.32+ | Korean-slug entity_ids (`sensor.hangug_*`) → English slugs. Recommend delete + re-add. |
-| v0.1.32–v0.1.33 → v0.1.34+ | `sensor.kr_finance_kit_*` → `sensor.fi_*`. Delete + re-add or rename entity_ids manually. |
-| ≤v0.1.43 → v0.1.44+ | Five new options (target_currency_krw, P/L alert, market_close events, global indices, disclosure filter) — open and save Options once. |
-| ≤v0.1.47 → v0.1.48+ | config_flow 500 error fix (frontend-compatible selectors). |
-| ≤v0.1.51 → v0.1.52 | Short-window minutes was briefly a CSV option (now removed). |
-| ≤v0.1.52 → v0.1.53+ | Option dropped; sensor always emits 1/5/15/30/60/90/120/180-min attributes. Blueprint's number input picks one of those. |
-
----
-
-## Troubleshooting
-
-- Prices Unavailable → restart HA and wait 1–2 min. If persistent, open [Issues](https://github.com/redchupa/kr_finance_kit/issues)
-- New options don't appear → **full HA Restart** (Reload won't flush translations)
-- `already_in_progress` error → update to v0.1.47+, restart HA
-- `Config flow 500 error` → update to v0.1.48+
-- Deeper guide: [docs/installation-en.md](docs/installation-en.md)
-
----
-
-## ☕ Sponsor
-
-If this integration helps you out, a coffee is appreciated. 🙏
+If Finance Kit has been helpful, a coffee is always appreciated.
 
 <table>
   <tr>
@@ -418,4 +177,4 @@ If this integration helps you out, a coffee is appreciated. 🙏
 
 ---
 
-<sub>Bug reports and feature requests: [Issues](https://github.com/redchupa/kr_finance_kit/issues) | Changelog: [Releases](https://github.com/redchupa/kr_finance_kit/releases) | [MIT License](LICENSE)</sub>
+<sub>[Issues](https://github.com/redchupa/kr_finance_kit/issues) · [Releases](https://github.com/redchupa/kr_finance_kit/releases) · [MIT License](LICENSE)</sub>

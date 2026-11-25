@@ -2,416 +2,173 @@
 
 **[English](README.en.md)** · 한국어
 
-> Home Assistant에서 한국·미국 주식, 환율, 암호화폐, OpenDart 공시까지 모두 네이티브 sensor로.
-> 무료 API만 사용, 증권사 계정 연동 없음, 음성 비서 지원.
+거실 태블릿이나 휴대폰 Home Assistant에서 국내·미국 주식, 코인, 환율, 보유 종목 손익, 공시까지 한눈에 확인하세요.
+대시보드를 직접 꾸밀 필요도, 증권사 계정을 연결할 필요도 없습니다.
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-FF8C00?style=flat-square&logo=homeassistantcommunitystore&logoColor=white)](https://hacs.xyz)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.6%2B-03A9F4?style=flat-square&logo=home-assistant&logoColor=white)](https://www.home-assistant.io)
-[![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org)
-
-[![Validate](https://img.shields.io/github/actions/workflow/status/redchupa/kr_finance_kit/validate.yml?label=validate&style=flat-square&logo=github)](https://github.com/redchupa/kr_finance_kit/actions/workflows/validate.yml)
-[![Tests](https://img.shields.io/github/actions/workflow/status/redchupa/kr_finance_kit/test.yml?label=tests&style=flat-square&logo=github)](https://github.com/redchupa/kr_finance_kit/actions/workflows/test.yml)
-[![Data: yfinance](https://img.shields.io/badge/data-yfinance-7B1FA2?style=flat-square&logo=yahoo&logoColor=white)](https://github.com/ranaroussi/yfinance)
-[![Disclosures: OpenDart](https://img.shields.io/badge/disclosures-OpenDart-E53935?style=flat-square)](https://opendart.fss.or.kr)
-[![Made for HA](https://img.shields.io/badge/Made%20for-Home%20Assistant-18BCF2?style=flat-square&logo=home-assistant&logoColor=white)](https://www.home-assistant.io)
-
-[Releases](https://github.com/redchupa/kr_finance_kit/releases)
+[![Releases](https://img.shields.io/github/v/release/redchupa/kr_finance_kit?style=flat-square)](https://github.com/redchupa/kr_finance_kit/releases)
 
 ---
 
-## 무엇을 할 수 있나요
-
-- 📱 **사이드바 전용 화면 (v0.2.0)** — 대시보드 YAML 없이 지수·관심종목·코인·보유종목·공시를 한 화면에서
-- ☕ 거실 패널에서 코스피·내 종목·환율·비트코인 한눈에
-- 📉 보유 종목이 평단가 대비 ±5% 움직이면 자동 알림
-- ⏱️ "지난 30분 동안 ±2% 움직였다" 같은 단기 변동률 트리거
-- 🗣️ "헤이 구글, 삼성전자 얼마야?" 음성 질의
-- 🔔 OpenDart 신규 공시 푸시 (카테고리별 필터)
-- 📊 장 마감 직후 일일 요약 자동 발송
-
-모두 **무료 API** (yfinance + OpenDart 무료 키), 증권사 계정 X.
-
----
-
-## 📱 사이드바 화면 (v0.2.0)
-
-설치하면 HA 왼쪽 사이드바에 **Finance Kit** 메뉴가 생깁니다. 대시보드를 따로 만들지 않아도 바로 쓸 수 있어요.
-설치할 때 종목 칸을 비워두면 **예시 종목**(삼성전자·SK하이닉스·애플·엔비디아·마이크로소프트·비트코인·이더리움)으로 시작하고, 이후 사이드바 오른쪽 위 **＋** 버튼으로 자유롭게 추가·삭제할 수 있어요.
-
-- **➕ 종목 추가** — 🇰🇷 국내 / 🇺🇸 미국 / 🪙 코인 / 🌐 기타(환율·금·유가). 이름으로 검색 가능 (OpenDart 키가 있으면 한글 회사명 검색)
-- **⚙️ 설정** — 카드 테마 13종 × 레이아웃 6종(카드·리스트·컴팩트·빅넘버·히트맵·티커테이프), 상승색(🔴 한국식 / 🟢 글로벌), 섹션 순서·표시, 미니 차트, 새로고침 주기
-- **한 / EN** 버튼 — 영어 화면으로 즉시 전환 (설정은 사용자별로 저장되어 폰·태블릿에서도 동일)
-- **모바일** — 하단 탭바, 플로팅 ➕ 버튼, 바텀시트, 차트를 손가락으로 훑으면 해당 시점 가격 표시
-- **종목 상세** — 1일~1년 차트, 52주 범위, 보유 수량·평단가 입력, HA 기록 바로가기
-- 국내 원화 코인(`BTC-KRW`)과 달러 코인(`BTC-USD`)을 같이 추가하면 **김치 프리미엄**이 자동 계산됩니다
-
-> 종목 추가·삭제는 관리자 계정만 가능하고, 일반 사용자는 보기 전용입니다. 메뉴를 숨기고 싶으면 사이드바 제목을 길게 눌러 편집하세요.
-
----
-
-## 5분 설치
-
-### 사전 준비
-- Home Assistant + [HACS](https://hacs.xyz) 설치
-
-### Step 1 · HACS 저장소 추가
-
-아래 버튼을 누르면 내 Home Assistant의 HACS에서 이 저장소가 바로 열립니다. URL을 복사해 붙여넣을 필요가 없어요.
-
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=redchupa&repository=kr_finance_kit&category=integration)
-
-버튼이 동작하지 않으면 아래 방법으로 직접 등록하세요.
-
-1. HACS → ⋮ → **사용자 정의 저장소**
-2. URL: `https://github.com/redchupa/kr_finance_kit` / Type: `Integration` → 추가
-
-### Step 2 · 다운로드
-1. HACS에서 **Finance Kit** 검색 → 다운로드
-2. **HA 완전 재시작** (Reload 아닌 Restart)
-
-### Step 3 · 통합 추가
-**설정 → 기기 및 서비스 → + 통합 추가 → "Finance Kit"**
-
----
-
-## 옵션 화면 한눈에 (v0.1.52 기준)
-
-각 필드의 라벨 뒤 콜론(`:`)에 **그대로 복사·붙여넣기 가능한 예시**가 미리 보입니다.
-
-| 옵션 | 설명 |
-|---|---|
-| OpenDart API 키 | (선택) 공시 알림 + 종목명 자동 매핑 활성. 비워두면 가격만. |
-| 한국 종목 코드 | CSV. 6자리 = KOSPI, `.KQ` 접미사 = KOSDAQ |
-| 미국 종목 심볼 | CSV. `AAPL:애플` 처럼 콜론 뒤 라벨 지정 가능 (없으면 yfinance longName 자동) |
-| 암호화폐·환율·선물 | Yahoo ticker 형식 (`BTC-USD`, `EUR=X`, `GC=F` 등). 시장 시간 무관 24/7 갱신 |
-| 코스피·코스닥 지수 포함 | 체크박스 (기본 ☑) |
-| 나스닥·다우·S&P 500 지수 포함 | 체크박스 (기본 ☑) |
-| 글로벌 지수 포함 | 닛케이·항생·FTSE·DAX (기본 ☐) |
-| USD/KRW 환율 포함 | 체크박스 (기본 ☑) |
-| 상세 attribute 포함 | 52주 고/저, 200일 평균, 배당, PE 등 (트래픽 ↑, 기본 ☐) |
-| USD 자산을 KRW로 환산 | BTC·AAPL 같은 USD 가격에 `price_krw` attribute 추가 (기본 ☐) |
-| 포트폴리오 평가손익 알림 임계값 % | 0=비활성. 5 입력 시 평단가 대비 ±5% 돌파하면 binary_sensor ON |
-| 공시 카테고리 필터 | A=정기공시, B=주요사항 등 10종 다중선택. 비우면 전체 |
-
----
-
-## 생성되는 sensor
-
-### 시장 지표 (옵션으로 토글)
-- `sensor.fi_kospi` / `sensor.fi_kosdaq` — 한국 지수
-- `sensor.fi_nasdaq` / `_dow` / `_sp500` — 미국 지수
-- `sensor.fi_nikkei` / `_hangseng` / `_ftse` / `_dax` — 글로벌 지수
-- `sensor.fi_usdkrw` — USD/KRW 환율
-
-### 종목 시세
-- `sensor.fi_kr_<6자리>` — 한국 종목 (예 `_kr_005930`)
-- `sensor.fi_us_<티커>` — 미국 종목 (예 `_us_aapl`)
-- `sensor.fi_other_<슬러그>` — 암호화폐·환율·선물 (예 `_other_btc_usd`, 24/7 갱신)
-
-### 종목 시세 attribute
-- 기본: `price`, `change`, `change_pct` (전일 종가 대비), `prev_close`, `asof`, `stale`
-- "상세 attribute 포함" ON 시: `fifty_two_week_high/low`, `fifty/two_hundred_day_average`, `regular_market_day_high/low/volume`, `market_state`, `currency`, `quote_type`, `long_name`, equity는 `dividend_*` / `forward_pe` / `trailing_pe`
-- "USD→KRW 환산" ON 시 (USD 자산만): `price_krw`
-- 단기 변동률 (옵션 없이 자동): `change_pct_1min` / `_5min` / `_15min` / `_30min` / `_60min` / `_90min` / `_120min` / `_180min` (8개 윈도우 고정)
-
-### 포트폴리오 (서비스로 보유 종목 등록 시)
-- `sensor.fi_portfolio_kr_value` / `_kr_pl` / `_us_value` / `_us_pl` / `_krw_total` / `_krw_pl`
-- `binary_sensor.fi_portfolio_pl_alert` — 평단가 대비 ±임계값 돌파 시 ON
-
-### 공시 (OpenDart 키 + 한국 종목 등록 시)
-- `binary_sensor.fi_disclosure_<corp_code>` — 24시간 윈도우, device label은 종목명 (예 `삼성전자`)
-
-### HA event bus (자동화 트리거용, 옵션 없음)
-- `kr_finance_kit_kr_market_closed` — 한국 장 마감 시점 fire
-- `kr_finance_kit_us_market_closed` — 미국 장 마감 시점 fire
-
----
-
-## 보유 종목 등록 (서비스)
-
-옵션 화면이 아닌 **HA 서비스(=동작)로 입력** — 평단가·수량은 HA 암호화 저장소에만 저장됩니다.
-
-### 1. 추가하는 위치
-
-**Settings → 개발자 도구(Developer Tools) → 동작(Actions) 탭** → 검색창에 `kr_finance_kit.add_position` 입력 → 폼이 자동으로 나타납니다.
-
-![보유 종목 추가 화면](docs/screenshots/add_position.png)
-
-> HA 2024.8+ 부터 기존 "서비스(Services)" 탭이 "동작(Actions)" 으로 명칭만 변경됐습니다. 같은 화면입니다.
-
-### 2. 입력 필드
-
-| HA UI 라벨 | 키 | 예시 | 단위 / 비고 |
-|---|---|---|---|
-| 종목 코드/심볼 | `ticker` | 🇰🇷 `005930`, `035720.KS` · 🇺🇸 `AAPL`, `BRK-B` | 영문/숫자/`.`/`-` 만. 공백·특수문자·이모지 → 거부 |
-| 수량 | `quantity` | `10`, `1.5` | 0보다 큰 양수. US fractional share OK |
-| **평단가 (1주당)** | `avg_price` | 🇰🇷 `60000` (원/KRW) · 🇺🇸 `180.5` (달러/USD) | **시장 통화 그대로** — 환산 금지 |
-| 시장 | `market` | `KR` (한국 주식) / `US` (미국 주식) | 라디오 버튼 |
-
-> ⚠ **암호화폐 / 환율 / 선물 (BTC-USD, EUR=X, GC=F …) 은 보유 종목 추적 미지원**. 시세 sensor (`sensor.fi_other_*`) 는 제공되지만 add_position 의 market 라디오에는 KR/US 만 있어요.
-
-> 💱 **환산 자동** — KR 종목은 원 그대로, US 종목은 달러 그대로 입력. USD/KRW 환율은 통합이 자동으로 가져와서 `sensor.fi_portfolio_krw_total` / `sensor.fi_portfolio_krw_pl` 에 합산합니다. 환산값을 미리 넣으면 이중 환산되어 망가져요.
-
-> 🛡️ **입력 검증** — schema 단계에서 ticker는 정규식 `^[A-Za-z0-9][A-Za-z0-9.\-]{0,19}$` 필터, quantity·avg_price는 양수 + finite (NaN/Infinity 거부) + 최대 10억. 잘못된 값 (특수문자, 음수, 빈 칸, 한글 ticker, HTML/SQL 인젝션 시도 등) 은 서비스 호출이 시작 전에 명확한 에러 메시지와 함께 차단됩니다.
-
-저장 후 6개 portfolio sensor (`sensor.fi_portfolio_*`) + P/L alert binary_sensor가 자동으로 활성화됩니다.
-
-### 3. 삭제
-
-같은 화면에서 `kr_finance_kit.remove_position` 선택 → `ticker` + `market` 입력 → 동작 수행.
-
-### 4. YAML로 일괄 등록 (선택)
-
-여러 종목을 한 번에 넣고 싶다면 개발자 도구 → 동작 → "YAML 모드로 이동":
-
-```yaml
-action: kr_finance_kit.add_position
-data:
-  ticker: "005930"
-  quantity: 10
-  avg_price: 60000
-  market: KR
-```
-
-종목별로 동작 1회씩 실행. 자동화 스크립트로 묶어두면 HA 시작 시 자동 등록도 가능.
-
----
-
-## 자동화 블루프린트 3종
-
-옵션 화면에서 종목을 여러 개 등록해두고, **블루프린트 입력에서 체크박스로 알림 받을 종목만 선택**하는 패턴. 종목 추가/삭제 시 자동화 재생성 불필요.
-
-### 1. 종목 가격 변동률 알림 (전일 종가 기준)
-[![import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fprice_change_alert.yaml)
-
-`change_pct` (전일 종가 대비) 기반. 입력: 종목·하락 임계값·상승 임계값·알림 대상.
-
-### 2. 단기 변동률 알림 (사용자 지정 분 단위)
-[![import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fshort_window_alert.yaml)
-
-**종목별로 다른 분을 트리거하려면 블루프린트 자동화를 여러 개 만드시면 됩니다.** 예:
-- 자동화 1: 종목=[삼성전자], 윈도우=15분
-- 자동화 2: 종목=[비트코인], 윈도우=60분
-
-v0.1.53부터 sensor가 **1·5·15·30·60·90·120·180분** 8개 윈도우 attribute를 옵션 입력 없이 자동 생성. 블루프린트 number 입력에 그 중 하나(예 `30`) 넣으면 즉시 동작.
-
-> 📥 **Import 직후 warm-up** — 첫 알림은 윈도우만큼 가격 샘플이 쌓여야 옴
-> ⚠️ **HA 재시작 시** — N분 윈도우는 N분 동안 attribute None (memory-only buffer)
-
-### 3. 일일 시장 요약
-[![import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fdaily_summary.yaml)
-
-장 마감 직후(기본 15:30 KST) 지수·환율·종목·평가손익을 한 메시지로.
-
-### 알림 호환성
-모든 블루프린트는 `notify.send_message` (HA 2024.6+ 표준) 사용. mobile_app 자동 호환. service-only notify (일부 telegram_bot 모드 등) 사용자는 [docs/examples/](docs/examples/) 의 raw YAML 참고.
-
----
-
-## 📊 대시보드 예시
-
-마크다운 표 위주의 슬림한 vertical-stack 예시 — 본인 취향대로 수정하세요. ApexCharts 1개 외에는 빌트인 markdown 카드만 사용.
-
-[![dashboard.yaml](https://img.shields.io/badge/copy-docs%2Fexamples%2Fdashboard.yaml-blue?logo=homeassistant)](docs/examples/dashboard.yaml)
+## 왜 Finance Kit인가요
+
+- **설치하자마자 바로 쓰는 전용 화면** — 설치하면 Home Assistant 왼쪽 메뉴에 `Finance Kit` 화면이 생깁니다. 복잡한 대시보드 설정 없이 코스피·나스닥·관심 종목·코인·보유 현황·공시를 한곳에서 볼 수 있습니다.
+- **코드를 몰라도 쉽게 종목 추가** — 국내 대형주·코스닥·ETF, 미국 빅테크·ETF, 주요 코인, 금·원유·환율까지 카테고리에서 골라 클릭 한 번으로 추가할 수 있습니다. OpenDart 무료 키를 넣으면 국내 상장사 전체(2,600여 개)를 한글 이름으로 바로 검색할 수 있습니다.
+- **보유 종목 손익과 목표가·손절가 알림** — 종목을 눌러 수량과 평단가, 원하는 목표가·손절가를 적어두면 총 평가금액과 수익률을 원화로 합산해 보여주고, 설정한 가격에 도달하면 화면과 휴대폰 알림으로 알려줍니다.
+- **김치 프리미엄 자동 계산** — 비트코인 원화(`BTC-KRW`)와 달러(`BTC-USD`)를 함께 추가해 두면 현재 김치 프리미엄이 상단에 자동으로 표시됩니다.
+- **내 취향대로 꾸미는 화면** — 13가지 카드 테마, 6가지 레이아웃(카드·리스트·컴팩트·빅넘버·히트맵·티커테이프), 상승 색상(한국식 빨강 / 글로벌 초록), 섹션 순서와 미니 차트까지 클릭으로 바꿀 수 있습니다.
+- **음성 비서와 자동화 알림** — "삼성전자 지금 얼마야?"처럼 말로 물어보거나, 장 마감 요약·급등락 알림·신규 공시 알림을 휴대폰으로 받아볼 수 있습니다.
+- **완전 무료, 증권사 로그인 없음** — 공개 시세와 금융감독원 OpenDart 무료 키만 사용합니다. 계좌 비밀번호나 증권사 로그인은 일절 요구하지 않습니다.
 
 <table>
 <tr>
-<td width="33%"><img src="docs/screenshots/보유종목현황.png" alt="보유 종목 현황 표"></td>
-<td width="33%"><img src="docs/screenshots/지수.png" alt="지수 & 환율 표"></td>
-<td width="33%"><img src="docs/screenshots/종목.png" alt="종목 시세 표"></td>
+<td width="33%"><img src="docs/screenshots/보유종목현황.png" alt="보유 종목 현황"></td>
+<td width="33%"><img src="docs/screenshots/지수.png" alt="지수 및 환율"></td>
+<td width="33%"><img src="docs/screenshots/종목.png" alt="관심 종목 시세"></td>
 </tr>
 </table>
 
-### 사용법
+---
 
-1. [docs/examples/dashboard.yaml](docs/examples/dashboard.yaml) 의 view 블록 복사
-2. HA → Settings → Dashboards → ⋮ Edit → ⋮ **Raw configuration editor**
-3. `views:` 아래에 paste → Save
-4. 섹션 6 의 종목 entity_id 와 섹션 7 의 disclosure entity_id 를 본인 종목으로 교체
+## 설치 방법
 
-> entity 참조는 `sensor.fi_*` / `binary_sensor.fi_*` 형식. v0.1.54+ migration 후, v0.1.61+ `positions` attribute 가 있어야 보유 종목 현황 표가 작동합니다.
+Home Assistant에 [HACS](https://hacs.xyz)가 설치되어 있으면 3단계로 끝납니다.
 
-### HACS 의존 카드
+### 1. HACS에 저장소 추가
 
-| 카드 | 어디 쓰임 | 대체 가능 여부 |
-|---|---|---|
-| [`apexcharts-card`](https://github.com/RomRider/apexcharts-card) | 포트폴리오 30일 추세 차트 1개 | 빼면 그 섹션만 제거 |
+아래 버튼을 누르면 사용 중인 Home Assistant의 HACS 화면으로 바로 연결됩니다.
 
-다른 모든 카드는 HA 빌트인 (markdown 만 사용).
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=redchupa&repository=kr_finance_kit&category=integration)
 
-### 구성 요소
+버튼이 동작하지 않는다면 HACS 우측 상단 메뉴 → **사용자 정의 저장소**에서 아래 주소를 직접 추가해 주세요.
+- 주소: `https://github.com/redchupa/kr_finance_kit`
+- 유형: `통합 구성요소 (Integration)`
 
-| 섹션 | 카드 | 데이터 |
-|---|---|---|
-| 1. Hero | markdown | 헤더 |
-| 2. 💼 포트폴리오 KPI 표 | markdown | 한국·미국·KRW 합계 (3행) |
-| 3. 📦 보유 종목 현황 표 | markdown | `sensor.fi_portfolio_krw_pl` 의 `positions` attribute (qty / avg / current / 손익률) |
-| 4. 📈 포트폴리오 30일 차트 | apexcharts-card | `sensor.fi_portfolio_krw_total` 30일 area chart |
-| 5. 🌐 지수 & 환율 표 | markdown | KOSPI · KOSDAQ · USD/KRW · NASDAQ · DOW · S&P 500 · NIKKEI · HANGSENG · FTSE · DAX |
-| 6. 📊 종목 시세 표 | markdown | KR + US + 암호화폐/환율/선물 한 표 통합 (placeholder 14행) |
-| 7. 📋 공시 라이브 리스트 | markdown | OpenDart binary_sensor — ON 종목 보고서명·날짜·링크, OFF 종목 회색 점선 |
-| 8. 🔗 빠른 링크 | markdown | 개발자 도구·통합 옵션·자동화 화면 바로가기 |
+### 2. 다운로드 후 재시작
+
+1. HACS에서 **Finance Kit**을 검색해 다운로드합니다.
+2. Home Assistant를 **재시작**합니다.
+
+### 3. 통합 추가
+
+**설정 → 기기 및 서비스 → 통합 구성요소 추가 → Finance Kit**을 선택합니다.
+
+처음 설치할 때 종목 칸을 비워두어도 괜찮습니다. 대표 종목(삼성전자·SK하이닉스·애플·엔비디아·마이크로소프트·비트코인·이더리움)이 자동으로 채워져 바로 화면을 둘러볼 수 있고, 나중에 사이드바에서 언제든 바꿀 수 있습니다.
 
 ---
 
-## 자동화 직접 작성 (yaml)
+## 사이드바 화면 사용법
 
-### 평가손익 알림
-```yaml
-trigger:
-  - platform: state
-    entity_id: binary_sensor.fi_portfolio_pl_alert
-    to: "on"
-action:
-  - service: notify.mobile_app_my_phone
-    data:
-      title: "포트폴리오 알림"
-      message: >
-        평가손익 {{ state_attr('binary_sensor.fi_portfolio_pl_alert', 'current_pl_pct') }}%
-        — 임계값 ±{{ state_attr('binary_sensor.fi_portfolio_pl_alert', 'threshold_pct') }}%
-```
+설치가 끝나면 Home Assistant 왼쪽 메뉴에 **Finance Kit**이 나타납니다.
 
-### 한국 장 마감 직후 이벤트
+- **종목 추가**: 오른쪽 위 **+ 종목 추가** 버튼을 누르면 국내·미국·코인·기타 탭별로 인기 종목 목록이 열립니다. 원하는 종목 옆의 **+ 추가**를 눌러 여러 종목을 한 번에 담을 수 있고, 검색창에서 한글 이름이나 코드로 찾을 수도 있습니다. 코드를 직접 찾고 싶을 때를 위해 KRX·네이버 금융·Yahoo Finance 바로가기도 함께 들어 있습니다.
+- **보유 종목 및 가격 알림**: 아무 종목이나 눌러 상세 화면을 열면 기간별 차트(1일, 5일, 1개월, 6개월, 1년)와 함께 **내 보유** 입력란이 나옵니다. 수량, 평단가, 그리고 선택 사항으로 **목표가(이상)** 와 **손절가(이하)** 를 입력하고 저장하면 됩니다.
+  - 한국 주식은 원(KRW), 미국 주식은 달러(USD) 그대로 입력하면 환율이 자동 반영됩니다.
+  - 보유 종목 목록에 설정한 알림 가격이 표시되며, 가격에 도달하면 강조 배지로 바로 확인할 수 있습니다.
+- **화면 꾸미기**: 오른쪽 위 설정 아이콘에서 테마, 레이아웃, 상승 색상, 섹션 순서, 언어(한국어 / English)를 바꿀 수 있습니다. 설정은 사용자마다 따로 저장되므로 휴대폰과 태블릿에서 각자 편한 화면으로 쓸 수 있습니다.
+
+> 종목 추가·삭제와 보유 정보 수정은 관리자 계정만 가능하며, 가족 등 일반 사용자는 보기 전용으로 안전하게 이용할 수 있습니다.
+
+---
+
+## 휴대폰 알림 자동화
+
+Home Assistant 알림과 연결하면 시세를 계속 들여다보지 않아도 중요한 순간만 받아볼 수 있습니다.
+
+### 원클릭 블루프린트 3종
+
+버튼을 눌러 바로 가져온 뒤 알림 받을 종목과 휴대폰만 고르면 됩니다.
+
+1. **전일 대비 등락률 알림** — 선택한 종목이 전일 종가 대비 설정한 비율만큼 오르거나 내리면 알림
+   [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fprice_change_alert.yaml)
+2. **단기 급등락 알림** — "최근 15분 동안 2% 이상 움직였을 때"처럼 짧은 시간의 급변을 포착 (1·5·15·30·60·90·120·180분 지원)
+   [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fshort_window_alert.yaml)
+3. **일일 시장 요약** — 매일 장 마감 후 지수·환율·관심 종목·내 평가손익을 한 메시지로 정리해 발송
+   [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fredchupa%2Fkr_finance_kit%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkr_finance_kit%2Fdaily_summary.yaml)
+
+### 보유 종목 목표가·손절가 도달 알림
+
+사이드바에서 목표가나 손절가를 설정해 두면, 가격이 돌파되는 순간 Home Assistant에 알림 신호가 발생합니다. 아래 자동화를 하나만 만들어 두면 모든 보유 종목의 목표가·손절가 알림을 휴대폰으로 받을 수 있습니다.
+
 ```yaml
 trigger:
   - platform: event
-    event_type: kr_finance_kit_kr_market_closed
+    event_type: kr_finance_kit_price_alert
 action:
-  - service: notify.notify
+  - action: notify.mobile_app_my_phone
     data:
-      message: "코스피 종가 {{ states('sensor.fi_kospi') }}"
+      title: "{{ trigger.event.data.name }} 가격 알림"
+      message: >
+        {{ '목표가 도달' if trigger.event.data.direction == 'high' else '손절가 도달' }}:
+        현재가 {{ trigger.event.data.current_price }} (기준 {{ trigger.event.data.target_price }})
 ```
 
-더 많은 예시: [docs/examples/](docs/examples/)
+더 많은 자동화와 직접 꾸미는 대시보드 예시는 [docs/examples/](docs/examples/)에서 확인할 수 있습니다.
 
 ---
 
-## 음성 비서
+## 음성 비서로 물어보기
 
-HA Assist에 자동 등록 (`finance_query` LLM tool). 8개 query_type:
-- index / fx / quote / portfolio / disclosures / disclosure_for_ticker / top_movers / market_summary
+Home Assistant Assist에 음성 비서(ChatGPT, Gemini, 로컬 음성 비서 등)를 연결해 두셨다면 말로 바로 시세를 물어볼 수 있습니다.
 
-예시 질문:
 - "코스피 지금 얼마야?"
-- "삼성전자 시세 알려줘"
-- "오늘 가장 많이 오른 종목?"
-- "오늘 시장 요약해줘"
-- "관심 종목 새 공시 있어?"
-
-Google Assistant / Alexa / ChatGPT 음성 모드 / 로컬 Whisper — HA Assist 통해 모두 사용 가능 (LLM 기반 conversation 통합 필요).
+- "삼성전자 주가 알려줘"
+- "오늘 내 관심 종목 중에 제일 많이 오른 건 뭐야?"
+- "오늘 시장 상황 요약해 줘"
+- "관심 종목에 새 공시 올라온 거 있어?"
 
 ---
 
-## FAQ
+## 자주 묻는 질문
 
 <details>
-<summary><b>증권사 계정과 연동하나요?</b></summary>
+<summary><b>증권사 계정을 연결해야 하나요?</b></summary>
 
-**아니요.** 비공식 API 보안·법적 리스크가 있어 의도적으로 빼두었습니다. yfinance(Yahoo Finance 공개) + OpenDart(금융감독원 공식) + 사용자 직접 입력하는 평단가·수량 조합.
+아니요. 계좌 연동 없이 공개 시세와 직접 입력한 보유 수량·평단가만 사용하므로 보안 걱정 없이 쓸 수 있습니다.
 </details>
 
 <details>
-<summary><b>무료인가요?</b></summary>
+<summary><b>사용료가 있나요?</b></summary>
 
-전부 무료. yfinance·OpenDart 둘 다 무료 무제한(개인 사용 범위). 통합 자체도 MIT.
+무료입니다. 시세 조회와 금융감독원 OpenDart 공시 API 모두 개인 사용 범위에서 무료로 제공됩니다.
 </details>
 
 <details>
-<summary><b>장 마감 후·주말에도 동작하나요?</b></summary>
+<summary><b>주말이나 장 마감 후에는 어떻게 표시되나요?</b></summary>
 
-직전 거래일 종가 표시. 한국·미국 공휴일 자동 처리. 암호화폐·환율은 24/7 갱신.
+국내·미국 주식은 직전 거래일 종가를 보여주며, 한국·미국 공휴일도 자동으로 처리됩니다. 비트코인 등 코인과 환율·원자재는 24시간 계속 갱신됩니다.
 </details>
 
 <details>
-<summary><b>HA 재시작하면 단기 변동률이 None으로 보입니다</b></summary>
+<summary><b>OpenDart API 키는 꼭 넣어야 하나요?</b></summary>
 
-memory-only ring buffer라 정상. N분 윈도우면 N분 동안 None → 그 후 정상. 60분 윈도우는 약 1시간 warm-up.
+필수는 아닙니다. 키 없이도 주가·환율·코인·보유 손익·가격 알림은 모두 정상 동작합니다. 다만 OpenDart 무료 키를 입력하면 관심 종목의 신규 공시 알림과 국내 상장사 전체 검색 기능이 추가로 열립니다.
 </details>
 
 <details>
-<summary><b>옵션을 나중에 바꾸려면?</b></summary>
+<summary><b>옵션을 나중에 바꾸고 싶어요.</b></summary>
 
-설정 → 기기 및 서비스 → Finance Kit → ⚙ 옵션. 저장하면 자동 reload.
+**설정 → 기기 및 서비스 → Finance Kit → 구성(옵션)** 에서 언제든 바꿀 수 있습니다. 저장하면 통합이 자동으로 다시 불러와집니다.
 </details>
 
 <details>
-<summary><b>차트 카드?</b></summary>
+<summary><b>가격이 표시되지 않거나 새 메뉴가 안 보일 때는?</b></summary>
 
-이 통합은 sensor만 제공. [apexcharts-card](https://github.com/RomRider/apexcharts-card)(별도 HACS) 또는 HA 기본 통계 카드에 연결해 사용.
-</details>
-
----
-
-<details>
-<summary>⚙️ 기술 세부사항</summary>
-
-### 데이터 소스
-| 데이터 | 소스 | yfinance ticker |
-|---|---|---|
-| 코스피·코스닥 | yfinance | `^KS11`, `^KQ11` |
-| 나스닥·다우·S&P 500 | yfinance | `^IXIC`, `^DJI`, `^GSPC` |
-| 닛케이·항생·FTSE·DAX | yfinance | `^N225`, `^HSI`, `^FTSE`, `^GDAXI` |
-| USD/KRW | yfinance | `KRW=X` |
-| 한국 종목 | yfinance | `005930.KS` / `.KQ` |
-| 미국 종목 | yfinance | `AAPL` |
-| 암호화폐 | yfinance | `BTC-USD` (24/7) |
-| 외환·선물 | yfinance | `EUR=X`, `GC=F` (24/7) |
-| 공시 + 종목명 매핑 | OpenDart | `list.json`, `corpCode.xml` |
-
-### 폴링 정책
-- 한·미 시장 중 하나라도 열림: **60초**
-- 양쪽 다 닫힘 (야간·주말): **600초** (자동 dial-down)
-- 암호화폐·환율·선물: **항상 60초** (시장 시간 무관)
-
-### Ring buffer (단기 변동률용)
-- 메모리만, ticker당 deque(maxlen=300) ≈ 5시간 history
-- HA 재시작 시 비워짐 (의도된 trade-off)
-
-### 의존성
-`yfinance>=0.2.40` 하나만. HA가 자동 설치.
-
-### 제외 사항 (의도적)
-- ❌ 자동 매매 (법·약관 리스크)
-- ❌ 증권사 계좌 직연동
-- ❌ 차트 카드 (apexcharts-card 사용)
-- ❌ 백테스팅
-
+HACS 업데이트 직후에는 Home Assistant를 재시작한 뒤 브라우저를 새로고침(`Ctrl+Shift+R`)해 주세요. 자세한 설치·문제 해결 안내는 [docs/installation-ko.md](docs/installation-ko.md)를 참고해 주세요.
 </details>
 
 ---
 
-## 🔄 기존 사용자 마이그레이션
+## 후원
 
-| 버전 변화 | 영향 |
-|---|---|
-| ≤v0.1.31 → v0.1.32+ | entity_id 한국어 슬러그 (`sensor.hangug_*`) → 영어 슬러그. 통합 삭제 후 재추가 권장 |
-| v0.1.32~v0.1.33 → v0.1.34+ | `sensor.kr_finance_kit_*` → `sensor.fi_*` 단축. 삭제+재추가 또는 entity_id 수동 변경 |
-| ≤v0.1.43 → v0.1.44+ | 새 옵션 5종 (target_currency_krw, P/L alert, market_close events, global indices, disclosure filter) — 옵션 화면 한 번 저장 필요 |
-| ≤v0.1.47 → v0.1.48+ | config_flow 500 에러 fix (frontend serialize 호환 selector 사용) |
-| ≤v0.1.51 → v0.1.52 | 단기 변동률 옵션이 잠시 CSV로 도입 (지금은 제거됨). |
-| ≤v0.1.52 → v0.1.53+ | 옵션 제거. sensor가 항상 1/5/15/30/60/90/120/180분 attribute 자동 생성. 블루프린트 number 입력에서 그 중 하나 선택. |
-
----
-
-## 문제 해결
-
-- 가격이 안 뜸 / Unavailable → HA 재시작 후 1~2분. 계속되면 [Issues](https://github.com/redchupa/kr_finance_kit/issues)
-- 옵션 새 항목이 안 보임 → HA **완전 재시작** (Reload 아님, translation cache flush)
-- `already_in_progress` 에러 → v0.1.47+ 받기, HA Restart
-- `구성 흐름 500 에러` → v0.1.48+ 받기
-- 더 자세한 가이드: [docs/installation-ko.md](docs/installation-ko.md)
-
----
-
-## ☕ 후원
-
-도움이 되셨다면 커피 한 잔 🙏
+유용하게 쓰고 계시다면 커피 한 잔으로 응원해 주세요.
 
 <table>
   <tr>
     <td align="center">
       <b>토스</b><br/>
-      <img src="https://raw.githubusercontent.com/redchupa/kr_finance_kit/main/images/toss-donation.png" alt="Toss 후원 QR" width="200"/>
+      <img src="https://raw.githubusercontent.com/redchupa/kr_finance_kit/main/images/toss-donation.png" alt="토스 후원 QR" width="200"/>
     </td>
     <td align="center">
       <b>PayPal</b><br/>
@@ -422,12 +179,4 @@ memory-only ring buffer라 정상. N분 윈도우면 N분 동안 None → 그 �
 
 ---
 
-<sub>🤝 버그 리포트·기능 제안: [Issues](https://github.com/redchupa/kr_finance_kit/issues) | 📦 변경 이력: [Releases](https://github.com/redchupa/kr_finance_kit/releases) | 📝 [MIT License](LICENSE)</sub>
-
-<details>
-<summary>📘 English summary</summary>
-
-A Home Assistant HACS integration exposing Korean and US equities, FX, crypto, and OpenDart disclosures as native HA sensors. Free data sources only (yfinance + OpenDart's free key), no brokerage credentials, voice-assist ready.
-
-See [README.en.md](README.en.md) for the full English version.
-</details>
+<sub>[문의 및 제보](https://github.com/redchupa/kr_finance_kit/issues) · [업데이트 내역](https://github.com/redchupa/kr_finance_kit/releases) · [MIT 라이선스](LICENSE)</sub>
