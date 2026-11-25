@@ -2,13 +2,14 @@
   "config": {
     "step": {
       "user": {
-        "title": "KR Finance Kit 설정",
+        "title": "Finance Kit 설정",
         "description": "한 번에 모두 입력하시면 됩니다. 모든 항목은 선택이며 비워두면 해당 기능이 비활성화됩니다.\n\n**OpenDart 키**가 있고 **한국 종목**이 입력되어 있으면 → 시세 sensor + 공시 binary_sensor + 종목명(예 삼성전자) 매핑이 모두 자동으로 활성화됩니다.\n\n**OpenDart 키 발급** (무료·즉시):\n• [회원가입 — opendart.fss.or.kr/uss/umt/EgovMberInsertView.do]({opendart_signup_url})\n• [인증키 신청 — opendart.fss.or.kr/mng/apiUseStusUser.do]({opendart_key_url})\n\n**종목코드 검색 (클릭하면 바로 이동)**:\n• 🇰🇷 한국 (6자리 숫자):\n  [KRX 상장법인 목록 — kind.krx.co.kr/corpgeneral/corpList.do]({krx_search_url})\n  [네이버 금융 시세 — finance.naver.com/sise/sise_market_sum.naver]({naver_finance_url})\n• 🇺🇸 미국 (티커 심볼):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url})\n• 🪙 암호화폐·환율·선물 (Yahoo ticker 형식, 시장 시간 무관 24/7 갱신):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url}) (같은 검색)",
         "data": {
           "opendart_api_key": "OpenDart API 키 : 약 40자리 키 입력",
           "kr_tickers": "한국 종목 코드 : 005930, 000660, 035420, 035720.KS, 373220",
           "us_tickers": "미국 종목 심볼 : AAPL:애플, MSFT:마이크로소프트, TSLA:테슬라, NVDA:엔비디아",
           "other_tickers": "암호화폐·환율·선물 : BTC-USD:비트코인, ETH-USD:이더리움, EUR=X:유로, GC=F:금, CL=F:원유",
+          "seed_defaults": "예시 종목으로 시작 (권장)",
           "include_indices": "코스피·코스닥 지수 포함",
           "include_us_indices": "나스닥·다우·S&P 500 지수 포함",
           "include_global_indices": "글로벌 지수 포함 (닛케이·항생·FTSE·DAX)",
@@ -23,6 +24,7 @@
           "kr_tickers": "005930, 000660, 035420, 035720.KS, 373220",
           "us_tickers": "AAPL:애플, MSFT:마이크로소프트, TSLA:테슬라, NVDA:엔비디아",
           "other_tickers": "BTC-USD:비트코인, ETH-USD:이더리움, EUR=X:유로, GC=F:금, CL=F:원유",
+          "seed_defaults": "위 종목 칸 3개를 모두 비워둔 경우에만 적용: 삼성전자·SK하이닉스·애플·엔비디아·마이크로소프트·비트코인(원화/달러)·이더리움을 추가해 사이드바 화면이 비어 있지 않게 합니다. 종목은 언제든 사이드바에서 추가·삭제할 수 있어요.",
           "include_us_indices": "활성화하면 sensor.fi_nasdaq / dow / sp500 추가됩니다",
           "portfolio_pl_alert_pct": "예: 5로 설정 → 보유 종목 전체 평가손익(KRW 환산)이 ±5%를 넘으면 binary_sensor.fi_portfolio_pl_alert가 ON. 기준점은 kr_finance_kit.add_position 서비스로 입력한 평단가(avg_price) — 매수 원가 대비 손익 %. 자동화 트리거(알림·메일 등)에서 그 binary_sensor 사용. 0으로 두면 sensor 자체 생성 안 됨",
           "include_detailed_attrs": "각 종목 sensor에 깊이 있는 정보를 함께 받아옵니다 — 52주 최고/최저가, 50일·200일 이동평균선, 당일 고가/저가/거래량, 배당금·배당수익률, 주가수익비율(PER), 장 전/장 마감 후 시간외 가격, 장 상태(개장/마감). 단점: 종목 하나마다 야후 파이낸스에 데이터 요청이 한 번씩 더 들어갑니다. 종목 10개면 매 갱신마다 추가 요청 10번. 종목이 많으면 트래픽이 늘고 가끔 갱신이 느려질 수 있으니, 차트나 상세 분석이 꼭 필요할 때만 켜는 걸 추천합니다."
@@ -40,7 +42,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "KR Finance Kit 옵션",
+        "title": "Finance Kit 옵션",
         "description": "설치 시 입력한 값을 자유롭게 수정할 수 있습니다. **저장하면 통합이 자동으로 재시작**되며 변경 사항이 즉시 반영됩니다.\n\n**무엇이 바뀌나**:\n• 한국 종목을 **추가하면** → 시세 sensor 즉시 생성. OpenDart 키가 있으면 공시 binary_sensor와 종목명(예 삼성전자)도 자동.\n• 한국 종목을 **삭제하면** → 해당 sensor 자동 제거.\n• **OpenDart 키를 비우면** → 공시 binary_sensor와 종목명 매핑이 비활성화됩니다 (가격 sensor는 그대로 동작).\n• **OpenDart 키를 새로 입력하면** → corpCode.xml을 다시 다운로드해 종목명·corp_code를 다시 매핑합니다.\n\n**종목코드 검색 (클릭하면 바로 이동)**:\n• 🇰🇷 한국 (6자리 숫자):\n  [KRX 상장법인 목록 — kind.krx.co.kr/corpgeneral/corpList.do]({krx_search_url})\n  [네이버 금융 시세 — finance.naver.com/sise/sise_market_sum.naver]({naver_finance_url})\n• 🇺🇸 미국 (티커 심볼):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url})\n• 🪙 암호화폐·환율·선물 (Yahoo ticker 형식, 시장 시간 무관 24/7 갱신):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url}) (같은 검색)\n\n**OpenDart 키 발급** (무료·즉시):\n• [회원가입 — opendart.fss.or.kr/uss/umt/EgovMberInsertView.do]({opendart_signup_url})\n• [인증키 신청 — opendart.fss.or.kr/mng/apiUseStusUser.do]({opendart_key_url})\n\n참고: 보유 종목 평가손익(수량·평단가)은 옵션 화면이 아닌 `kr_finance_kit.add_position` 서비스로 관리됩니다 — 이 화면에서 손대지 않아도 됩니다.",
         "data": {
           "opendart_api_key": "OpenDart API 키 : 약 40자리 키 입력",
@@ -74,16 +76,32 @@
   },
   "entity": {
     "sensor": {
-      "portfolio_kr_value": {"name": "한국 보유 평가금액"},
-      "portfolio_kr_pl": {"name": "한국 보유 평가손익"},
-      "portfolio_us_value": {"name": "미국 보유 평가금액"},
-      "portfolio_us_pl": {"name": "미국 보유 평가손익"},
-      "portfolio_krw_total": {"name": "총 평가금액 (KRW 환산)"},
-      "portfolio_krw_pl": {"name": "총 평가손익 (KRW 환산)"}
+      "portfolio_kr_value": {
+        "name": "한국 보유 평가금액"
+      },
+      "portfolio_kr_pl": {
+        "name": "한국 보유 평가손익"
+      },
+      "portfolio_us_value": {
+        "name": "미국 보유 평가금액"
+      },
+      "portfolio_us_pl": {
+        "name": "미국 보유 평가손익"
+      },
+      "portfolio_krw_total": {
+        "name": "총 평가금액 (KRW 환산)"
+      },
+      "portfolio_krw_pl": {
+        "name": "총 평가손익 (KRW 환산)"
+      }
     },
     "binary_sensor": {
-      "new_disclosure": {"name": "신규 공시"},
-      "pl_alert": {"name": "평가손익 알림"}
+      "new_disclosure": {
+        "name": "신규 공시"
+      },
+      "pl_alert": {
+        "name": "평가손익 알림"
+      }
     }
   },
   "services": {
@@ -113,8 +131,36 @@
       "name": "보유 종목 삭제",
       "description": "보유 종목을 삭제합니다. ticker + market 조합으로 매칭 — add_position 때 입력한 그대로 다시 넣어주세요.",
       "fields": {
-        "ticker": {"name": "종목 코드/심볼", "description": "삭제할 종목 코드 또는 심볼 (예 005930, AAPL)."},
-        "market": {"name": "시장", "description": "KR (한국 주식) 또는 US (미국 주식). add_position 시 입력한 것과 동일해야 합니다."}
+        "ticker": {
+          "name": "종목 코드/심볼",
+          "description": "삭제할 종목 코드 또는 심볼 (예 005930, AAPL)."
+        },
+        "market": {
+          "name": "시장",
+          "description": "KR (한국 주식) 또는 US (미국 주식). add_position 시 입력한 것과 동일해야 합니다."
+        }
+      }
+    }
+  },
+  "selector": {
+    "disclosure_category": {
+      "options": {
+        "A": "A — 정기공시",
+        "B": "B — 주요사항보고",
+        "C": "C — 발행공시",
+        "D": "D — 지분공시",
+        "E": "E — 기타공시",
+        "F": "F — 외부감사관련",
+        "G": "G — 펀드공시",
+        "H": "H — 자산유동화",
+        "I": "I — 거래소공시",
+        "J": "J — 공정위공시"
+      }
+    },
+    "market": {
+      "options": {
+        "KR": "KR — 한국 주식 (코스피·코스닥)",
+        "US": "US — 미국 주식 (NYSE·NASDAQ)"
       }
     }
   }

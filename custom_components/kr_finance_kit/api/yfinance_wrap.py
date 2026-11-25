@@ -353,3 +353,84 @@ async def fetch_quotes(tickers: list[str], market: str = MARKET_KR) -> dict[str,
         return {orig: raw.get(sym, {}) for orig, sym in zip(tickers, symbols)}
     raw = await _gather(tickers)
     return raw
+
+
+# ---------------------------------------------------------------------------
+# Sidebar panel helpers — charts + symbol search. Called on demand from the
+# panel's websocket handlers (never from the polling coordinator), and the
+# panel layer caches results so a phone re-opening the panel doesn't re-hit
+# Yahoo every time.
+# ---------------------------------------------------------------------------
+
+# period -> (yfinance period, interval). Intraday intervals keep the 1D/5D
+# charts meaningful; daily/weekly bars keep longer ranges light.
+HISTORY_PERIODS: dict[str, tuple[str, str]] = {
+    "1d": ("1d", "5m"),
+    "5d": ("5d", "30m"),
+    "1mo": ("1mo", "1d"),
+    "6mo": ("6mo", "1d"),
+    "1y": ("1y", "1wk"),
+}
+
+
+def _history_sync(symbol: str, period: str) -> dict[str, Any]:
+    import yfinance as yf
+
+    yf_period, interval = HISTORY_PERIODS.get(period, HISTORY_PERIODS["1mo"])
+    try:
+        hist = yf.Ticker(symbol).history(period=yf_period, interval=interval, auto_adjust=False)
+    except Exception as err:  # noqa: BLE001
+        LOGGER.debug("yfinance history(%s, %s) failed: %s", symbol, period, err)
+        return {"t": [], "c": []}
+    if hist is None or hist.empty or "Close" not in hist:
+        return {"t": [], "c": []}
+    ts: list[int] = []
+    closes: list[float] = []
+    for idx, value in hist["Close"].items():
+        f = _safe_float(value)
+        if f is None:
+            continue
+        try:
+            ts.append(int(idx.timestamp()))
+        except Exception:  # noqa: BLE001
+            continue
+        closes.append(round(f, 4))
+    return {"t": ts, "c": closes}
+
+
+async def fetch_history(symbol: str, period: str = "1mo") -> dict[str, Any]:
+    """Close-price series ``{"t": [epoch...], "c": [close...]}`` for charts."""
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, _history_sync, symbol, period)
+
+
+def _search_sync(query: str, limit: int) -> list[dict[str, Any]]:
+    import yfinance as yf
+
+    search_cls = getattr(yf, "Search", None)
+    if search_cls is None:  # yfinance < 0.2.44
+        return []
+    try:
+        quotes = search_cls(query, max_results=limit, news_count=0).quotes or []
+    except Exception as err:  # noqa: BLE001
+        LOGGER.debug("yfinance Search(%s) failed: %s", query, err)
+        return []
+    out: list[dict[str, Any]] = []
+    for q in quotes:
+        sym = q.get("symbol")
+        if not isinstance(sym, str) or not sym:
+            continue
+        out.append({
+            "symbol": sym,
+            # Yahoo pads some names to a fixed width ("Tesla Inc.     R").
+            "name": " ".join(str(q.get("shortname") or q.get("longname") or sym).split()),
+            "exchange": q.get("exchDisp") or q.get("exchange"),
+            "quote_type": (q.get("quoteType") or "").upper(),
+        })
+    return out
+
+
+async def search_symbols(query: str, limit: int = 8) -> list[dict[str, Any]]:
+    """Yahoo symbol search. Empty list when unsupported or offline."""
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, _search_sync, query, limit)

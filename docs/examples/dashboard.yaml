@@ -1,4 +1,4 @@
-# KR Finance Kit — sample dashboard (v0.1.61+)
+# Finance Kit — sample dashboard (v0.1.61+)
 #
 # Pure-Markdown layout. Slim, vertical, no heavy chart cards except
 # one ApexCharts portfolio trend. Designed to work on both desktop
@@ -18,7 +18,7 @@
 # All Markdown tables read the live state of `sensor.fi_*` entities
 # the integration creates. The holdings table reads
 # `sensor.fi_portfolio_krw_pl` 's `positions` attribute (v0.1.61+).
-title: KR Finance Kit
+title: Finance Kit
 path: kr-finance
 icon: mdi:chart-line
 type: sections
@@ -30,7 +30,7 @@ sections:
     cards:
       - type: markdown
         content: |
-          # 📊 KR Finance Kit
+          # 📊 Finance Kit
           한국·미국 주식 · 환율 · 암호화폐 · OpenDart 공시 — **한눈에**
 
   # ── 2. Portfolio KPI table ──────────────────────────────────────

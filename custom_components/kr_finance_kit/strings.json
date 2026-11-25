@@ -2,13 +2,14 @@
   "config": {
     "step": {
       "user": {
-        "title": "KR Finance Kit",
-        "description": "Everything fits on one page. Each field is optional — leave blank to disable that feature.\n\nWhen an **OpenDart key** and **KR tickers** are both set, the same tickers automatically drive price sensors, disclosure binary_sensors, AND friendly company-name labels (e.g. \"삼성전자\" instead of \"005930\").\n\n**Get an OpenDart key** (free, instant):\n• [Sign up — opendart.fss.or.kr/uss/umt/EgovMberInsertView.do]({opendart_signup_url})\n• [Request API key — opendart.fss.or.kr/mng/apiUseStusUser.do]({opendart_key_url})\n\n**Where to find ticker codes (click to open)**:\n• 🇰🇷 KR (6-digit number):\n  [KRX listed company directory — kind.krx.co.kr/corpgeneral/corpList.do]({krx_search_url})\n  [Naver Finance market list — finance.naver.com/sise/sise_market_sum.naver]({naver_finance_url})\n• 🇺🇸 US (ticker symbol):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url})\n• 🪙 Crypto / FX / Futures (Yahoo ticker form, fetched 24/7 regardless of market hours):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url}) (same search)",
+        "title": "Finance Kit",
+        "description": "Everything fits on one page. Each field is optional — leave blank to disable that feature.\n\nWhen an **OpenDart key** and **KR tickers** are both set, the same tickers automatically drive price sensors, disclosure binary_sensors, AND friendly company-name labels (e.g. the registered name \"삼성전자\" instead of \"005930\" — OpenDart names are in Korean).\n\n**Get an OpenDart key** (free, instant):\n• [Sign up — opendart.fss.or.kr/uss/umt/EgovMberInsertView.do]({opendart_signup_url})\n• [Request API key — opendart.fss.or.kr/mng/apiUseStusUser.do]({opendart_key_url})\n\n**Where to find ticker codes (click to open)**:\n• 🇰🇷 KR (6-digit number):\n  [KRX listed company directory — kind.krx.co.kr/corpgeneral/corpList.do]({krx_search_url})\n  [Naver Finance market list — finance.naver.com/sise/sise_market_sum.naver]({naver_finance_url})\n• 🇺🇸 US (ticker symbol):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url})\n• 🪙 Crypto / FX / Futures (Yahoo ticker form, fetched 24/7 regardless of market hours):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url}) (same search)",
         "data": {
           "opendart_api_key": "OpenDart API key : ~40-character key",
           "kr_tickers": "KR ticker codes : 005930, 000660, 035420, 035720.KS, 373220",
           "us_tickers": "US ticker symbols : AAPL:Apple, MSFT:Microsoft, TSLA:Tesla, NVDA:NVIDIA",
           "other_tickers": "Crypto / FX / futures : BTC-USD:Bitcoin, ETH-USD:Ethereum, EUR=X:EUR/USD, GC=F:Gold, CL=F:Oil",
+          "seed_defaults": "Start with sample symbols (recommended)",
           "include_indices": "Include KOSPI/KOSDAQ indices",
           "include_us_indices": "Include NASDAQ/Dow/S&P 500 indices",
           "include_global_indices": "Include global indices (Nikkei, Hang Seng, FTSE, DAX)",
@@ -23,6 +24,7 @@
           "kr_tickers": "005930, 000660, 035420, 035720.KS, 373220",
           "us_tickers": "AAPL:Apple, MSFT:Microsoft, TSLA:Tesla, NVDA:NVIDIA",
           "other_tickers": "BTC-USD:Bitcoin, ETH-USD:Ethereum, EUR=X:EUR/USD, GC=F:Gold, CL=F:Oil",
+          "seed_defaults": "Only applies when all three ticker fields above are blank: adds Samsung Electronics, SK hynix, Apple, NVIDIA, Microsoft, Bitcoin and Ethereum so the Finance Kit sidebar isn't empty. Add or remove symbols any time from the sidebar.",
           "include_us_indices": "Adds sensor.fi_nasdaq / dow / sp500",
           "portfolio_pl_alert_pct": "E.g. set to 5 → binary_sensor.fi_portfolio_pl_alert turns ON whenever the KRW-converted total portfolio P/L crosses ±5%. Baseline is the avg_price you supplied via the kr_finance_kit.add_position service (cost-basis %, not current-price %). Wire that binary_sensor into a notify automation. 0 = sensor not created at all",
           "include_detailed_attrs": "Adds one yfinance .info call per ticker per poll. Surfaces fifty_two_week_high/low, fifty/two_hundred_day_average, regular_market_day_high/low/volume, dividend_*, forward_pe / trailing_pe, market_state, pre/post_market_price as sensor attributes"
@@ -40,7 +42,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "KR Finance Kit options",
+        "title": "Finance Kit options",
         "description": "Edit any value you set at install. **Saving auto-reloads the integration** so changes take effect immediately.\n\n**What changes when**:\n• **Add a KR ticker** → its price sensor appears immediately. With an OpenDart key, the disclosure binary_sensor and Korean company-name label come along automatically.\n• **Remove a KR ticker** → its sensor is removed.\n• **Clear the OpenDart key** → disclosure binary_sensors and company-name labels are disabled (price sensors keep working).\n• **Enter a new OpenDart key** → corpCode.xml is re-downloaded and corp_codes / names are re-mapped.\n\n**Where to find ticker codes (click to open)**:\n• 🇰🇷 KR (6-digit number):\n  [KRX listed company directory — kind.krx.co.kr/corpgeneral/corpList.do]({krx_search_url})\n  [Naver Finance market list — finance.naver.com/sise/sise_market_sum.naver]({naver_finance_url})\n• 🇺🇸 US (ticker symbol):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url})\n• 🪙 Crypto / FX / Futures (Yahoo ticker form, fetched 24/7 regardless of market hours):\n  [Yahoo Finance Lookup — finance.yahoo.com/lookup]({yahoo_finance_url}) (same search)\n\n**Get an OpenDart key** (free, instant):\n• [Sign up — opendart.fss.or.kr/uss/umt/EgovMberInsertView.do]({opendart_signup_url})\n• [Request API key — opendart.fss.or.kr/mng/apiUseStusUser.do]({opendart_key_url})\n\nNote: holdings (quantity / avg price) are managed via the `kr_finance_kit.add_position` service, not this screen — you don't need to touch them here.",
         "data": {
           "opendart_api_key": "OpenDart API key : ~40-character key",
@@ -70,6 +72,28 @@
     },
     "error": {
       "invalid_api_key": "OpenDart key is not valid. Verify it at opendart.fss.or.kr."
+    }
+  },
+  "selector": {
+    "disclosure_category": {
+      "options": {
+        "A": "A — Periodic reports",
+        "B": "B — Major event reports",
+        "C": "C — Securities issuance",
+        "D": "D — Shareholding disclosures",
+        "E": "E — Other disclosures",
+        "F": "F — External audit",
+        "G": "G — Fund disclosures",
+        "H": "H — Asset-backed securities",
+        "I": "I — Exchange disclosures",
+        "J": "J — Fair Trade Commission"
+      }
+    },
+    "market": {
+      "options": {
+        "KR": "KR — Korean stocks (KOSPI / KOSDAQ)",
+        "US": "US — US stocks (NYSE / NASDAQ)"
+      }
     }
   }
 }

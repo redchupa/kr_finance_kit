@@ -1,4 +1,4 @@
-"""Config flow + options flow for KR Finance Kit.
+"""Config flow + options flow for Finance Kit.
 
 Single-step layout: one form captures everything (tickers, OpenDart key,
 toggles). The same KR ticker list feeds both price sensors (via yfinance)
@@ -57,11 +57,11 @@ from .const import (
     CONF_OTHER_TICKERS,
     CONF_PORTFOLIO_PL_ALERT_PCT,
     CONF_POSITIONS,
+    CONF_SEED_DEFAULTS,
     CONF_TARGET_CURRENCY_KRW,
     CONF_US_TICKER_LABELS,
     CONF_US_TICKERS,
     DISCLOSURE_CATEGORY_CODES,
-    DISCLOSURE_CATEGORY_LABELS,
     DOMAIN,
 )
 
@@ -214,45 +214,58 @@ async def _enrich_kr_metadata(
 # values because pre-filling is handled separately via
 # ``add_suggested_values_to_schema`` (defaults only apply on submit-with-
 # blank, which would silently wipe values across reloads).
-_FORM_SCHEMA = vol.Schema(
-    {
-        vol.Optional(CONF_OPENDART_API_KEY): str,
-        vol.Optional(CONF_KR_TICKERS): str,
-        vol.Optional(CONF_US_TICKERS): str,
-        vol.Optional(CONF_OTHER_TICKERS): str,
-        vol.Optional(CONF_INCLUDE_INDICES, default=True): bool,
-        vol.Optional(CONF_INCLUDE_US_INDICES, default=True): bool,
-        vol.Optional(CONF_INCLUDE_GLOBAL_INDICES, default=False): bool,
-        vol.Optional(CONF_INCLUDE_FX, default=True): bool,
-        vol.Optional(CONF_INCLUDE_DETAILED_ATTRS, default=False): bool,
-        vol.Optional(CONF_TARGET_CURRENCY_KRW, default=False): bool,
-        # NumberSelector + SelectSelector(multiple=True) are required because
-        # HA's voluptuous-serialize layer (which converts the flow schema to
-        # JSON for the frontend) doesn't know how to render arbitrary
-        # `vol.All(...)` wrappers. The v0.1.44 attempt to use `vol.All` for
-        # these two fields raised a 500 Internal Server Error when the
-        # frontend tried to load the form — selectors are the HA-blessed
-        # path for ranged numbers and multi-select lists.
-        vol.Optional(CONF_PORTFOLIO_PL_ALERT_PCT, default=0): NumberSelector(
-            NumberSelectorConfig(min=0, max=100, step=0.5, mode=NumberSelectorMode.BOX)
-        ),
-        vol.Optional(CONF_DISCLOSURE_CATEGORIES, default=[]): SelectSelector(
-            SelectSelectorConfig(
-                # Inline value+label pairs so the dropdown reads
-                # "A — 정기공시" instead of a bare "A". HA's
-                # SelectSelector accepts the SelectOptionDict shape
-                # (value/label) and the wire format stays the single
-                # letter so OpenDart requests don't need to change.
-                options=[
-                    {"value": code, "label": DISCLOSURE_CATEGORY_LABELS[code]}
-                    for code in DISCLOSURE_CATEGORY_CODES
-                ],
-                multiple=True,
-                mode=SelectSelectorMode.DROPDOWN,
-            )
-        ),
-    }
-)
+_FORM_FIELDS = {
+    vol.Optional(CONF_OPENDART_API_KEY): str,
+    vol.Optional(CONF_KR_TICKERS): str,
+    vol.Optional(CONF_US_TICKERS): str,
+    vol.Optional(CONF_OTHER_TICKERS): str,
+    vol.Optional(CONF_INCLUDE_INDICES, default=True): bool,
+    vol.Optional(CONF_INCLUDE_US_INDICES, default=True): bool,
+    vol.Optional(CONF_INCLUDE_GLOBAL_INDICES, default=False): bool,
+    vol.Optional(CONF_INCLUDE_FX, default=True): bool,
+    vol.Optional(CONF_INCLUDE_DETAILED_ATTRS, default=False): bool,
+    vol.Optional(CONF_TARGET_CURRENCY_KRW, default=False): bool,
+    # NumberSelector + SelectSelector(multiple=True) are required because
+    # HA's voluptuous-serialize layer (which converts the flow schema to
+    # JSON for the frontend) doesn't know how to render arbitrary
+    # `vol.All(...)` wrappers. The v0.1.44 attempt to use `vol.All` for
+    # these two fields raised a 500 Internal Server Error when the
+    # frontend tried to load the form — selectors are the HA-blessed
+    # path for ranged numbers and multi-select lists.
+    vol.Optional(CONF_PORTFOLIO_PL_ALERT_PCT, default=0): NumberSelector(
+        NumberSelectorConfig(min=0, max=100, step=0.5, mode=NumberSelectorMode.BOX)
+    ),
+    vol.Optional(CONF_DISCLOSURE_CATEGORIES, default=[]): SelectSelector(
+        SelectSelectorConfig(
+            # Labels come from translations/<lang>.json
+            # (selector.disclosure_category.options.*) so English
+            # installs read "A — Periodic reports" and Korean ones
+            # "A — 정기공시". The wire format stays the single
+            # letter so OpenDart requests don't change.
+            options=list(DISCLOSURE_CATEGORY_CODES),
+            multiple=True,
+            mode=SelectSelectorMode.DROPDOWN,
+            translation_key="disclosure_category",
+        )
+    ),
+}
+_FORM_SCHEMA = vol.Schema(_FORM_FIELDS)
+
+
+# The install form adds one config-flow-only checkbox right after the ticker
+# fields. Built from the shared field dict so the options form stays
+# unchanged.
+def _with_seed_field(base_fields: dict) -> dict:
+    fields: dict = {}
+    for key, value in base_fields.items():
+        fields[key] = value
+        if str(key) == CONF_OTHER_TICKERS:
+            fields[vol.Optional(CONF_SEED_DEFAULTS, default=True)] = bool
+    return fields
+
+
+_USER_FIELDS = _with_seed_field(_FORM_FIELDS)
+_USER_SCHEMA = vol.Schema(_USER_FIELDS)
 
 # URLs are injected via description_placeholders rather than embedded
 # directly in the translation strings — hassfest rejects raw URLs inside
@@ -292,16 +305,31 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 user_input.get(CONF_OTHER_TICKERS)
             )
 
+            # First install with every ticker field blank -> start from a
+            # small sample watchlist so the sidebar panel has something to
+            # show. Anything the user typed always wins (no seeding then).
+            default_kr_names: dict[str, str] = {}
+            if user_input.get(CONF_SEED_DEFAULTS, True) and not (kr or us or other):
+                from .panel_data import default_symbols
+
+                seed = default_symbols(getattr(self.hass.config, "language", None))
+                kr, us, other = seed["kr"], seed["us"], seed["other"]
+                us_labels_explicit = {**seed["us_labels"], **us_labels_explicit}
+                other_labels_explicit = {**seed["other_labels"], **other_labels_explicit}
+                default_kr_names = seed["kr_names"]
+
             if api_key and not await validate_api_key(self.hass, api_key):
                 errors[CONF_OPENDART_API_KEY] = "invalid_api_key"
             else:
                 corp_codes, ticker_names, corp_names = await _enrich_kr_metadata(
                     self.hass, api_key, kr
                 )
+                # OpenDart names (when a key is set) override the defaults.
+                ticker_names = {**default_kr_names, **ticker_names}
                 us_labels = await _enrich_other_labels(self.hass, us, us_labels_explicit)
                 other_labels = await _enrich_other_labels(self.hass, other, other_labels_explicit)
                 return self.async_create_entry(
-                    title="KR Finance Kit",
+                    title="Finance Kit",
                     data={
                         CONF_KR_TICKERS: kr,
                         CONF_US_TICKERS: us,
@@ -331,7 +359,7 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         suggested = user_input or {}
         return self.async_show_form(
             step_id="user",
-            data_schema=self.add_suggested_values_to_schema(_FORM_SCHEMA, suggested),
+            data_schema=self.add_suggested_values_to_schema(_USER_SCHEMA, suggested),
             description_placeholders=_LINK_PLACEHOLDERS,
             errors=errors,
         )

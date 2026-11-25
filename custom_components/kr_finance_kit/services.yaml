@@ -52,18 +52,17 @@ add_position:
     market:
       name: Market
       description: >
-        KR — 한국 주식 (코스피·코스닥). US — 미국 주식 (NYSE·NASDAQ).
-        암호화폐·환율·선물 (예 BTC-USD, EUR=X, GC=F) 은 보유 추적 미지원 —
-        해당 종목은 옵션 화면의 "암호화폐·환율·선물" 필드로 시세만 등록하세요.
+        KR — Korean stocks (KOSPI, KOSDAQ). US — US stocks (NYSE, NASDAQ).
+        Crypto, FX and futures (e.g. BTC-USD, EUR=X, GC=F) can't be tracked
+        as holdings — add them on the options screen for price tracking only.
       required: true
       default: "KR"
       selector:
         select:
+          translation_key: market
           options:
-            - label: "KR (한국 주식)"
-              value: "KR"
-            - label: "US (미국 주식)"
-              value: "US"
+            - "KR"
+            - "US"
 
 remove_position:
   name: Remove holding
@@ -78,13 +77,12 @@ remove_position:
         text:
     market:
       name: Market
-      description: KR (한국 주식) or US (미국 주식). Must match the market the position was added under.
+      description: KR (Korean stocks) or US (US stocks). Must match the market the position was added under.
       required: true
       default: "KR"
       selector:
         select:
+          translation_key: market
           options:
-            - label: "KR (한국 주식)"
-              value: "KR"
-            - label: "US (미국 주식)"
-              value: "US"
+            - "KR"
+            - "US"

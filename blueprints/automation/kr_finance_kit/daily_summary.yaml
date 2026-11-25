@@ -1,5 +1,5 @@
 blueprint:
-  name: KR Finance Kit — 일일 시장 요약
+  name: Finance Kit — 일일 시장 요약
   description: |
     지정한 시각(기본 한국 장 마감 15:30)에 코스피·코스닥·환율과 선택한
     종목들의 현재가·변동률, 그리고 보유 종목 평가금액·평가손익을 한
@@ -18,7 +18,7 @@ blueprint:
         time:
     target_tickers:
       name: 요약에 포함할 종목 (선택)
-      description: KR Finance Kit 종목 시세 sensor 중 메시지에 포함할 종목. 비워두면 종목 줄은 생략됨.
+      description: Finance Kit 종목 시세 sensor 중 메시지에 포함할 종목. 비워두면 종목 줄은 생략됨.
       default: []
       selector:
         entity:
@@ -95,5 +95,5 @@ action:
   - service: notify.send_message
     target: !input notify_target
     data:
-      title: "KR Finance Kit · 일일 요약"
+      title: "Finance Kit · 일일 요약"
       message: "{{ message }}"

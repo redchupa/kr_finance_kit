@@ -1,4 +1,4 @@
-"""Constants for KR Finance Kit."""
+"""Constants for Finance Kit."""
 from __future__ import annotations
 
 import logging
@@ -35,6 +35,10 @@ CONF_INCLUDE_FX = "include_fx"
 # attributes carry price_krw alongside the native value so dashboards
 # can show "BTC ≈ 80,000,000 KRW" without a template.
 CONF_TARGET_CURRENCY_KRW = "target_currency_krw"
+# Config-flow-only checkbox (never stored): when every ticker field is left
+# blank on first install, seed a small set of well-known public symbols so
+# the sidebar panel isn't empty. See panel_data.default_symbols.
+CONF_SEED_DEFAULTS = "seed_defaults"
 # Trigger threshold for the portfolio P/L alert binary_sensor. Stored
 # as a positive percentage; the sensor goes ON when the absolute
 # portfolio_krw_pl_pct crosses ±threshold. 0 disables (default).
@@ -89,22 +93,8 @@ EVENT_US_MARKET_CLOSED = f"{DOMAIN}_us_market_closed"
 # the filter through to api.opendart.fetch_recent_disclosures.
 DISCLOSURE_CATEGORY_CODES = ("A", "B", "C", "D", "E", "F", "G", "H", "I", "J")
 
-# Korean labels for the OpenDart pblntf_ty codes, used by the
-# SelectSelector in config_flow so the dropdown shows
-# "A — 정기공시" instead of a bare "A". Code value stays unchanged
-# (entry.data + OpenDart request keep using the single-letter form).
-DISCLOSURE_CATEGORY_LABELS = {
-    "A": "A — 정기공시",
-    "B": "B — 주요사항보고",
-    "C": "C — 발행공시",
-    "D": "D — 지분공시",
-    "E": "E — 기타공시",
-    "F": "F — 외부감사관련",
-    "G": "G — 펀드공시",
-    "H": "H — 자산유동화",
-    "I": "I — 거래소공시",
-    "J": "J — 공정위공시",
-}
+# Human-readable labels for these codes live in translations/<lang>.json
+# under selector.disclosure_category (English + Korean).
 
 MARKET_KR = "KR"
 MARKET_US = "US"

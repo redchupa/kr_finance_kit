@@ -1,10 +1,10 @@
 blueprint:
-  name: KR Finance Kit — 단기 변동률 알림 (분 단위 자유 입력)
+  name: Finance Kit — 단기 변동률 알림 (분 단위 자유 입력)
   description: |
     선택한 종목이 지정한 시간 윈도우 안에서 ±임계값을 넘으면 알림.
     예) 30분 안에 ±2% 변동 → 알림.
 
-    KR Finance Kit의 모든 QuoteSensor는 1·5·15·30·60·90·120·180분
+    Finance Kit의 모든 QuoteSensor는 1·5·15·30·60·90·120·180분
     8개 윈도우의 `change_pct_<N>min` attribute를 자동으로 노출합니다.
     이 블루프린트는 그 중 하나를 사용자 선택 → state + template
     트리거로 받습니다.
@@ -25,7 +25,7 @@ blueprint:
   input:
     target_tickers:
       name: 알림 받을 종목
-      description: KR Finance Kit이 만든 종목 시세 sensor를 선택하세요. 여러 개 선택 가능.
+      description: Finance Kit이 만든 종목 시세 sensor를 선택하세요. 여러 개 선택 가능.
       selector:
         entity:
           integration: kr_finance_kit
@@ -105,5 +105,5 @@ action:
   - service: notify.send_message
     target: !input notify_target
     data:
-      title: "KR Finance Kit · {{ window_min }}분 {{ direction }}"
+      title: "Finance Kit · {{ window_min }}분 {{ direction }}"
       message: "{{ label }} {{ window_min }}분 {{ pct }}% — 현재가 {{ price }}"

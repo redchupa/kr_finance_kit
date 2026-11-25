@@ -1,4 +1,4 @@
-"""DataUpdateCoordinators for KR Finance Kit.
+"""DataUpdateCoordinators for Finance Kit.
 
 Two coordinators run independently:
 
@@ -255,6 +255,8 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "positions": self.positions,
             "kr_market_open": kr_open,
             "us_market_open": us_open,
+            # Read by the sidebar panel ("updated 12s ago").
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
         }
         self._push_price_history(result)
         return result

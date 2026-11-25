@@ -1,4 +1,4 @@
-"""KR Finance Kit — Home Assistant integration for Korean finance data.
+"""Finance Kit — Home Assistant integration for Korean & global market data.
 
 HA-specific imports are lazy (inside ``async_setup_entry`` /
 ``async_unload_entry``) so the package is importable without Home
@@ -106,6 +106,12 @@ async def async_setup_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> bool
 
     hass.data.setdefault(DOMAIN, {})
 
+    # v0.2.0 rebrand: "KR Finance Kit" → "Finance Kit". Only the untouched
+    # default title is migrated — a title the user renamed is left alone.
+    # Runs before the update listener is attached, so no reload is triggered.
+    if entry.title == "KR Finance Kit":
+        hass.config_entries.async_update_entry(entry, title="Finance Kit")
+
     # Run before coordinator setup so renamed entity_ids show the new
     # slug from the very first state push (no flicker through the old
     # Korean entity_id on restart).
@@ -135,8 +141,27 @@ async def async_setup_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> bool
     await hass.config_entries.async_forward_entry_setups(
         entry, [Platform.SENSOR, Platform.BINARY_SENSOR]
     )
+    # HA 2026.x ignores ``_attr_suggested_object_id`` and registers brand-new
+    # entities under a name-based slug ("sensor.ethereum_krw"); the sweep
+    # above only fixes those on the *next* setup, so a ticker added from the
+    # options screen or the sidebar panel would change entity_id once more
+    # later and break automations written in between. Running the same
+    # idempotent sweep again right after the platforms registered their
+    # entities pins new ones to their fi_* slug immediately.
+    await _migrate_legacy_entity_ids(hass)
     async_register_services(hass)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+
+    # Sidebar panel (v0.2.0). A failure here must never take the sensors
+    # down with it — the panel is a convenience layer on top.
+    try:
+        from .panel import async_setup_panel
+
+        await async_setup_panel(hass, entry)
+    except Exception as err:  # noqa: BLE001
+        from .const import LOGGER
+
+        LOGGER.warning("Finance Kit sidebar panel could not be registered: %s", err)
 
     # Non-blocking first market fetch. Entities are already added above and
     # tolerate coordinator.data being None — they render "unknown" until
@@ -170,3 +195,22 @@ async def async_unload_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> boo
         if not hass.config_entries.async_entries(DOMAIN):
             async_unregister_services(hass)
     return unload_ok
+
+
+async def async_remove_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> None:
+    """Integration deleted — drop the sidebar panel too.
+
+    Not done in ``async_unload_entry`` because every options change
+    (including adding a ticker from the panel itself) reloads the entry,
+    and removing the panel there would yank the page out from under the
+    user mid-edit.
+    """
+    from .const import DOMAIN
+
+    # HA still lists the entry being removed while this hook runs.
+    others = [e for e in hass.config_entries.async_entries(DOMAIN) if e.entry_id != entry.entry_id]
+    if others:
+        return
+    from .panel import async_remove_panel
+
+    async_remove_panel(hass)

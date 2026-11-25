@@ -4,11 +4,11 @@
 
 1. HACS → 통합 → 우상단 ⋮ → **사용자 저장소**
 2. URL: `https://github.com/redchupa/kr_finance_kit` 입력, 카테고리: `Integration`
-3. KR Finance Kit 검색 → 다운로드 → HA 재시작
+3. Finance Kit 검색 → 다운로드 → HA 재시작
 
 ## 2. 통합 추가
 
-설정 → 기기 및 서비스 → **통합 추가** → "KR Finance Kit"
+설정 → 기기 및 서비스 → **통합 추가** → "Finance Kit"
 
 입력값:
 - **OpenDart API 키** (선택): https://opendart.fss.or.kr 에서 무료 발급

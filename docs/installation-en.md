@@ -4,11 +4,11 @@
 
 1. HACS → Integrations → top-right menu → **Custom repositories**
 2. URL: `https://github.com/redchupa/kr_finance_kit`, category: `Integration`
-3. Search "KR Finance Kit" → download → restart HA
+3. Search "Finance Kit" → download → restart HA
 
 ## 2. Add the integration
 
-Settings → Devices & services → **Add integration** → "KR Finance Kit"
+Settings → Devices & services → **Add integration** → "Finance Kit"
 
 Inputs:
 - **OpenDart API key** (optional): get one free at https://opendart.fss.or.kr

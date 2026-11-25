@@ -1,4 +1,4 @@
-"""LLM tool registration for KR Finance Kit.
+"""LLM tool registration for Finance Kit.
 
 A single ``llm.API`` is registered per config entry, exposing one tool —
 ``finance_query`` — that dispatches on a ``query_type`` argument. The
@@ -26,8 +26,11 @@ from .const import (
 from .llm_dispatch import QUERY_TYPES, dispatch_query
 
 _API_PROMPT = (
-    "한국 금융 데이터(코스피·코스닥 지수, USD/KRW 환율, 한국·미국 종목 시세, "
-    "보유 종목 평가손익, OpenDart 공시, 변동률 상위 종목, 시장 요약)를 조회할 수 있습니다."
+    "You can look up market data: Korean, US and global stock indices "
+    "(KOSPI, KOSDAQ, NASDAQ, S&P 500, ...), the USD/KRW exchange rate, quotes "
+    "for the user's Korean / US stocks and crypto, portfolio value and P/L, "
+    "OpenDart corporate filings, top movers and a market summary. "
+    "Answer in the user's language."
 )
 
 
@@ -75,7 +78,7 @@ class FinanceQueryTool(llm.Tool):
 
 class _FinanceAPI(llm.API):
     def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
-        super().__init__(hass=hass, id=_api_id(entry_id), name="KR Finance Kit")
+        super().__init__(hass=hass, id=_api_id(entry_id), name="Finance Kit")
         self._entry_id = entry_id
 
     async def async_get_api_instance(self, llm_context: llm.LLMContext) -> llm.APIInstance:
@@ -92,7 +95,7 @@ async def async_setup_llm_api(
 ) -> Callable[[], None] | None:
     api = _FinanceAPI(hass, entry.entry_id)
     unreg = llm.async_register_api(hass, api)
-    LOGGER.info("Registered KR Finance Kit LLM API for entry %s", entry.entry_id)
+    LOGGER.info("Registered Finance Kit LLM API for entry %s", entry.entry_id)
     return unreg
 
 

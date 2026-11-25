@@ -1,4 +1,4 @@
-# KR Finance Kit
+# Finance Kit
 
 English · **[한국어](README.md)**
 
@@ -21,6 +21,7 @@ English · **[한국어](README.md)**
 
 ## What you can do
 
+- 📱 **Sidebar app (v0.2.0)** — indices, watchlist, crypto, holdings and filings on one screen, no dashboard YAML needed
 - ☕ KOSPI, your tickers, FX, Bitcoin — all on the living-room wall panel
 - 📉 Push the moment a holding moves ±5% from your average cost
 - ⏱️ Trigger on "moved ±2% in the last 30 minutes"
@@ -29,6 +30,22 @@ English · **[한국어](README.md)**
 - 📊 Daily summary auto-sent right after market close
 
 All on **free APIs** (yfinance + OpenDart free key), no brokerage account needed.
+
+---
+
+## 📱 Sidebar panel (v0.2.0)
+
+After install, a **Finance Kit** entry appears in the Home Assistant sidebar — usable right away, no dashboard to build.
+Leave the ticker fields blank during setup and it starts with **sample symbols** (Samsung Electronics, SK hynix, Apple, NVIDIA, Microsoft, Bitcoin, Ethereum); add or remove symbols any time with the **＋** button at the top right.
+
+- **➕ Add symbol** — 🇰🇷 Korea / 🇺🇸 US / 🪙 Crypto / 🌐 Other (FX, gold, oil), with name search
+- **⚙️ Settings** — 13 card themes × 6 layouts (cards, list, compact, big number, heatmap, ticker tape), gain color (🔴 Korean / 🟢 global), section order & visibility, mini charts, refresh interval
+- **KO / EN** toggle — preferences are stored per user, so they follow you across phone and tablet
+- **Mobile-first** — bottom tab bar, floating ➕ button, bottom sheets, scrub the chart with a finger
+- **Symbol detail** — 1D–1Y chart, 52-week range, holding quantity / average price, jump to HA history
+- Add both `BTC-KRW` and `BTC-USD` and the panel shows the **kimchi premium**
+
+> Only administrators can add or remove symbols; other users get a read-only view.
 
 ---
 
@@ -49,11 +66,11 @@ If the button doesn't work, add it manually:
 2. URL `https://github.com/redchupa/kr_finance_kit`, Type `Integration` → Add
 
 ### Step 2 · Download
-1. Search **KR Finance Kit** in HACS → Download
+1. Search **Finance Kit** in HACS → Download
 2. **Restart Home Assistant fully** (Restart, not Reload)
 
 ### Step 3 · Add integration
-**Settings → Devices & services → + Add integration → "KR Finance Kit"**
+**Settings → Devices & services → + Add integration → "Finance Kit"**
 
 ---
 
@@ -310,7 +327,7 @@ The ring buffer is memory-only by design. An N-minute window stays None for ~N m
 <details>
 <summary><b>How do I change options later?</b></summary>
 
-Settings → Devices & services → KR Finance Kit → ⚙ Options. Saving auto-reloads the integration.
+Settings → Devices & services → Finance Kit → ⚙ Options. Saving auto-reloads the integration.
 </details>
 
 <details>

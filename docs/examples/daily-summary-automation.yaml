@@ -1,4 +1,4 @@
-# Daily summary automations using KR Finance Kit sensors.
+# Daily summary automations using Finance Kit sensors.
 #
 # Replace placeholders:
 #   - `your_ticker`         a single ticker for spot alerts (e.g. 005930)
@@ -56,7 +56,7 @@
     - platform: state
       to: "on"
   action:
-    # Loop over all KR Finance Kit disclosure binary_sensors. Adjust the
+    # Loop over all Finance Kit disclosure binary_sensors. Adjust the
     # template if you only want a subset.
     - condition: template
       value_template: "{{ trigger.entity_id.startswith('binary_sensor.fi_disclosure_') }}"

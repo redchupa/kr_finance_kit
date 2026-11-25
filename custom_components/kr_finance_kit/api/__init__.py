@@ -1,1 +1,1 @@
-"""API clients for KR Finance Kit data sources."""
+"""API clients for Finance Kit data sources."""
