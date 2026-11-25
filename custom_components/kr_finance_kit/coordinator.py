@@ -69,6 +69,7 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             update_interval=timedelta(seconds=SCAN_INTERVAL_MARKET),
         )
         self._entry = entry
+        self.startup_quotes = {}
         self._failures = 0
         # Ring buffer per ticker for short-window change_pct attributes.
         # Capacity 300 entries × ~60s polling = ~5 hours, large enough to
@@ -191,27 +192,37 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 wanted_indices.extend(US_INDICES)
             if include_global_indices:
                 wanted_indices.extend(GLOBAL_INDICES)
-            indices_task = (
-                yfinance_wrap.fetch_indices(wanted_indices) if wanted_indices else None
-            )
-            fx_task = yfinance_wrap.fetch_fx() if include_fx else None
-
-            indices = await indices_task if indices_task else {}
-            fx = await fx_task if fx_task else {}
-
             prev = self.data or {}
-            kr_quotes = await yfinance_wrap.fetch_quotes(self.kr_tickers, MARKET_KR) \
-                if (kr_open or not prev.get("kr_quotes")) \
-                else prev.get("kr_quotes", {})
-            us_quotes = await yfinance_wrap.fetch_quotes(self.us_tickers, MARKET_US) \
-                if (us_open or not prev.get("us_quotes")) \
-                else prev.get("us_quotes", {})
-            # `other_tickers` covers crypto, FX, futures — assets that
-            # trade 24/7 or 24/5, so we ignore market_hours and always
-            # fetch. Empty list is a free no-op.
-            other_quotes = await yfinance_wrap.fetch_quotes(
-                self.other_tickers, MARKET_OTHER
-            ) if self.other_tickers else {}
+
+            async def quotes(group, symbols, fetch):
+                if prev:
+                    return await fetch(symbols) if symbols else {}
+                # Publish first-run progress to the read-only sidebar snapshot.
+                # Keep coordinator listeners and alerts on complete refreshes.
+                rows = {}
+                for symbol in symbols:
+                    batch = await fetch([symbol])
+                    rows.update(batch)
+                    if any(row.get("price") is not None for row in batch.values()):
+                        self.startup_quotes.setdefault(group, {}).update(batch)
+                        self.startup_quotes.update(
+                            kr_market_open=kr_open, us_market_open=us_open,
+                            fetched_at=datetime.now(timezone.utc).isoformat(),
+                        )
+                return rows
+
+            indices = await quotes("indices", wanted_indices, yfinance_wrap.fetch_indices)
+            fx = await yfinance_wrap.fetch_fx() if include_fx else {}
+            if not prev and any(row.get("price") is not None for row in fx.values()):
+                self.startup_quotes.update(fx=fx, fetched_at=datetime.now(timezone.utc).isoformat())
+            kr_quotes = await quotes("kr_quotes", self.kr_tickers,
+                lambda tickers: yfinance_wrap.fetch_quotes(tickers, MARKET_KR)
+            ) if kr_open or not prev.get("kr_quotes") else prev["kr_quotes"]
+            us_quotes = await quotes("us_quotes", self.us_tickers,
+                lambda tickers: yfinance_wrap.fetch_quotes(tickers, MARKET_US)
+            ) if us_open or not prev.get("us_quotes") else prev["us_quotes"]
+            other_quotes = await quotes("other_quotes", self.other_tickers,
+                lambda tickers: yfinance_wrap.fetch_quotes(tickers, MARKET_OTHER))
 
             # Detailed yfinance .info attributes — toggled separately
             # because each symbol adds one extra HTTP round-trip. We map
@@ -264,6 +275,7 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         }
         self._push_price_history(result)
         self._check_position_price_alerts(result, cfg)
+        self.startup_quotes = {}
         return result
 
     def _check_position_price_alerts(

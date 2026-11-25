@@ -221,7 +221,7 @@ async def ws_snapshot(hass: HomeAssistant, connection, msg: dict[str, Any]) -> N
     cfg = pd.merged_config(entry.data, entry.options)
     market = store["market"]
     disclosure = store.get("disclosure")
-    data = market.data
+    data = market.data or getattr(market, "startup_quotes", {})
     if data and data.get("positions") and not can_read_holdings(hass, connection.user):
         data = {**data, "positions": []}
     snap = pd.build_snapshot(
@@ -241,6 +241,7 @@ async def ws_snapshot(hass: HomeAssistant, connection, msg: dict[str, Any]) -> N
             for name in ("yahoo", "dart")
             if (remaining := gate(name).resume - time.monotonic()) > 0
         },
+        "initial_sync": not bool(market.data),
         "last_update_success": bool(market.last_update_success),
         "version": _state(hass).get("version"),
     })

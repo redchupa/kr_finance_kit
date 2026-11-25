@@ -10,13 +10,15 @@
  * open sheet (with inputs the user is typing into) is never clobbered.
  */
 
-const PANEL_VERSION = "0.2.14";
+const PANEL_VERSION = "0.2.15";
 const LS_KEY = "kr_finance_kit.prefs";
 
 const I18N = {
   ko: {
     title: "Finance Kit",
     loading: "데이터를 불러오는 중…",
+    initial_failed: "첫 조회를 완료하지 못했습니다. 자동으로 다시 시도합니다.",
+    partial: "첫 조회 중입니다. 도착한 시세부터 표시합니다.",
     warming: "첫 시세를 가져오는 중입니다. 잠시만 기다려 주세요.",
     not_configured: "Finance Kit 통합이 아직 설정되지 않았습니다. 설정 → 기기 및 서비스에서 추가해 주세요.",
     refresh: "새로고침",
@@ -131,7 +133,9 @@ const I18N = {
   en: {
     title: "Finance Kit",
     loading: "Loading…",
-    warming: "Fetching the first quotes. This takes a few seconds.",
+    initial_failed: "The first refresh could not finish. Finance Kit will retry automatically.",
+    partial: "First refresh in progress. Showing quotes as they arrive.",
+    warming: "Fetching the first quotes. Symbols are fetched one at a time.",
     not_configured: "Finance Kit isn't set up yet. Add it under Settings → Devices & services.",
     refresh: "Refresh",
     settings: "Settings",
@@ -422,8 +426,8 @@ class KRFinancePanel extends HTMLElement {
     } catch (_e) { /* backend older than panel — keep local prefs */ }
     this._applyTheme();
     this._renderAll();
+    if (this.isConnected) this._startTimers();
     await this._loadSnapshot();
-    this._startTimers();
   }
 
   _startTimers() {
@@ -650,7 +654,7 @@ class KRFinancePanel extends HTMLElement {
   _sparkFor(key, period) { return (this._spark[period || this._prefs.spark_period] || {})[key]; }
 
   async _ensureSparks() {
-    if (!this._prefs.sparkline || !this._snap?.ready) return;
+    if (!this._prefs.sparkline || !this._snap?.ready || this._snap.initial_sync) return;
     const period = this._prefs.spark_period;
     const keys = [
       ...(this._snap.indices || []).map((i) => "INDEX:" + i.key),
@@ -781,7 +785,10 @@ class KRFinancePanel extends HTMLElement {
       const visible = this._view === "all"
         ? this._prefs.sections.filter((x) => x.visible).map((x) => x.id)
         : VIEWS[this._view];
-      if (!s.ready) html += `<div class="banner">⏳ ${esc(this.t("warming"))}</div>`;
+      if ((!s.ready || s.initial_sync) && !s.provider_wait_minutes?.yahoo) {
+        const status = !s.last_update_success ? "initial_failed" : s.ready ? "partial" : "warming";
+        html += `<div class="banner" role="status">${esc(this._error || this.t(status))}</div>`;
+      }
       if (!this.isAdmin) html += `<div class="banner subtle">🔒 ${esc(this.t("readonly"))}</div>`;
       for (const id of visible) {
         const fn = this[`_sec_${id}`];
