@@ -179,7 +179,7 @@ async def async_setup_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> bool
     disclosure: DisclosureCoordinator | None = None
     if opendart_key and corp_codes:
         disclosure = DisclosureCoordinator(hass, opendart_key, corp_codes, categories)
-        await disclosure.async_config_entry_first_refresh()
+
 
     store = {"market": market, "disclosure": disclosure}
     store["unregister_llm"] = await async_setup_llm_api(hass, entry)
@@ -218,6 +218,10 @@ async def async_setup_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> bool
     entry.async_create_background_task(
         hass, market.async_refresh(), f"{DOMAIN}_market_first_refresh"
     )
+    if disclosure is not None:
+        entry.async_create_background_task(
+            hass, disclosure.async_refresh(), f"{DOMAIN}_disclosure_first_refresh"
+        )
     return True
 
 

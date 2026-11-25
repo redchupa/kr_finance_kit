@@ -41,6 +41,7 @@ from .api.opendart import (
     resolve_kr_ticker_names,
     validate_api_key,
 )
+from .api.pacing import Backoff, ProviderBusy
 from .credentials import seal, unseal
 from .const import (
     CONF_DISCLOSURE_CATEGORIES,
@@ -144,7 +145,10 @@ async def _enrich_other_labels(
     if not missing:
         return dict(explicit_labels)
     from .api import yfinance_wrap
-    raw = await yfinance_wrap.fetch_info(missing)
+    try:
+        raw = await yfinance_wrap.fetch_info(missing)
+    except (Backoff, ProviderBusy):
+        return dict(explicit_labels)
     out = dict(explicit_labels)
     for t in missing:
         info = raw.get(t, {}) or {}
@@ -336,12 +340,22 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 other_labels_explicit = {**seed["other_labels"], **other_labels_explicit}
                 default_kr_names = seed["kr_names"]
 
-            if api_key and not await validate_api_key(self.hass, api_key):
-                errors[CONF_OPENDART_API_KEY] = "invalid_api_key"
-            else:
-                corp_codes, ticker_names, corp_names = await _enrich_kr_metadata(
-                    self.hass, api_key, kr
-                )
+            try:
+                if api_key and not await validate_api_key(self.hass, api_key):
+                    errors[CONF_OPENDART_API_KEY] = "invalid_api_key"
+            except (Backoff, ProviderBusy):
+                errors["base"] = "provider_busy"
+            if not errors:
+                try:
+                    corp_codes, ticker_names, corp_names = await _enrich_kr_metadata(
+                        self.hass, api_key, kr
+                    )
+                except (Backoff, ProviderBusy):
+                    return self.async_show_form(
+                        step_id="user", errors={"base": "provider_busy"},
+                        data_schema=self.add_suggested_values_to_schema(_USER_SCHEMA, user_input),
+                        description_placeholders=_LINK_PLACEHOLDERS,
+                    )
                 # OpenDart names (when a key is set) override the defaults.
                 ticker_names = {**default_kr_names, **ticker_names}
                 us_labels = await _enrich_other_labels(self.hass, us, us_labels_explicit)
@@ -427,12 +441,22 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
                 user_input.get(CONF_OTHER_TICKERS)
             )
 
-            if api_key and not await validate_api_key(self.hass, api_key):
-                errors[CONF_OPENDART_API_KEY] = "invalid_api_key"
-            else:
-                corp_codes, ticker_names, corp_names = await _enrich_kr_metadata(
-                    self.hass, api_key, kr
-                )
+            try:
+                if api_key and not await validate_api_key(self.hass, api_key):
+                    errors[CONF_OPENDART_API_KEY] = "invalid_api_key"
+            except (Backoff, ProviderBusy):
+                errors["base"] = "provider_busy"
+            if not errors:
+                try:
+                    corp_codes, ticker_names, corp_names = await _enrich_kr_metadata(
+                        self.hass, api_key, kr
+                    )
+                except (Backoff, ProviderBusy):
+                    return self.async_show_form(
+                        step_id="init", errors={"base": "provider_busy"},
+                        data_schema=self.add_suggested_values_to_schema(_FORM_SCHEMA, user_input),
+                        description_placeholders=_LINK_PLACEHOLDERS,
+                    )
                 us_labels = await _enrich_other_labels(self.hass, us, us_labels_explicit)
                 other_labels = await _enrich_other_labels(self.hass, other, other_labels_explicit)
                 encrypted_key = await seal(self.hass, api_key)

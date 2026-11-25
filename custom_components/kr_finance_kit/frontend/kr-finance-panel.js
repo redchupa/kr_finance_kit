@@ -10,7 +10,7 @@
  * open sheet (with inputs the user is typing into) is never clobbered.
  */
 
-const PANEL_VERSION = "0.2.12";
+const PANEL_VERSION = "0.2.13";
 const LS_KEY = "kr_finance_kit.prefs";
 
 const I18N = {
@@ -71,6 +71,7 @@ const I18N = {
     err_invalid_kr_ticker: "국내 종목은 6자리 숫자 코드예요 (예: 005930).",
     err_invalid_us_ticker: "미국 종목은 영문 티커예요 (예: AAPL).",
     err_duplicate: "이미 관심 목록에 있어요.",
+    err_provider_busy: "데이터 제공처의 요청 제한으로 잠시 대기 중입니다. 나중에 다시 시도해 주세요.",
     err_no_quote: "시세를 찾지 못했어요. 코드를 확인하거나 '그래도 추가'를 눌러 주세요.",
     err_has_position: "보유 수량이 등록된 종목이에요. 삭제하면 보유 기록도 함께 지워집니다.",
     err_unauthorized: "관리자만 변경할 수 있어요.",
@@ -178,6 +179,7 @@ const I18N = {
     err_invalid_kr_ticker: "Korean stocks use a 6-digit code (e.g. 005930).",
     err_invalid_us_ticker: "US stocks use a letter ticker (e.g. AAPL).",
     err_duplicate: "Already on your watchlist.",
+    err_provider_busy: "The data provider is busy. Please try again later.",
     err_no_quote: "No price found. Check the symbol or press 'Add anyway'.",
     err_has_position: "This symbol has a recorded holding. Removing it also deletes the holding.",
     err_unauthorized: "Only administrators can change the watchlist.",
@@ -1722,7 +1724,7 @@ class KRFinancePanel extends HTMLElement {
       this._sheet.query = el.value;
       clearTimeout(this._searchTimer);
       const q = el.value;
-      this._searchTimer = setTimeout(() => this._doSearch(q), 400);
+      this._searchTimer = setTimeout(() => this._doSearch(q), 1000);
     } else if (el.dataset?.posinp && this._sheet?.type === "detail") {
       if (this._sheet.posStatus || this._sheet.posSaved) {
         this._sheet.posSaved = false;

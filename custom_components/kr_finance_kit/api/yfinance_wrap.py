@@ -11,9 +11,7 @@ We chose yfinance over scraping Naver Finance because:
    and the risk of IP-level rate-limit bans on Naver — a constraint
    PLAN.md §7 explicitly flags.
 
-All sync ``yfinance`` calls run inside ``hass.async_add_executor_job`` via
-``asyncio.get_running_loop().run_in_executor`` so we never block HA's
-event loop.
+Blocking SDK calls use asyncio.to_thread behind the shared Yahoo request gate.
 
 Returned shape per symbol::
 
@@ -34,6 +32,8 @@ import asyncio
 import math
 from typing import Any
 
+from .pacing import Backoff, gate, retry_delay
+
 from ..const import (
     FX_USDKRW,
     GLOBAL_INDICES,
@@ -51,6 +51,20 @@ from ..const import (
     MARKET_KR,
     US_INDICES,
 )
+
+
+def _check_provider_error(err):
+    response = getattr(err, "response", None)
+    status = getattr(response, "status_code", None)
+    if isinstance(err, (TimeoutError, ConnectionError)) or type(err).__name__ in ("Timeout", "ConnectTimeout", "ReadTimeout"):
+        raise Backoff() from None
+    if type(err).__name__ == "YFRateLimitError" or status in (403, 429) or (status and status >= 500):
+        headers = getattr(response, "headers", {}) or {}
+        raise Backoff(retry_delay(headers.get("Retry-After"))) from None
+
+
+async def _cached(operation, ttl, func, *args):
+    return await gate("yahoo").run((operation, *args), ttl, lambda: asyncio.to_thread(func, *args))
 
 
 def _safe_float(value: Any) -> float | None:
@@ -122,8 +136,9 @@ def _fetch_via_history(t) -> tuple[float | None, float | None, str | None, int]:
     yields an empty frame.
     """
     try:
-        hist = t.history(period="1mo", auto_adjust=False)
+        hist = t.history(period="1mo", auto_adjust=False, raise_errors=True, timeout=15)
     except Exception as err:  # noqa: BLE001
+        _check_provider_error(err)
         LOGGER.debug("yfinance .history failed: %s", err)
         return None, None, None, 0
     if hist is None or hist.empty:
@@ -175,6 +190,7 @@ def _fetch_via_fast_info(t) -> tuple[float | None, float | None]:
         last = info.last_price
         prev = info.previous_close
     except Exception as err:  # noqa: BLE001
+        _check_provider_error(err)
         LOGGER.debug("yfinance .fast_info failed: %s", err)
         return None, None
     return _safe_float(last), _safe_float(prev)
@@ -195,20 +211,25 @@ def _fetch_single(symbol: str) -> dict[str, Any]:
     try:
         t = yf.Ticker(symbol)
     except Exception as err:  # noqa: BLE001
+        _check_provider_error(err)
         LOGGER.debug("yfinance Ticker(%s) construction failed: %s", symbol, err)
         return {}
 
     close, prev_close, asof, bar_count = _fetch_via_history(t)
 
     if close is None:
-        # History didn't yield a usable bar — fall back to fast_info.
-        close, prev_close_alt = _fetch_via_fast_info(t)
-        if close is None:
-            LOGGER.debug("yfinance: no data available for %s", symbol)
-            return {}
-        if prev_close is None:
-            prev_close = prev_close_alt
+        return {}
+    return _quote(close, prev_close, asof, bar_count)
 
+
+def _fallback_quote(symbol):
+    import yfinance as yf
+
+    close, previous = _fetch_via_fast_info(yf.Ticker(symbol))
+    return _quote(close, previous, None, 0) if close is not None else {}
+
+
+def _quote(close, prev_close, asof, bar_count):
     out: dict[str, Any] = {
         "price": round(close, 4),
         # bar_count < 2 means we have today but no prior trading day in the
@@ -227,18 +248,15 @@ def _fetch_single(symbol: str) -> dict[str, Any]:
 
 
 async def _gather(symbols: list[str]) -> dict[str, dict[str, Any]]:
-    """Run executor calls sequentially within this gather.
-
-    yfinance hits Yahoo's chart endpoint and is sensitive to burst patterns
-    — sequential calls inside a single coordinator tick are fine because
-    SCAN_INTERVAL_MARKET (60s) bounds throughput already.
-    """
+    """Fetch symbols through the shared Yahoo scheduler."""
     if not symbols:
         return {}
-    loop = asyncio.get_running_loop()
     out: dict[str, dict[str, Any]] = {}
-    for sym in symbols:
-        out[sym] = await loop.run_in_executor(None, _fetch_single, sym)
+    for sym in dict.fromkeys(symbols):
+        quote = await _cached("price", 300, _fetch_single, sym)
+        if not quote:
+            quote = await _cached("fallback", 900, _fallback_quote, sym)
+        out[sym] = quote
     return out
 
 
@@ -285,6 +303,7 @@ def _fetch_info_sync(symbol: str) -> dict[str, Any]:
     try:
         info = yf.Ticker(symbol).info or {}
     except Exception as err:  # noqa: BLE001
+        _check_provider_error(err)
         LOGGER.debug("yfinance .info(%s) failed: %s", symbol, err)
         return {}
     out: dict[str, Any] = {}
@@ -308,10 +327,9 @@ async def fetch_info(symbols: list[str]) -> dict[str, dict[str, Any]]:
     """Fetch yfinance .info for many symbols, sequentially in executor."""
     if not symbols:
         return {}
-    loop = asyncio.get_running_loop()
     out: dict[str, dict[str, Any]] = {}
     for sym in symbols:
-        out[sym] = await loop.run_in_executor(None, _fetch_info_sync, sym)
+        out[sym] = await _cached("info", 21600, _fetch_info_sync, sym)
     return out
 
 
@@ -378,8 +396,9 @@ def _history_sync(symbol: str, period: str) -> dict[str, Any]:
 
     yf_period, interval = HISTORY_PERIODS.get(period, HISTORY_PERIODS["1mo"])
     try:
-        hist = yf.Ticker(symbol).history(period=yf_period, interval=interval, auto_adjust=False)
+        hist = yf.Ticker(symbol).history(period=yf_period, interval=interval, auto_adjust=False, raise_errors=True, timeout=15)
     except Exception as err:  # noqa: BLE001
+        _check_provider_error(err)
         LOGGER.debug("yfinance history(%s, %s) failed: %s", symbol, period, err)
         return {"t": [], "c": []}
     if hist is None or hist.empty or "Close" not in hist:
@@ -400,8 +419,7 @@ def _history_sync(symbol: str, period: str) -> dict[str, Any]:
 
 async def fetch_history(symbol: str, period: str = "1mo") -> dict[str, Any]:
     """Close-price series ``{"t": [epoch...], "c": [close...]}`` for charts."""
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, _history_sync, symbol, period)
+    return await _cached("history", 900, _history_sync, symbol, period)
 
 
 def _search_sync(query: str, limit: int) -> list[dict[str, Any]]:
@@ -413,6 +431,7 @@ def _search_sync(query: str, limit: int) -> list[dict[str, Any]]:
     try:
         quotes = search_cls(query, max_results=limit, news_count=0).quotes or []
     except Exception as err:  # noqa: BLE001
+        _check_provider_error(err)
         LOGGER.debug("yfinance Search(%s) failed: %s", query, err)
         return []
     out: list[dict[str, Any]] = []
@@ -432,5 +451,4 @@ def _search_sync(query: str, limit: int) -> list[dict[str, Any]]:
 
 async def search_symbols(query: str, limit: int = 8) -> list[dict[str, Any]]:
     """Yahoo symbol search. Empty list when unsupported or offline."""
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, _search_sync, query, limit)
+    return await _cached("search", 1800, _search_sync, query.casefold(), limit)

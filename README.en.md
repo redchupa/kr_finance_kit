@@ -11,6 +11,15 @@ No dashboard YAML to write, and no brokerage account login required.
 
 ---
 
+
+### External data refresh
+
+During market hours, quotes refresh every five minutes. Outside market hours and for filings, the interval is fifteen minutes. Per-symbol lookup time adds to these intervals. Brief price crossings or one-minute movements may be missed.
+
+Each HA instance allows one lookup at a time per provider, with an 8–12 second gap after completion. Clients share cached quotes for five minutes and detailed metadata for six hours. Uncached Yahoo chart and search operations share a budget of 60 per hour. Refreshing the panel reads HA's snapshot.
+
+A provider limit pauses lookups for at least fifteen minutes or longer when requested by Retry-After. OpenDart quota status 020 pauses requests for 24 hours. Cooldowns and caches are held in memory for the lifetime of the HA process.
+
 ## What makes it useful
 
 - **Ready-to-use sidebar screen** — Installing Finance Kit adds a dedicated entry to your Home Assistant sidebar with indices, watchlist, crypto, holdings, and filings on one page. No custom dashboard required.

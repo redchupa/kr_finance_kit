@@ -28,6 +28,7 @@ from homeassistant.helpers.storage import Store
 from . import panel_data as pd
 from .access import can_read_holdings
 from .credentials import unseal
+from .api.pacing import Backoff, ProviderBusy
 from .api import yfinance_wrap
 from .api.yfinance_wrap import FX_TICKERS, INDEX_TICKERS, normalize_kr_ticker
 from .const import (
@@ -81,7 +82,6 @@ def _state(hass: HomeAssistant) -> dict[str, Any]:
             "panel": False,
             "history": {},
             "search": {},
-            "lock": asyncio.Lock(),
             "prefs": None,
             "store": None,
         },
@@ -264,24 +264,24 @@ async def ws_history(hass: HomeAssistant, connection, msg: dict[str, Any]) -> No
     ttl = _HISTORY_TTL.get(period, 3600)
     cache: dict[tuple[str, str], tuple[float, dict[str, Any]]] = st["history"]
     out: dict[str, Any] = {}
-    # One lock for every chart request: Yahoo dislikes bursts, and two
-    # phones opening the panel at once shouldn't double the traffic.
-    async with st["lock"]:
-        for item in msg["symbols"]:
-            key = f"{item['market']}:{item['ticker']}"
-            sym = _yahoo_symbol(item["market"], item["ticker"])
-            if not sym:
-                continue
-            ck = (sym, period)
-            hit = cache.get(ck)
-            if hit and hit[0] > time.monotonic():
-                out[key] = hit[1]
-                continue
+    for item in msg["symbols"]:
+        key = f"{item['market']}:{item['ticker']}"
+        sym = _yahoo_symbol(item["market"], item["ticker"])
+        if not sym:
+            continue
+        ck = (sym, period)
+        hit = cache.get(ck)
+        if hit and hit[0] > time.monotonic():
+            out[key] = hit[1]
+            continue
+        try:
             series = await yfinance_wrap.fetch_history(sym, period)
-            if len(cache) >= _HISTORY_CACHE_MAX:
-                cache.clear()
-            cache[ck] = (time.monotonic() + ttl, series)
-            out[key] = series
+        except (Backoff, ProviderBusy):
+            break
+        if len(cache) >= _HISTORY_CACHE_MAX:
+            cache.clear()
+        cache[ck] = (time.monotonic() + ttl, series)
+        out[key] = series
     connection.send_result(msg["id"], {"period": period, "series": out})
 
 
@@ -328,8 +328,7 @@ async def ws_catalog(hass: HomeAssistant, connection, msg: dict[str, Any]) -> No
         cfg = pd.merged_config(entry.data, entry.options) if entry else {}
         api_key = await unseal(hass, cfg.get(CONF_OPENDART_API_KEY))
         if api_key:
-            async with _state(hass)["lock"]:
-                extra_kr_map = await _get_corp_map_cached(hass, api_key)
+            extra_kr_map = await _get_corp_map_cached(hass, api_key)
     payload = pd.catalog_for_market(
         market,
         category=msg["category"],
@@ -363,14 +362,14 @@ async def ws_search(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
     entry, _store = _active(hass)
     cfg = pd.merged_config(entry.data, entry.options) if entry else {}
     api_key = await unseal(hass, cfg.get(CONF_OPENDART_API_KEY))
-    # Same lock as chart requests: any logged-in user can call this, so
-    # outbound traffic is serialized rather than fanned out.
-    async with st["lock"]:
-        if api_key:
-            mapping = await _get_corp_map_cached(hass, api_key)
-            if mapping:
-                results.extend(pd.match_kr_companies(mapping, query, limit=6))
+    if api_key:
+        mapping = await _get_corp_map_cached(hass, api_key)
+        if mapping:
+            results.extend(pd.match_kr_companies(mapping, query, limit=6))
+    try:
         yahoo_hits = await yfinance_wrap.search_symbols(query, limit=8)
+    except (Backoff, ProviderBusy):
+        yahoo_hits = []
 
     seen = {(r["market"], r["symbol"]) for r in results}
     # Curated catalog matches provide instant Korean/English lookup even
@@ -453,7 +452,11 @@ async def _watchlist_add(hass, connection, msg) -> None:
     # "unavailable" sensor behind. The panel can retry with force=True
     # (e.g. a KR stock before the first trading day after listing).
     if not msg["force"]:
-        probe = await yfinance_wrap.fetch_quotes([ticker], market)
+        try:
+            probe = await yfinance_wrap.fetch_quotes([ticker], market)
+        except (Backoff, ProviderBusy):
+            connection.send_error(msg["id"], "provider_busy", "Market data temporarily unavailable")
+            return
         if not (probe.get(ticker) or {}).get("price"):
             connection.send_error(msg["id"], "no_quote", "No price data for this symbol")
             return
@@ -481,6 +484,9 @@ async def _watchlist_add(hass, connection, msg) -> None:
                 labels = dict(new_options.get(label_key, cfg.get(label_key, {})) or {})
                 labels[ticker] = fetched[ticker]
                 new_options[label_key] = labels
+    except (ProviderBusy, Backoff):
+        connection.send_error(msg["id"], "provider_busy", "Data provider temporarily unavailable")
+        return
     except Exception as err:  # noqa: BLE001 — labels are cosmetic
         LOGGER.debug("Watchlist label enrichment failed for %s: %s", ticker, err)
 
@@ -543,6 +549,9 @@ async def _watchlist_remove(hass, connection, msg) -> None:
                 )
                 new_options[CONF_DISCLOSURE_CORP_CODES] = corp_codes
                 new_options[CONF_DISCLOSURE_CORP_NAMES] = corp_names
+            except (ProviderBusy, Backoff):
+                connection.send_error(msg["id"], "provider_busy", "Data provider temporarily unavailable")
+                return
             except Exception as err:  # noqa: BLE001 — keep the removal itself
                 LOGGER.debug("Disclosure code refresh after removing %s failed: %s", ticker, err)
     if not _commit_watchlist(hass, entry, cfg, original_options, new_options, removing=True):

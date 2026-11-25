@@ -28,11 +28,13 @@ unit-tested without Home Assistant installed.
 from __future__ import annotations
 
 import io
+import hashlib
 from defusedxml import ElementTree as ET
 import zipfile
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
+from .pacing import Backoff, ProviderBusy, gate, retry_delay
 from ..const import LOGGER, TZ_KST
 
 if TYPE_CHECKING:
@@ -138,6 +140,33 @@ def _clear_corp_code_cache() -> None:
     _corp_code_cache = None
 
 
+def _check_http(response):
+    if response.status in (403, 429) or response.status >= 500:
+        raise Backoff(retry_delay(response.headers.get("Retry-After")))
+    response.raise_for_status()
+
+
+def _check_status(payload):
+    status = payload.get("status")
+    if status in ("012", "020", "800", "900"):
+        raise Backoff(86400 if status == "020" else 900)
+
+
+async def _json_request(session, params, ttl):
+    async def fetch():
+        async with session.get(OPENDART_LIST_URL, params=params, timeout=_TIMEOUT,
+                               headers={"User-Agent": "Finance-Kit (Home Assistant integration)"},
+                               allow_redirects=False) as response:
+            _check_http(response)
+            payload = await response.json(content_type=None)
+            _check_status(payload)
+            return payload
+
+    key = tuple(sorted((k, hashlib.sha256(v.encode()).digest() if k == "crtfc_key" else v)
+                       for k, v in params.items()))
+    return await gate("dart").run(("json", key), ttl, fetch)
+
+
 async def _load_corp_code_map(
     hass: "HomeAssistant", api_key: str
 ) -> dict[str, tuple[str, str]]:
@@ -149,24 +178,34 @@ async def _load_corp_code_map(
     from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
     session = async_get_clientsession(hass)
-    try:
+    async def fetch():
         async with session.get(
             OPENDART_CORPCODE_URL, params={"crtfc_key": api_key},
             timeout=_TIMEOUT, allow_redirects=False,
+            headers={"User-Agent": "Finance-Kit (Home Assistant integration)"},
         ) as response:
-            response.raise_for_status()
+            _check_http(response)
             body = bytearray()
             async for chunk in response.content.iter_chunked(64 * 1024):
                 if len(body) + len(chunk) > 16 * 1024 * 1024:
                     raise ValueError("OpenDart archive exceeds size limit")
                 body.extend(chunk)
-        mapping = await hass.async_add_executor_job(_parse_archive, body)
+        if body.lstrip().startswith(b"{"):
+            import json
+            _check_status(json.loads(body))
+            return {}
+        return await hass.async_add_executor_job(_parse_archive, body)
+    try:
+        mapping = await gate("dart").run(("directory", hashlib.sha256(api_key.encode()).digest()), 600, fetch)
+    except (Backoff, ProviderBusy):
+        raise
     except Exception as err:
         LOGGER.warning("OpenDart company directory unavailable (%s)", type(err).__name__)
         return {}
 
     LOGGER.info("OpenDart corpCode.xml loaded: %d listed-equity entries", len(mapping))
-    _corp_code_cache = mapping
+    if mapping:
+        _corp_code_cache = mapping
     return mapping
 
 
@@ -209,12 +248,9 @@ async def fetch_recent_disclosures(
         if category:
             params["pblntf_ty"] = category
         try:
-            async with session.get(
-                OPENDART_LIST_URL,
-                params=params,
-                timeout=_TIMEOUT,
-            ) as r:
-                payload = await r.json(content_type=None)
+            payload = await _json_request(session, params, 900)
+        except (Backoff, ProviderBusy):
+            raise
         except Exception as err:  # noqa: BLE001
             LOGGER.debug("OpenDart fetch %s failed: %s", code, type(err).__name__)
             continue
@@ -296,14 +332,11 @@ async def validate_api_key(hass: "HomeAssistant", api_key: str) -> bool:
 
     session = async_get_clientsession(hass)
     try:
-        async with session.get(
-            OPENDART_LIST_URL,
-            params={"crtfc_key": api_key, "page_count": "1"},
-            timeout=_TIMEOUT,
-        ) as r:
-            payload = await r.json(content_type=None)
+        payload = await _json_request(session, {"crtfc_key": api_key, "page_count": "1"}, 900)
+    except (Backoff, ProviderBusy):
+        raise
     except Exception as err:  # noqa: BLE001
         LOGGER.debug("OpenDart validate failed: %s", type(err).__name__)
         return False
-    # 000 = OK, 013 = no data (still valid key), 020 = invalid/no permission.
+    # 000 and 013 both confirm that the supplied credential works.
     return payload.get("status") in ("000", "013")
