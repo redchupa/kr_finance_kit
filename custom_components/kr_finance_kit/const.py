@@ -87,6 +87,7 @@ FX_USDKRW = "USDKRW"
 # and the current one sees it closed.
 EVENT_KR_MARKET_CLOSED = f"{DOMAIN}_kr_market_closed"
 EVENT_US_MARKET_CLOSED = f"{DOMAIN}_us_market_closed"
+EVENT_PRICE_ALERT = f"{DOMAIN}_price_alert"
 
 # OpenDart disclosure category codes (pblntf_ty values). Surfaced so
 # config_flow can present them as a selector and coordinator can pass

@@ -64,6 +64,34 @@ add_position:
               value: "KR"
             - label: "US — US stocks (NYSE / NASDAQ)"
               value: "US"
+    alert_high:
+      name: Target price alert (high)
+      description: >
+        Optional upper price threshold in native currency (KRW for KR,
+        USD for US). Turns the position's price alert binary_sensor ON
+        and fires `kr_finance_kit_price_alert` when price >= alert_high.
+        Leave blank or 0 to disable.
+      required: false
+      example: "80000"
+      selector:
+        number:
+          min: 0
+          max: 1000000000
+          mode: box
+    alert_low:
+      name: Stop-loss alert (low)
+      description: >
+        Optional lower price threshold in native currency (KRW for KR,
+        USD for US). Turns the position's price alert binary_sensor ON
+        and fires `kr_finance_kit_price_alert` when price <= alert_low.
+        Leave blank or 0 to disable.
+      required: false
+      example: "55000"
+      selector:
+        number:
+          min: 0
+          max: 1000000000
+          mode: box
 
 remove_position:
   name: Remove holding

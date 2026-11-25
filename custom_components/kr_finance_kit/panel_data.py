@@ -427,6 +427,14 @@ def positions_breakdown(data: dict[str, Any]) -> list[dict[str, Any]]:
         avg = _finite(p.get("avg_price")) or 0.0
         quotes = kr_quotes if market == MARKET_KR else us_quotes
         current = _finite((quotes.get(ticker) or {}).get("price"))
+        alert_high = _finite(p.get("alert_high"))
+        alert_low = _finite(p.get("alert_low"))
+        alert_state: str | None = None
+        if current is not None:
+            if alert_high is not None and current >= alert_high:
+                alert_state = "high"
+            elif alert_low is not None and current <= alert_low:
+                alert_state = "low"
         row: dict[str, Any] = {
             "ticker": ticker,
             "market": market,
@@ -437,6 +445,9 @@ def positions_breakdown(data: dict[str, Any]) -> list[dict[str, Any]]:
             "value": None,
             "pl": None,
             "pl_pct": None,
+            "alert_high": alert_high,
+            "alert_low": alert_low,
+            "alert_state": alert_state,
         }
         if current is not None and qty > 0:
             value = current * qty

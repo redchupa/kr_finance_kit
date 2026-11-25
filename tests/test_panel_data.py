@@ -438,3 +438,63 @@ def test_match_catalog_korean_and_english_without_opendart():
     assert pd.match_catalog("금 선물", lang="ko")[0]["symbol"] == "GC=F"
     assert pd.match_catalog("Apple", lang="en")[0]["symbol"] == "AAPL"
     assert pd.match_catalog("", lang="ko") == []
+
+
+# ---------------------------------------------------------------- position price alerts
+
+def test_positions_breakdown_price_alert_states():
+    data = {
+        "kr_quotes": {
+            "005930": {"price": 82000},
+            "000660": {"price": 140000},
+        },
+        "us_quotes": {
+            "AAPL": {"price": 175.0},
+        },
+        "positions": [
+            {"ticker": "005930", "market": "KR", "quantity": 10, "avg_price": 70000, "alert_high": 80000, "alert_low": 60000},
+            {"ticker": "000660", "market": "KR", "quantity": 5, "avg_price": 150000, "alert_high": 200000, "alert_low": 145000},
+            {"ticker": "AAPL", "market": "US", "quantity": 2, "avg_price": 170.0, "alert_high": 200.0, "alert_low": 150.0},
+        ],
+    }
+    rows = {r["ticker"]: r for r in pd.positions_breakdown(data)}
+    assert rows["005930"]["alert_state"] == "high"
+    assert rows["000660"]["alert_state"] == "low"
+    assert rows["AAPL"]["alert_state"] is None
+
+
+def test_coordinator_price_alert_edge_triggered():
+    from types import SimpleNamespace
+    from custom_components.kr_finance_kit.binary_sensor import evaluate_price_alert
+    from custom_components.kr_finance_kit.const import EVENT_PRICE_ALERT
+    from custom_components.kr_finance_kit.coordinator import MarketCoordinator
+
+    assert evaluate_price_alert(80000, 80000, 60000) == "high"
+    assert evaluate_price_alert(59000, 80000, 60000) == "low"
+    assert evaluate_price_alert(70000, 80000, 60000) is None
+    assert evaluate_price_alert(None, 80000, 60000) is None
+
+    fired = []
+    coord = object.__new__(MarketCoordinator)
+    coord._alert_states = {}
+    coord.hass = SimpleNamespace(
+        bus=SimpleNamespace(async_fire=lambda ev, data: fired.append((ev, data)))
+    )
+    cfg = {"kr_ticker_names": {"005930": "삼성전자"}}
+    pos = [{"ticker": "005930", "market": "KR", "quantity": 10, "avg_price": 70000, "alert_high": 80000}]
+
+    # First crossing fires once
+    coord._check_position_price_alerts({"kr_quotes": {"005930": {"price": 81000}}, "positions": pos}, cfg)
+    assert len(fired) == 1
+    assert fired[0][0] == EVENT_PRICE_ALERT
+    assert fired[0][1]["direction"] == "high"
+    assert fired[0][1]["name"] == "삼성전자"
+
+    # Staying above threshold does NOT re-fire
+    coord._check_position_price_alerts({"kr_quotes": {"005930": {"price": 82000}}, "positions": pos}, cfg)
+    assert len(fired) == 1
+
+    # Dropping back below resets, then crossing again fires again
+    coord._check_position_price_alerts({"kr_quotes": {"005930": {"price": 79000}}, "positions": pos}, cfg)
+    coord._check_position_price_alerts({"kr_quotes": {"005930": {"price": 80500}}, "positions": pos}, cfg)
+    assert len(fired) == 2

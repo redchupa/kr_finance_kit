@@ -101,6 +101,9 @@
       },
       "pl_alert": {
         "name": "P/L alert"
+      },
+      "price_alert": {
+        "name": "Price alert"
       }
     }
   },
@@ -124,6 +127,14 @@
         "market": {
           "name": "Market",
           "description": "KR — Korean stocks (KOSPI, KOSDAQ). US — US stocks (NYSE, NASDAQ). Crypto, FX, and futures (BTC-USD, EUR=X, GC=F) can't be selected here — register them via the integration options screen for price tracking only."
+        },
+        "alert_high": {
+          "name": "Target price alert (high)",
+          "description": "Optional upper threshold in native currency. Turns the position's price alert binary_sensor ON and fires `kr_finance_kit_price_alert` when price >= alert_high. Leave blank or 0 to disable."
+        },
+        "alert_low": {
+          "name": "Stop-loss alert (low)",
+          "description": "Optional lower threshold in native currency. Turns the position's price alert binary_sensor ON and fires `kr_finance_kit_price_alert` when price <= alert_low. Leave blank or 0 to disable."
         }
       }
     },

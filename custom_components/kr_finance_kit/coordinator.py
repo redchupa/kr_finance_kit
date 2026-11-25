@@ -32,6 +32,7 @@ from .const import (
     CONF_INCLUDE_GLOBAL_INDICES,
     CONF_INCLUDE_INDICES,
     CONF_INCLUDE_US_INDICES,
+    CONF_KR_TICKER_NAMES,
     CONF_KR_TICKERS,
     CONF_OTHER_TICKER_LABELS,
     CONF_OTHER_TICKERS,
@@ -39,6 +40,7 @@ from .const import (
     CONF_US_TICKER_LABELS,
     CONF_US_TICKERS,
     EVENT_KR_MARKET_CLOSED,
+    EVENT_PRICE_ALERT,
     EVENT_US_MARKET_CLOSED,
     FX_USDKRW,
     GLOBAL_INDICES,
@@ -77,6 +79,8 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # to the requested window length.
         self._price_history: dict[str, deque[tuple[datetime, float]]] = {}
         self._history_maxlen = 300
+        # Edge-trigger state for per-position price alerts: (market, ticker) -> "high"|"low"|None
+        self._alert_states: dict[tuple[str, str], str | None] = {}
 
     @property
     def _config(self) -> dict[str, Any]:
@@ -259,7 +263,63 @@ class MarketCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "fetched_at": datetime.now(timezone.utc).isoformat(),
         }
         self._push_price_history(result)
+        self._check_position_price_alerts(result, cfg)
         return result
+
+    def _check_position_price_alerts(
+        self, data: dict[str, Any], cfg: dict[str, Any]
+    ) -> None:
+        """Fire EVENT_PRICE_ALERT once when a holding crosses alert_high/alert_low."""
+        kr_names = cfg.get(CONF_KR_TICKER_NAMES, {}) or {}
+        us_labels = cfg.get(CONF_US_TICKER_LABELS, {}) or {}
+        active_keys: set[tuple[str, str]] = set()
+        for pos in data.get("positions", []) or []:
+            ticker = pos.get("ticker")
+            market = pos.get("market", MARKET_KR)
+            alert_high = pos.get("alert_high")
+            alert_low = pos.get("alert_low")
+            if not ticker or (alert_high is None and alert_low is None):
+                continue
+            key = (market, ticker)
+            active_keys.add(key)
+            src = "kr_quotes" if market == MARKET_KR else "us_quotes"
+            price = (data.get(src, {}) or {}).get(ticker, {}).get("price")
+            if not isinstance(price, (int, float)):
+                continue
+            state: str | None = None
+            target: float | None = None
+            if alert_high is not None and price >= alert_high:
+                state, target = "high", float(alert_high)
+            elif alert_low is not None and price <= alert_low:
+                state, target = "low", float(alert_low)
+            prev_state = self._alert_states.get(key)
+            self._alert_states[key] = state
+            if state is not None and state != prev_state:
+                avg = pos.get("avg_price")
+                pl_pct = (
+                    round((price / avg - 1) * 100, 2)
+                    if isinstance(avg, (int, float)) and avg > 0
+                    else None
+                )
+                name = (
+                    (kr_names if market == MARKET_KR else us_labels).get(ticker)
+                    or ticker
+                )
+                self.hass.bus.async_fire(
+                    EVENT_PRICE_ALERT,
+                    {
+                        "ticker": ticker,
+                        "name": name,
+                        "market": market,
+                        "direction": state,
+                        "current_price": float(price),
+                        "target_price": target,
+                        "avg_price": avg,
+                        "pl_pct": pl_pct,
+                    },
+                )
+        for stale_key in [k for k in self._alert_states if k not in active_keys]:
+            self._alert_states.pop(stale_key, None)
 
 
 class DisclosureCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):

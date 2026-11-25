@@ -101,6 +101,9 @@
       },
       "pl_alert": {
         "name": "평가손익 알림"
+      },
+      "price_alert": {
+        "name": "가격 알림"
       }
     }
   },
@@ -124,6 +127,14 @@
         "market": {
           "name": "시장",
           "description": "KR — 한국 주식 (코스피·코스닥). US — 미국 주식 (NYSE·NASDAQ). 비트코인·암호화폐·환율·선물은 여기서 선택 불가 — 옵션 화면의 \"암호화폐·환율·선물\" 필드로 시세만 추적하세요."
+        },
+        "alert_high": {
+          "name": "목표가 알림 (상한)",
+          "description": "선택 항목. 현재가가 이 가격 이상에 도달하면 가격 알림 binary_sensor가 ON 되고 `kr_finance_kit_price_alert` 이벤트가 발생합니다. 0 또는 비워두면 비활성."
+        },
+        "alert_low": {
+          "name": "손절가 알림 (하한)",
+          "description": "선택 항목. 현재가가 이 가격 이하로 내려가면 가격 알림 binary_sensor가 ON 되고 `kr_finance_kit_price_alert` 이벤트가 발생합니다. 0 또는 비워두면 비활성."
         }
       }
     },

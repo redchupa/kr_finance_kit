@@ -233,3 +233,31 @@ def test_remove_schema_rejects_bad_ticker() -> None:
 def test_remove_schema_rejects_other_market() -> None:
     with pytest.raises(vol.Invalid):
         _REMOVE_SCHEMA({"ticker": "BTC-USD", "market": "OTHER"})
+
+
+# ---- Price alert fields ----------------------------------------------
+
+def test_position_schema_accepts_price_alerts() -> None:
+    out = _POSITION_SCHEMA({**_good_position(), "alert_high": "80000", "alert_low": 55000})
+    assert out["alert_high"] == 80000.0
+    assert out["alert_low"] == 55000.0
+
+
+def test_position_schema_zero_or_empty_disables_alert() -> None:
+    out = _POSITION_SCHEMA({**_good_position(), "alert_high": 0, "alert_low": ""})
+    assert out["alert_high"] is None
+    assert out["alert_low"] is None
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {"alert_high": -10},
+        {"alert_low": float("nan")},
+        {"alert_high": 50000, "alert_low": 60000},
+        {"alert_high": 60000, "alert_low": 60000},
+    ],
+)
+def test_position_schema_rejects_invalid_alerts(extra: dict) -> None:
+    with pytest.raises(vol.Invalid):
+        _POSITION_SCHEMA({**_good_position(), **extra})

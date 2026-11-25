@@ -13,13 +13,16 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import (
     CONF_DISCLOSURE_CORP_CODES,
     CONF_DISCLOSURE_CORP_NAMES,
+    CONF_KR_TICKER_NAMES,
     CONF_PORTFOLIO_PL_ALERT_PCT,
+    CONF_US_TICKER_LABELS,
     DOMAIN,
     ENTITY_ID_PREFIX,
+    MARKET_KR,
     TZ_KST,
 )
 from .coordinator import DisclosureCoordinator, MarketCoordinator
-from .device import disclosure_device, portfolio_device
+from .device import disclosure_device, portfolio_device, ticker_device
 from .portfolio import compute_totals
 
 # A disclosure is considered "new" if it landed within this window.
@@ -61,6 +64,27 @@ async def async_setup_entry(
     market: MarketCoordinator = store["market"]
     if threshold > 0 and market.positions:
         entities.append(PortfolioPLAlertBinarySensor(market, threshold))
+
+    kr_names: dict[str, str] = config.get(CONF_KR_TICKER_NAMES, {}) or {}
+    us_labels: dict[str, str] = config.get(CONF_US_TICKER_LABELS, {}) or {}
+    for pos in market.positions:
+        if pos.get("alert_high") is not None or pos.get("alert_low") is not None:
+            pos_market = pos.get("market", MARKET_KR)
+            pos_ticker = pos.get("ticker", "")
+            if not pos_ticker:
+                continue
+            label = (kr_names if pos_market == MARKET_KR else us_labels).get(pos_ticker)
+            entities.append(
+                PositionPriceAlertBinarySensor(
+                    market,
+                    pos_market,
+                    pos_ticker,
+                    alert_high=pos.get("alert_high"),
+                    alert_low=pos.get("alert_low"),
+                    avg_price=pos.get("avg_price"),
+                    label=label,
+                )
+            )
 
     if entities:
         async_add_entities(entities)
@@ -163,4 +187,92 @@ class PortfolioPLAlertBinarySensor(CoordinatorEntity[MarketCoordinator], BinaryS
         return {
             "current_pl_pct": pct,
             "threshold_pct": self._threshold,
+        }
+
+
+def evaluate_price_alert(
+    price: float | None,
+    alert_high: float | None,
+    alert_low: float | None,
+) -> str | None:
+    """Return 'high', 'low', or None depending on threshold crossing."""
+    if price is None:
+        return None
+    if alert_high is not None and price >= alert_high:
+        return "high"
+    if alert_low is not None and price <= alert_low:
+        return "low"
+    return None
+
+
+class PositionPriceAlertBinarySensor(
+    CoordinatorEntity[MarketCoordinator], BinarySensorEntity
+):
+    """Per-holding target / stop-loss price alert binary_sensor."""
+
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:bell-ring-outline"
+    _attr_translation_key = "price_alert"
+
+    def __init__(
+        self,
+        coordinator: MarketCoordinator,
+        market: str,
+        ticker: str,
+        *,
+        alert_high: float | None = None,
+        alert_low: float | None = None,
+        avg_price: float | None = None,
+        label: str | None = None,
+    ) -> None:
+        super().__init__(coordinator)
+        self._market = market
+        self._ticker = ticker
+        self._alert_high = alert_high
+        self._alert_low = alert_low
+        self._avg_price = avg_price
+        slug = ticker.lower().replace(".", "_").replace("-", "_")
+        self._attr_unique_id = f"{DOMAIN}_price_alert_{market.lower()}_{ticker}"
+        self._attr_suggested_object_id = f"{ENTITY_ID_PREFIX}_price_alert_{market.lower()}_{slug}"
+        self._attr_device_info = ticker_device(market, ticker, label)
+
+    def _current_price(self) -> float | None:
+        data = self.coordinator.data or {}
+        src = "kr_quotes" if self._market == MARKET_KR else "us_quotes"
+        raw = (data.get(src, {}) or {}).get(self._ticker, {}).get("price")
+        return float(raw) if isinstance(raw, (int, float)) else None
+
+    @property
+    def is_on(self) -> bool:
+        return (
+            evaluate_price_alert(
+                self._current_price(), self._alert_high, self._alert_low
+            )
+            is not None
+        )
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        price = self._current_price()
+        triggered = evaluate_price_alert(price, self._alert_high, self._alert_low)
+        dist_high = (
+            round((self._alert_high / price - 1) * 100, 2)
+            if price and price > 0 and self._alert_high is not None
+            else None
+        )
+        dist_low = (
+            round((self._alert_low / price - 1) * 100, 2)
+            if price and price > 0 and self._alert_low is not None
+            else None
+        )
+        return {
+            "ticker": self._ticker,
+            "market": self._market,
+            "current_price": price,
+            "avg_price": self._avg_price,
+            "alert_high": self._alert_high,
+            "alert_low": self._alert_low,
+            "triggered": triggered,
+            "distance_high_pct": dist_high,
+            "distance_low_pct": dist_low,
         }

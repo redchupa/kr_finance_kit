@@ -10,7 +10,7 @@
  * open sheet (with inputs the user is typing into) is never clobbered.
  */
 
-const PANEL_VERSION = "0.2.7";
+const PANEL_VERSION = "0.2.8";
 const LS_KEY = "kr_finance_kit.prefs";
 
 const I18N = {
@@ -81,6 +81,13 @@ const I18N = {
     prev_close: "전일 종가", day_range: "일중 범위", w52: "52주 범위", volume: "거래량",
     per: "PER", div_yield: "배당수익률", krw_price: "원화 환산",
     my_position: "내 보유",
+    price_alert: "🔔 가격 알림 (선택)",
+    alert_high: "목표가 (이상)",
+    alert_low: "손절가 (이하)",
+    alert_hit_high: "목표가 도달",
+    alert_hit_low: "손절가 도달",
+    alert_hint: "도달 시 HA 가격 알림 센서(binary_sensor)가 ON 되고 kr_finance_kit_price_alert 이벤트가 발생합니다.",
+    err_alert_bounds: "손절가는 목표가보다 낮아야 해요.",
     save: "저장", delete: "삭제", cancel: "취소", close: "닫기",
     position_saved: "보유 정보 저장됨 — 잠시 후 반영됩니다",
     position_deleted: "보유 정보 삭제됨",
@@ -178,6 +185,13 @@ const I18N = {
     prev_close: "Prev close", day_range: "Day range", w52: "52-week range", volume: "Volume",
     per: "P/E", div_yield: "Div. yield", krw_price: "In KRW",
     my_position: "My position",
+    price_alert: "🔔 Price alert (optional)",
+    alert_high: "Target (≥)",
+    alert_low: "Stop-loss (≤)",
+    alert_hit_high: "Target hit",
+    alert_hit_low: "Stop-loss hit",
+    alert_hint: "Turns the HA price alert binary_sensor ON and fires kr_finance_kit_price_alert when reached.",
+    err_alert_bounds: "Stop-loss must be lower than target price.",
     save: "Save", delete: "Delete", cancel: "Cancel", close: "Close",
     position_saved: "Position saved — updates in a moment",
     position_deleted: "Position deleted",
@@ -911,8 +925,16 @@ class KRFinancePanel extends HTMLElement {
     const bar = weighted.length ? `<div class="muted small">${esc(this.t("allocation"))}</div>
       <div class="alloc">${weighted.map((r) => `<span style="flex:${r.weight_pct};--h:${hashHue(r.ticker)}" title="${esc(nameOf(r))} ${r.weight_pct}%"></span>`).join("")}</div>
       <div class="alloc-legend">${weighted.map((r) => `<span><i style="--h:${hashHue(r.ticker)}"></i>${esc(nameOf(r))} ${r.weight_pct.toFixed(1)}%</span>`).join("")}</div>` : "";
-    const list = rows.map((r) => `<button class="pf-row" data-act="detail" data-key="${esc(r.market + ":" + r.ticker)}">
-        <span class="nm"><b>${esc(nameOf(r))}</b><span class="muted small mono">${esc(this._num(r.quantity, { maximumFractionDigits: 4 }))} × ${esc(this._price(r.avg_price, ccy(r)))}</span></span>
+    const alertBadge = (r) => {
+      if (r.alert_state === "high") return `<span class="alert-badge hit up">🔔 ${esc(this.t("alert_hit_high"))}</span>`;
+      if (r.alert_state === "low") return `<span class="alert-badge hit down">🔔 ${esc(this.t("alert_hit_low"))}</span>`;
+      const parts = [];
+      if (r.alert_high != null) parts.push(`↑${this._price(r.alert_high, ccy(r))}`);
+      if (r.alert_low != null) parts.push(`↓${this._price(r.alert_low, ccy(r))}`);
+      return parts.length ? `<span class="alert-badge">🔔 ${esc(parts.join(" · "))}</span>` : "";
+    };
+    const list = rows.map((r) => `<button class="pf-row ${r.alert_state ? "pf-hit" : ""}" data-act="detail" data-key="${esc(r.market + ":" + r.ticker)}">
+        <span class="nm"><b>${esc(nameOf(r))}</b><span class="muted small mono">${esc(this._num(r.quantity, { maximumFractionDigits: 4 }))} × ${esc(this._price(r.avg_price, ccy(r)))}</span>${alertBadge(r)}</span>
         <span class="rt"><span class="mono">${esc(this._price(r.value, ccy(r)))}</span>
           <span class="mono small ${this._dir(r.pl)}">${esc(this._money(r.pl, ccy(r)))} (${esc(this._pct(r.pl_pct))})</span></span>
       </button>`).join("");
@@ -1288,13 +1310,25 @@ class KRFinancePanel extends HTMLElement {
     // Holdings are written through the add/remove_position services; the
     // panel only offers the form to administrators (read-only for others,
     // matching the watchlist controls).
+    const alertBanner = pos?.alert_state
+      ? `<div class="alert-banner ${pos.alert_state === "high" ? "up" : "down"}">🔔 ${esc(pos.alert_state === "high" ? this.t("alert_hit_high") : this.t("alert_hit_low"))} (${esc(this._price(pos.alert_state === "high" ? pos.alert_high : pos.alert_low, ccy))})</div>` : "";
+    const roAlerts = pos && (pos.alert_high != null || pos.alert_low != null)
+      ? `<p class="muted small mono">🔔 ${pos.alert_high != null ? `↑${esc(this._price(pos.alert_high, ccy))}` : ""} ${pos.alert_low != null ? `↓${esc(this._price(pos.alert_low, ccy))}` : ""}</p>` : "";
     const readOnlyHolding = pos
-      ? `<h4>${esc(this.t("my_position"))}</h4>${posSummary}<p class="muted small mono">${esc(this._num(pos.quantity, { maximumFractionDigits: 4 }))} × ${esc(this._price(pos.avg_price, ccy))}</p>` : "";
+      ? `<h4>${esc(this.t("my_position"))}</h4>${alertBanner}${posSummary}<p class="muted small mono">${esc(this._num(pos.quantity, { maximumFractionDigits: 4 }))} × ${esc(this._price(pos.avg_price, ccy))}</p>${roAlerts}` : "";
     const holding = ["INDEX", "FX"].includes(it.market) ? "" : !this.isAdmin ? readOnlyHolding : `<h4>${esc(this.t("my_position"))}</h4>
-      ${canHold ? `${posSummary}
+      ${canHold ? `${alertBanner}${posSummary}
         <div class="field two">
           <label><span>${esc(this.t("qty"))}</span><input id="pq" class="inp mono" type="number" inputmode="decimal" min="0" step="any" value="${pos ? esc(pos.quantity) : ""}"></label>
           <label><span>${esc(this.t("avg"))} · ${esc(unit)}</span><input id="pa" class="inp mono" type="number" inputmode="decimal" min="0" step="any" value="${pos ? esc(pos.avg_price) : ""}"></label>
+        </div>
+        <div class="alert-box">
+          <div class="muted small">${esc(this.t("price_alert"))}</div>
+          <div class="field two">
+            <label><span>${esc(this.t("alert_high"))} · ${esc(unit)}</span><input id="pah" class="inp mono" type="number" inputmode="decimal" min="0" step="any" placeholder="—" value="${pos?.alert_high != null ? esc(pos.alert_high) : ""}"></label>
+            <label><span>${esc(this.t("alert_low"))} · ${esc(unit)}</span><input id="pal" class="inp mono" type="number" inputmode="decimal" min="0" step="any" placeholder="—" value="${pos?.alert_low != null ? esc(pos.alert_low) : ""}"></label>
+          </div>
+          <div class="muted small">${esc(this.t("alert_hint"))}</div>
         </div>
         <div class="btn-row">${pos ? `<button class="btn danger" data-act="posdel">${esc(this.t("delete"))}</button>` : ""}
           <button class="btn primary" data-act="possave">${esc(this.t("save"))}</button></div>`
@@ -1336,10 +1370,13 @@ class KRFinancePanel extends HTMLElement {
   _renderDetailKeepInputs() {
     const r = this.shadowRoot;
     const q = r.getElementById("pq")?.value, a = r.getElementById("pa")?.value;
+    const ah = r.getElementById("pah")?.value, al = r.getElementById("pal")?.value;
     const scroll = r.querySelector(".sheet-b")?.scrollTop || 0;
     this._renderSheet();
     if (q !== undefined && r.getElementById("pq")) r.getElementById("pq").value = q;
     if (a !== undefined && r.getElementById("pa")) r.getElementById("pa").value = a;
+    if (ah !== undefined && r.getElementById("pah")) r.getElementById("pah").value = ah;
+    if (al !== undefined && r.getElementById("pal")) r.getElementById("pal").value = al;
     const sb = r.querySelector(".sheet-b");
     if (sb) sb.scrollTop = scroll;
   }
@@ -1360,8 +1397,18 @@ class KRFinancePanel extends HTMLElement {
     const qty = parseFloat(r.getElementById("pq")?.value);
     const avg = parseFloat(r.getElementById("pa")?.value);
     if (!(qty > 0) || !(avg > 0)) { this._toast(this.t("err_generic", { m: `${this.t("qty")} / ${this.t("avg")} > 0` })); return; }
+    const rawH = (r.getElementById("pah")?.value || "").trim();
+    const rawL = (r.getElementById("pal")?.value || "").trim();
+    const alertHigh = rawH ? parseFloat(rawH) : null;
+    const alertLow = rawL ? parseFloat(rawL) : null;
+    if (alertHigh !== null && !(alertHigh > 0)) { this._toast(this.t("err_generic", { m: `${this.t("alert_high")} > 0` })); return; }
+    if (alertLow !== null && !(alertLow > 0)) { this._toast(this.t("err_generic", { m: `${this.t("alert_low")} > 0` })); return; }
+    if (alertHigh !== null && alertLow !== null && alertLow >= alertHigh) { this._toast(this.t("err_alert_bounds")); return; }
+    const payload = { ticker: it.ticker, market: it.market, quantity: qty, avg_price: avg };
+    if (alertHigh !== null) payload.alert_high = alertHigh;
+    if (alertLow !== null) payload.alert_low = alertLow;
     try {
-      await this._hass.callService("kr_finance_kit", "add_position", { ticker: it.ticker, market: it.market, quantity: qty, avg_price: avg });
+      await this._hass.callService("kr_finance_kit", "add_position", payload);
       this._toast(this.t("position_saved"));
       this._pollAfterChange(null);
     } catch (e) { this._toast(this._errText(e)); }
@@ -1768,6 +1815,11 @@ main { max-width:1200px; margin:0 auto; padding:8px 16px 24px; }
 .pf-row { width:100%; display:flex; justify-content:space-between; gap:10px; align-items:center; text-align:left; border:none; background:none; border-bottom:1px solid var(--border); padding:12px 14px; min-height:56px; }
 .pf-row:last-child { border-bottom:none; }
 .pf-row .rt { display:flex; flex-direction:column; align-items:flex-end; }
+.pf-row.pf-hit { background:color-mix(in srgb, var(--accent) 8%, transparent); }
+.alert-badge { display:inline-block; margin-top:4px; padding:2px 7px; border-radius:6px; font-size:11.5px; font-family:var(--mono); color:var(--muted); background:var(--card2); width:fit-content; }
+.alert-badge.hit { font-weight:700; border:1px solid currentColor; background:color-mix(in srgb, currentColor 12%, transparent); }
+.alert-banner { padding:9px 12px; border-radius:10px; font-size:13.5px; font-weight:700; margin-bottom:8px; border:1px solid currentColor; background:color-mix(in srgb, currentColor 12%, transparent); }
+.alert-box { margin-top:8px; padding:10px 12px; border-radius:12px; background:var(--card2); border:1px solid var(--border); }
 
 /* ---------- disclosures ---------- */
 .disc { border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); background:var(--card); box-shadow:var(--shadow); }

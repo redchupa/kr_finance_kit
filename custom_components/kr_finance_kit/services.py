@@ -98,13 +98,48 @@ def _finite_positive(value: Any) -> float:
     return f
 
 
-_POSITION_SCHEMA = vol.Schema(
-    {
-        vol.Required("ticker"): _validate_ticker,
-        vol.Required("quantity"): _finite_positive,
-        vol.Required("avg_price"): _finite_positive,
-        vol.Required("market"): vol.In([MARKET_KR, MARKET_US]),
-    }
+def _optional_alert_price(value: Any) -> float | None:
+    """Validate optional alert_high / alert_low (None or 0 disables)."""
+    if value is None or value == "":
+        return None
+    try:
+        f = float(value)
+    except (TypeError, ValueError) as err:
+        raise vol.Invalid(f"Alert price must be a number, got {value!r}.") from err
+    if not math.isfinite(f):
+        raise vol.Invalid(f"Alert price must be finite, got {value!r}.")
+    if f < 0:
+        raise vol.Invalid(f"Alert price cannot be negative, got {f}.")
+    if f == 0:
+        return None
+    if f > _MAX_NUMERIC:
+        raise vol.Invalid(f"Alert price {f} is too large (max {_MAX_NUMERIC:.0f}).")
+    return f
+
+
+def _validate_alert_bounds(data: dict[str, Any]) -> dict[str, Any]:
+    """Ensure alert_low < alert_high when both are specified."""
+    low = data.get("alert_low")
+    high = data.get("alert_high")
+    if low is not None and high is not None and low >= high:
+        raise vol.Invalid(
+            f"alert_low ({low}) must be lower than alert_high ({high})."
+        )
+    return data
+
+
+_POSITION_SCHEMA = vol.All(
+    vol.Schema(
+        {
+            vol.Required("ticker"): _validate_ticker,
+            vol.Required("quantity"): _finite_positive,
+            vol.Required("avg_price"): _finite_positive,
+            vol.Required("market"): vol.In([MARKET_KR, MARKET_US]),
+            vol.Optional("alert_high"): _optional_alert_price,
+            vol.Optional("alert_low"): _optional_alert_price,
+        }
+    ),
+    _validate_alert_bounds,
 )
 _REMOVE_SCHEMA = vol.Schema(
     {
@@ -180,14 +215,17 @@ def async_register_services(hass: HomeAssistant) -> None:
             )
         # Upsert by (market, ticker).
         cur = [p for p in cur if not (p.get("ticker") == ticker and p.get("market") == market)]
-        cur.append(
-            {
-                "ticker": ticker,
-                "quantity": call.data["quantity"],
-                "avg_price": call.data["avg_price"],
-                "market": market,
-            }
-        )
+        pos_entry: dict[str, Any] = {
+            "ticker": ticker,
+            "quantity": call.data["quantity"],
+            "avg_price": call.data["avg_price"],
+            "market": market,
+        }
+        if call.data.get("alert_high") is not None:
+            pos_entry["alert_high"] = call.data["alert_high"]
+        if call.data.get("alert_low") is not None:
+            pos_entry["alert_low"] = call.data["alert_low"]
+        cur.append(pos_entry)
         _save_positions(hass, entry, cur)
 
     async def _remove_position(call: ServiceCall) -> None:
