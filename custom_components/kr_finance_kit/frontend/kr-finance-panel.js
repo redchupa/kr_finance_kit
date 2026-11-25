@@ -10,7 +10,7 @@
  * open sheet (with inputs the user is typing into) is never clobbered.
  */
 
-const PANEL_VERSION = "0.2.11";
+const PANEL_VERSION = "0.2.12";
 const LS_KEY = "kr_finance_kit.prefs";
 
 const I18N = {
@@ -99,6 +99,7 @@ const I18N = {
     confirm_tap: "한 번 더 누르면 삭제",
     chart_empty: "차트 데이터를 불러오지 못했어요.",
     chart_loading: "차트 불러오는 중…",
+    waiting_prices: "시세 대기",
     stale: "전일 데이터",
     // settings
     s_language: "언어", lang_auto: "자동 (HA 설정)",
@@ -204,6 +205,7 @@ const I18N = {
     confirm_tap: "Tap again to remove",
     chart_empty: "Couldn't load chart data.",
     chart_loading: "Loading chart…",
+    waiting_prices: "Waiting for quotes",
     stale: "prior session",
     s_language: "Language", lang_auto: "Auto (HA setting)",
     s_theme: "Card theme", s_layout: "Card layout",
@@ -802,7 +804,7 @@ class KRFinancePanel extends HTMLElement {
     const p = s.portfolio || {};
     const hero = p.krw_total != null ? `<div class="hero">
         <div class="hero-l">${esc(this.t("total_value"))}</div>
-        <div class="hero-v mono">${esc(this._price(p.krw_total, "KRW"))}</div>
+        <div class="hero-v mono">${esc(p.krw_total == null ? this.t("waiting_prices") : this._price(p.krw_total, "KRW"))}</div>
         <div class="hero-c ${this._dir(p.krw_pl)} mono">${this._arrow(p.krw_pl)} ${esc(this._money(p.krw_pl, "KRW"))} (${esc(this._pct(p.krw_pl_pct))})</div>
       </div>` : "";
     return this._section("summary", `${hero}<div class="chips">${sess("KR", this.t("kr_market"))}${sess("US", this.t("us_market"))}${fxChip}${kimchi}</div>`);
@@ -918,7 +920,7 @@ class KRFinancePanel extends HTMLElement {
     const nameOf = (r) => (this._snap.quotes.find((q) => q.market === r.market && q.ticker === r.ticker)?.name) || r.ticker;
     const ccy = (r) => (r.market === "KR" ? "KRW" : "USD");
     const head = `<div class="pf-head">
-        <div><div class="muted">${esc(this.t("total_value"))}</div><div class="pf-v mono">${esc(this._price(p.krw_total, "KRW"))}</div></div>
+        <div><div class="muted">${esc(this.t("total_value"))}</div><div class="pf-v mono">${esc(p.krw_total == null ? this.t("waiting_prices") : this._price(p.krw_total, "KRW"))}</div></div>
         <div><div class="muted">${esc(this.t("total_pl"))}</div><div class="pf-v mono ${this._dir(p.krw_pl)}">${esc(this._money(p.krw_pl, "KRW"))} <small>${esc(this._pct(p.krw_pl_pct))}</small></div></div>
         ${p.kr_value != null ? `<div><div class="muted">🇰🇷 ${esc(this.t("kr_sub"))}</div><div class="mono">${esc(this._price(p.kr_value, "KRW"))} <small class="${this._dir(p.kr_pl)}">${esc(this._money(p.kr_pl, "KRW"))}</small></div></div>` : ""}
         ${p.us_value != null ? `<div><div class="muted">🇺🇸 ${esc(this.t("us_sub"))}</div><div class="mono">${esc(this._price(p.us_value, "USD"))} <small class="${this._dir(p.us_pl)}">${esc(this._money(p.us_pl, "USD"))}</small></div></div>` : ""}

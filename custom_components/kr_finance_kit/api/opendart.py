@@ -28,7 +28,7 @@ unit-tested without Home Assistant installed.
 from __future__ import annotations
 
 import io
-import xml.etree.ElementTree as ET
+from defusedxml import ElementTree as ET
 import zipfile
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
@@ -112,7 +112,13 @@ def _unzip_corp_code(zip_bytes: bytes) -> bytes:
         xml_name = next((n for n in zf.namelist() if n.lower().endswith(".xml")), None)
         if xml_name is None:
             raise RuntimeError("CORPCODE archive has no .xml member")
+        if zf.getinfo(xml_name).file_size > 64 * 1024 * 1024:
+            raise ValueError("OpenDart XML exceeds size limit")
         return zf.read(xml_name)
+
+
+def _parse_archive(body: bytes) -> dict[str, tuple[str, str]]:
+    return _parse_corp_code_xml(_unzip_corp_code(body))
 
 
 # Process-level cache: the mapping is several megabytes of strings but
@@ -143,36 +149,20 @@ async def _load_corp_code_map(
     from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
     session = async_get_clientsession(hass)
-    async with session.get(
-        OPENDART_CORPCODE_URL,
-        params={"crtfc_key": api_key},
-        timeout=_TIMEOUT,
-    ) as r:
-        body = await r.read()
-
-    # OpenDart returns either:
-    #  - on error: a small JSON body with {"status": "...", "message": "..."}
-    #  - on success: a ZIP archive containing CORPCODE.xml
-    # We disambiguate by attempting a JSON decode first.
     try:
-        import json
-
-        as_json = json.loads(body)
-        if isinstance(as_json, dict) and as_json.get("status"):
-            LOGGER.warning(
-                "OpenDart corpCode.xml fetch failed: %s (%s)",
-                as_json.get("status"),
-                as_json.get("message"),
-            )
-            return {}
-    except (ValueError, UnicodeDecodeError):
-        pass  # Expected — body is a binary ZIP.
-
-    try:
-        xml_bytes = _unzip_corp_code(body)
-        mapping = _parse_corp_code_xml(xml_bytes)
-    except Exception as err:  # noqa: BLE001
-        LOGGER.warning("Failed to parse OpenDart corpCode.xml: %s", err)
+        async with session.get(
+            OPENDART_CORPCODE_URL, params={"crtfc_key": api_key},
+            timeout=_TIMEOUT, allow_redirects=False,
+        ) as response:
+            response.raise_for_status()
+            body = bytearray()
+            async for chunk in response.content.iter_chunked(64 * 1024):
+                if len(body) + len(chunk) > 16 * 1024 * 1024:
+                    raise ValueError("OpenDart archive exceeds size limit")
+                body.extend(chunk)
+        mapping = await hass.async_add_executor_job(_parse_archive, body)
+    except Exception as err:
+        LOGGER.warning("OpenDart company directory unavailable (%s)", type(err).__name__)
         return {}
 
     LOGGER.info("OpenDart corpCode.xml loaded: %d listed-equity entries", len(mapping))
@@ -226,15 +216,13 @@ async def fetch_recent_disclosures(
             ) as r:
                 payload = await r.json(content_type=None)
         except Exception as err:  # noqa: BLE001
-            LOGGER.debug("OpenDart fetch %s failed: %s", code, err)
+            LOGGER.debug("OpenDart fetch %s failed: %s", code, type(err).__name__)
             continue
         status = payload.get("status")
         if status not in ("000", "013"):  # 013 = no data is OK
             LOGGER.debug(
-                "OpenDart non-OK status for %s: %s (%s)",
+                "OpenDart returned an error for %s",
                 code,
-                status,
-                payload.get("message"),
             )
             continue
         for item in payload.get("list", []) or []:
@@ -315,7 +303,7 @@ async def validate_api_key(hass: "HomeAssistant", api_key: str) -> bool:
         ) as r:
             payload = await r.json(content_type=None)
     except Exception as err:  # noqa: BLE001
-        LOGGER.debug("OpenDart validate failed: %s", err)
+        LOGGER.debug("OpenDart validate failed: %s", type(err).__name__)
         return False
     # 000 = OK, 013 = no data (still valid key), 020 = invalid/no permission.
     return payload.get("status") in ("000", "013")

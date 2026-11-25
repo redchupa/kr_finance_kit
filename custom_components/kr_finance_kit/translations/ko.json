@@ -110,7 +110,7 @@
   "services": {
     "add_position": {
       "name": "보유 종목 추가/수정",
-      "description": "보유 종목(수량 + 평단가)을 추가하거나 수정합니다. ConfigEntry options에 암호화 저장 — 소스 파일에 기록되지 않습니다. ⚠ 한국·미국 주식만 지원 — 비트코인·암호화폐·환율·선물(BTC-USD, EUR=X 등)은 시세 sensor만 제공되고 보유 추적은 미지원입니다.",
+      "description": "보유 종목(수량 + 평단가)을 추가하거나 수정합니다. Home Assistant 설정 항목에 저장 — 소스 파일에 기록되지 않습니다. ⚠ 한국·미국 주식만 지원 — 비트코인·암호화폐·환율·선물(BTC-USD, EUR=X 등)은 시세 sensor만 제공되고 보유 추적은 미지원입니다.",
       "fields": {
         "ticker": {
           "name": "종목 코드/심볼",

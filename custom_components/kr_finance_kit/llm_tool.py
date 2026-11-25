@@ -23,6 +23,7 @@ from .const import (
     MARKET_KR,
     MARKET_US,
 )
+from .access import can_read_holdings
 from .llm_dispatch import QUERY_TYPES, dispatch_query
 
 _API_PROMPT = (
@@ -69,9 +70,17 @@ class FinanceQueryTool(llm.Tool):
     ) -> dict[str, Any]:
         market = self._store.get("market")
         disclosure = self._store.get("disclosure")
+        data = market.data if market is not None else None
+        if data and data.get("positions") and tool_input.tool_args.get("query_type") in ("portfolio", "market_summary"):
+            user_id = llm_context.context.user_id if llm_context.context else None
+            user = await hass.auth.async_get_user(user_id) if user_id else None
+            if not can_read_holdings(hass, user):
+                if tool_input.tool_args["query_type"] == "portfolio":
+                    return {"error": "permission_denied"}
+                data = {**data, "positions": []}
         return dispatch_query(
             tool_input.tool_args,
-            market.data if market is not None else None,
+            data,
             disclosure.data if disclosure is not None else None,
         )
 

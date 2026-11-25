@@ -41,6 +41,7 @@ from .api.opendart import (
     resolve_kr_ticker_names,
     validate_api_key,
 )
+from .credentials import seal, unseal
 from .const import (
     CONF_DISCLOSURE_CATEGORIES,
     CONF_DISCLOSURE_CORP_CODES,
@@ -353,7 +354,7 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_OTHER_TICKERS: other,
                         CONF_US_TICKER_LABELS: us_labels,
                         CONF_OTHER_TICKER_LABELS: other_labels,
-                        CONF_OPENDART_API_KEY: api_key,
+                        CONF_OPENDART_API_KEY: await seal(self.hass, api_key),
                         CONF_DISCLOSURE_CORP_CODES: corp_codes,
                         CONF_DISCLOSURE_CORP_NAMES: corp_names,
                         CONF_KR_TICKER_NAMES: ticker_names,
@@ -436,7 +437,7 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
                         CONF_OTHER_TICKERS: other,
                         CONF_US_TICKER_LABELS: us_labels,
                         CONF_OTHER_TICKER_LABELS: other_labels,
-                        CONF_OPENDART_API_KEY: api_key,
+                        CONF_OPENDART_API_KEY: await seal(self.hass, api_key),
                         CONF_DISCLOSURE_CORP_CODES: corp_codes,
                         CONF_DISCLOSURE_CORP_NAMES: corp_names,
                         CONF_KR_TICKER_NAMES: ticker_names,
@@ -459,7 +460,7 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
         # way to populate input boxes — schema defaults don't show up in
         # the UI by themselves.
         suggested = user_input if user_input is not None else {
-            CONF_OPENDART_API_KEY: self._current(CONF_OPENDART_API_KEY, ""),
+            CONF_OPENDART_API_KEY: await unseal(self.hass, self._current(CONF_OPENDART_API_KEY, "")),
             CONF_KR_TICKERS: _list_to_csv(self._current(CONF_KR_TICKERS, [])),
             CONF_US_TICKERS: _serialize_tickers_with_labels(
                 self._current(CONF_US_TICKERS, []),

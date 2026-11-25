@@ -74,7 +74,7 @@ def test_compute_totals_combined_with_fx():
     assert totals["krw_pl"] == 240000.0
 
 
-def test_compute_totals_skips_positions_with_no_quote():
+def test_incomplete_market_has_no_total():
     totals = compute_totals(
         _data(
             [
@@ -84,8 +84,9 @@ def test_compute_totals_skips_positions_with_no_quote():
             kr_quotes={"005930": {"price": 70000.0}},
         )
     )
-    assert totals["kr_value"] == 70000.0
-    assert totals["kr_pl"] == 10000.0
+    assert totals["kr_value"] is None
+    assert totals["kr_pl"] is None
+    assert totals["krw_total"] is None
 
 
 def test_compute_totals_returns_none_when_no_quotes_match():

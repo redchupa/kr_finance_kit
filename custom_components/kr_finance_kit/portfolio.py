@@ -35,7 +35,7 @@ def _accum(positions: list[dict[str, Any]], quotes: dict[str, dict[str, Any]]) -
         quote = quotes.get(ticker, {}) or {}
         price = quote.get("price")
         if price is None:
-            continue
+            return 0.0, 0.0, False
         seen = True
         value += float(price) * qty
         cost += avg * qty
@@ -72,10 +72,10 @@ def compute_totals(
 
     # KRW total only makes sense when we have at least one market and
     # (for US) the FX rate to convert with.
-    if kr_seen and not us_seen:
+    if kr_seen and not us_pos:
         out["krw_total"] = out["kr_value"]
         out["krw_pl"] = out["kr_pl"]
-    elif us_seen and not kr_seen and usdkrw:
+    elif us_seen and not kr_pos and usdkrw:
         out["krw_total"] = round(us_value * usdkrw, 2)
         out["krw_pl"] = round((us_value - us_cost) * usdkrw, 2)
     elif kr_seen and us_seen and usdkrw:

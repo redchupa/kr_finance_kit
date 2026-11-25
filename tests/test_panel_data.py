@@ -302,14 +302,12 @@ def test_build_snapshot_shape():
 def test_build_snapshot_portfolio():
     snap = pd.build_snapshot(_data(), _cfg())
     pf = snap["portfolio"]
-    # KR: 10*70000=700000 (cost 600000); US: 5*200=1000 USD → 1.4M KRW (cost 700k)
-    assert pf["krw_total"] == 700000 + 1_400_000
-    assert pf["krw_pl"] == 100000 + 700_000
-    assert pf["krw_pl_pct"] == pytest.approx(800000 / 1_300_000 * 100, abs=0.01)
+    assert pf["krw_total"] is None and pf["krw_pl"] is None
+    assert pf["krw_pl_pct"] is None
     rows = {r["ticker"]: r for r in pf["positions"]}
     assert rows["005930"]["pl_pct"] == pytest.approx(16.67, abs=0.01)
-    assert rows["AAPL"]["weight_pct"] == pytest.approx(66.67, abs=0.01)
-    assert rows["000660"]["value"] is None and rows["000660"]["weight_pct"] is None
+    assert rows["000660"]["value"] is None
+    assert all(r.get("weight_pct") is None for r in rows.values())
     assert snap["disclosure_enabled"] is False
 
 

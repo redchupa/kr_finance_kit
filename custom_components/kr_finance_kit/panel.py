@@ -26,6 +26,8 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.storage import Store
 
 from . import panel_data as pd
+from .access import can_read_holdings
+from .credentials import unseal
 from .api import yfinance_wrap
 from .api.yfinance_wrap import FX_TICKERS, INDEX_TICKERS, normalize_kr_ticker
 from .const import (
@@ -219,8 +221,11 @@ async def ws_snapshot(hass: HomeAssistant, connection, msg: dict[str, Any]) -> N
     cfg = pd.merged_config(entry.data, entry.options)
     market = store["market"]
     disclosure = store.get("disclosure")
+    data = market.data
+    if data and data.get("positions") and not can_read_holdings(hass, connection.user):
+        data = {**data, "positions": []}
     snap = pd.build_snapshot(
-        market.data,
+        data,
         cfg,
         disclosures=(disclosure.data or []) if disclosure is not None else None,
         entity_ids=_entity_ids(hass, cfg),
@@ -321,7 +326,7 @@ async def ws_catalog(hass: HomeAssistant, connection, msg: dict[str, Any]) -> No
     if market == MARKET_KR:
         entry, _store = _active(hass)
         cfg = pd.merged_config(entry.data, entry.options) if entry else {}
-        api_key = (cfg.get(CONF_OPENDART_API_KEY) or "").strip()
+        api_key = await unseal(hass, cfg.get(CONF_OPENDART_API_KEY))
         if api_key:
             async with _state(hass)["lock"]:
                 extra_kr_map = await _get_corp_map_cached(hass, api_key)
@@ -357,7 +362,7 @@ async def ws_search(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
     results: list[dict[str, Any]] = []
     entry, _store = _active(hass)
     cfg = pd.merged_config(entry.data, entry.options) if entry else {}
-    api_key = (cfg.get(CONF_OPENDART_API_KEY) or "").strip()
+    api_key = await unseal(hass, cfg.get(CONF_OPENDART_API_KEY))
     # Same lock as chart requests: any logged-in user can call this, so
     # outbound traffic is serialized rather than fanned out.
     async with st["lock"]:
@@ -397,6 +402,18 @@ async def ws_search(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
     connection.send_result(msg["id"], {"results": results})
 
 
+def _commit_watchlist(hass, entry, original, original_options, proposed, *, removing):
+    current = pd.merged_config(entry.data, entry.options)
+    changes = {k: v for k, v in proposed.items() if original_options.get(k) != v}
+    guarded = set(changes) | {CONF_OPENDART_API_KEY}
+    if removing:
+        guarded.add(CONF_POSITIONS)
+    if any(current.get(k) != original.get(k) for k in guarded):
+        return False
+    hass.config_entries.async_update_entry(entry, options={**entry.options, **changes})
+    return True
+
+
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "kr_finance_kit/watchlist/add",
@@ -410,12 +427,18 @@ async def ws_search(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
 @websocket_api.require_admin
 @websocket_api.async_response
 async def ws_watchlist_add(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    async with _state(hass).setdefault("watchlist_lock", asyncio.Lock()):
+        await _watchlist_add(hass, connection, msg)
+
+
+async def _watchlist_add(hass, connection, msg) -> None:
     entry, _store = _active(hass)
     if entry is None:
         connection.send_error(msg["id"], "not_configured", "Integration is not loaded")
         return
     try:
         market, ticker = pd.normalize_watch_input(msg["market"], msg["ticker"], msg.get("quote"))
+        original_options = dict(entry.options)
         cfg = pd.merged_config(entry.data, entry.options)
         if market == MARKET_KR:
             wanted = normalize_kr_ticker(ticker)
@@ -441,7 +464,7 @@ async def ws_watchlist_add(hass: HomeAssistant, connection, msg: dict[str, Any])
 
     try:
         if market == MARKET_KR:
-            api_key = (cfg.get(CONF_OPENDART_API_KEY) or "").strip()
+            api_key = await unseal(hass, cfg.get(CONF_OPENDART_API_KEY))
             if api_key:
                 kr_all = list(new_options.get(CONF_KR_TICKERS, []))
                 corp_codes, names, corp_names = await _enrich_kr_metadata(hass, api_key, kr_all)
@@ -461,7 +484,9 @@ async def ws_watchlist_add(hass: HomeAssistant, connection, msg: dict[str, Any])
     except Exception as err:  # noqa: BLE001 — labels are cosmetic
         LOGGER.debug("Watchlist label enrichment failed for %s: %s", ticker, err)
 
-    hass.config_entries.async_update_entry(entry, options=new_options)
+    if not _commit_watchlist(hass, entry, cfg, original_options, new_options, removing=False):
+        connection.send_error(msg["id"], "config_changed", "Configuration changed. Please retry.")
+        return
     connection.send_result(msg["id"], {"market": market, "ticker": ticker})
 
 
@@ -476,10 +501,16 @@ async def ws_watchlist_add(hass: HomeAssistant, connection, msg: dict[str, Any])
 @websocket_api.require_admin
 @websocket_api.async_response
 async def ws_watchlist_remove(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    async with _state(hass).setdefault("watchlist_lock", asyncio.Lock()):
+        await _watchlist_remove(hass, connection, msg)
+
+
+async def _watchlist_remove(hass, connection, msg) -> None:
     entry, _store = _active(hass)
     if entry is None:
         connection.send_error(msg["id"], "not_configured", "Integration is not loaded")
         return
+    original_options = dict(entry.options)
     cfg = pd.merged_config(entry.data, entry.options)
     market, ticker = msg["market"], msg["ticker"]
     # Positions price off the watchlist quote — removing the ticker would
@@ -502,7 +533,7 @@ async def ws_watchlist_remove(hass: HomeAssistant, connection, msg: dict[str, An
             if not (p.get("ticker") == ticker and p.get("market") == market)
         ]
     if market == MARKET_KR:
-        api_key = (cfg.get(CONF_OPENDART_API_KEY) or "").strip()
+        api_key = await unseal(hass, cfg.get(CONF_OPENDART_API_KEY))
         if api_key:
             from .config_flow import _enrich_kr_metadata
 
@@ -514,7 +545,9 @@ async def ws_watchlist_remove(hass: HomeAssistant, connection, msg: dict[str, An
                 new_options[CONF_DISCLOSURE_CORP_NAMES] = corp_names
             except Exception as err:  # noqa: BLE001 — keep the removal itself
                 LOGGER.debug("Disclosure code refresh after removing %s failed: %s", ticker, err)
-    hass.config_entries.async_update_entry(entry, options=new_options)
+    if not _commit_watchlist(hass, entry, cfg, original_options, new_options, removing=True):
+        connection.send_error(msg["id"], "config_changed", "Configuration changed. Please retry.")
+        return
     connection.send_result(msg["id"], {"market": market, "ticker": ticker})
 
 

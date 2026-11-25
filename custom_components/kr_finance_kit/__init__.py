@@ -169,8 +169,11 @@ async def async_setup_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> bool
     # detailed attrs are on). Deferring it keeps HA start fast.
     market = MarketCoordinator(hass, entry)
 
+    from .credentials import migrate_key, unseal
+
+    await migrate_key(hass, entry)
     cfg = _config(entry)
-    opendart_key = (cfg.get(CONF_OPENDART_API_KEY) or "").strip()
+    opendart_key = await unseal(hass, cfg.get(CONF_OPENDART_API_KEY))
     corp_codes = list(cfg.get(CONF_DISCLOSURE_CORP_CODES, []) or [])
     categories = list(cfg.get(CONF_DISCLOSURE_CATEGORIES, []) or [])
     disclosure: DisclosureCoordinator | None = None

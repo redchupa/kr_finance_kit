@@ -19,6 +19,6 @@ Inputs:
 
 ## 3. Security note
 
-The OpenDart key is kept in Home Assistant's encrypted storage — it never appears in source files, fixtures, or logs.
+Finance Kit encrypts the OpenDart key before saving the config entry. The decryption key lives in private storage on the same HA instance. Restrict access to the configuration directory and backups.
 
 Holdings (quantity / average price) are added later in M2 via the `kr_finance_kit.add_position` service.

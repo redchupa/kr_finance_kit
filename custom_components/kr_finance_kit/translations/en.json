@@ -110,7 +110,7 @@
   "services": {
     "add_position": {
       "name": "Add / update holding",
-      "description": "Add or update a holding (quantity + average purchase price). Stored in encrypted ConfigEntry options — never persisted to source files. ⚠ KR / US stocks only — crypto, FX, futures (BTC-USD, EUR=X, GC=F …) expose price sensors but are not tracked as positions; select from the Market radio (KR or US).",
+      "description": "Add or update a holding (quantity + average purchase price). Stored in Home Assistant ConfigEntry options — never persisted to source files. ⚠ KR / US stocks only — crypto, FX, futures (BTC-USD, EUR=X, GC=F …) expose price sensors but are not tracked as positions; select from the Market radio (KR or US).",
       "fields": {
         "ticker": {
           "name": "Ticker / symbol",

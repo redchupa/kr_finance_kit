@@ -13,6 +13,7 @@ from typing import Any
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers.service import async_register_admin_service
 
 from .const import (
     CONF_POSITIONS,
@@ -241,11 +242,11 @@ def async_register_services(hass: HomeAssistant) -> None:
         _save_positions(hass, entry, cur)
 
     hass.services.async_register(DOMAIN, SERVICE_REFRESH_NOW, _refresh_now)
-    hass.services.async_register(
-        DOMAIN, SERVICE_ADD_POSITION, _add_position, schema=_POSITION_SCHEMA
+    async_register_admin_service(
+        hass, DOMAIN, SERVICE_ADD_POSITION, _add_position, schema=_POSITION_SCHEMA
     )
-    hass.services.async_register(
-        DOMAIN, SERVICE_REMOVE_POSITION, _remove_position, schema=_REMOVE_SCHEMA
+    async_register_admin_service(
+        hass, DOMAIN, SERVICE_REMOVE_POSITION, _remove_position, schema=_REMOVE_SCHEMA
     )
 
 

@@ -425,3 +425,96 @@ def test_krw_attr_skips_non_usd_assets():
     assert sensor._krw_attr(coord, "OTHER", 100.0, "BTC-USD") == {"price_krw": 140000.0}
     assert sensor._krw_attr(coord, "OTHER", 79_000_000.0, "BTC-KRW") == {}
     assert sensor._krw_attr(coord, "US", 200.0, "AAPL") == {"price_krw": 280000.0}
+
+@sync
+async def test_concurrent_watchlist_add_keeps_new_holding(monkeypatch):
+    entry = _entry()
+    hass = _hass(entry, {})
+    holding = {"ticker": "SAMPLE", "quantity": 1}
+    async def probe(tickers, market):
+        entry.options = {"positions": [holding]}
+        return {tickers[0]: {"price": 10}}
+    monkeypatch.setattr(panel.yfinance_wrap, "fetch_quotes", probe)
+    conn = FakeConn()
+    async def add(ticker):
+        await raw(panel.ws_watchlist_add)(hass, conn, {
+            "id": 1, "market": "US", "ticker": ticker, "label": ticker, "force": True,
+        })
+    await raw(panel.ws_watchlist_add)(hass, conn, {
+        "id": 1, "market": "US", "ticker": "SAMPLE", "label": "Sample", "force": False,
+    })
+    await asyncio.gather(add("EXAMPLE"), add("DEMO"))
+    assert not conn.errors
+    assert entry.options["positions"] == [holding]
+    assert set(entry.options[CONF_US_TICKERS]) == {"SAMPLE", "EXAMPLE", "DEMO"}
+
+
+@sync
+async def test_snapshot_uses_actual_portfolio_sensor_permission(monkeypatch):
+    from custom_components.kr_finance_kit import access
+    conn = FakeConn(admin=False)
+    allowed = set()
+    conn.user.permissions = SimpleNamespace(check_entity=lambda eid, policy: eid in allowed)
+    eid = "sensor.custom_profit_loss"
+    reg = SimpleNamespace(async_get_entity_id=lambda *args: eid)
+    monkeypatch.setattr(access.er, "async_get", lambda hass: reg)
+    data = {"positions": [{"market": "US", "ticker": "SAMPLE", "quantity": 1, "avg_price": 10}]}
+    hass = _hass(_entry(), data)
+    await raw(panel.ws_snapshot)(hass, conn, {"id": 1})
+    assert conn.results[-1]["portfolio"]["positions"] == []
+    allowed.add(eid)
+    await raw(panel.ws_snapshot)(hass, conn, {"id": 2})
+    assert len(conn.results[-1]["portfolio"]["positions"]) == 1
+
+
+@sync
+async def test_credential_migration_roundtrip(monkeypatch):
+    from custom_components.kr_finance_kit import credentials
+    persisted = {}
+    class FakeStore:
+        def __init__(self, *args, **kwargs):
+            assert kwargs["private"] and kwargs["atomic_writes"]
+        async def async_load(self):
+            return persisted or None
+        async def async_save(self, data):
+            persisted.update(data)
+    monkeypatch.setattr(credentials, "Store", FakeStore)
+    entry = _entry({"opendart_api_key": "example-fixture"}, {"opendart_api_key": ""})
+    hass = _hass(entry)
+    hass.config_entries.async_update_entry = lambda obj, data: setattr(obj, "data", data)
+    await credentials.migrate_key(hass, entry)
+    token = entry.data["opendart_api_key"]
+    assert "example-fixture" not in token
+    hass.data.clear()
+    assert await credentials.unseal(hass, token) == "example-fixture"
+    assert entry.options["opendart_api_key"] == ""
+
+@sync
+async def test_holding_services_reject_non_admin():
+    from unittest.mock import AsyncMock
+    from homeassistant.core import Context
+    from custom_components.kr_finance_kit import services
+
+    handlers = {}
+    def register(domain, name, handler, *args, **kwargs):
+        handlers[name] = handler
+    hass = SimpleNamespace(
+        services=SimpleNamespace(has_service=lambda *args: False, async_register=register),
+        auth=SimpleNamespace(async_get_user=AsyncMock(return_value=SimpleNamespace(is_admin=False))),
+    )
+    services.async_register_services(hass)
+    for name in ("add_position", "remove_position"):
+        with pytest.raises(Unauthorized):
+            await handlers[name](SimpleNamespace(context=Context(user_id="viewer")))
+
+
+@sync
+async def test_anonymous_llm_context_omits_portfolio():
+    from custom_components.kr_finance_kit.llm_tool import FinanceQueryTool
+    hass = _hass(_entry(), {"positions": [{"market": "US", "ticker": "SAMPLE", "quantity": 1}]})
+    tool = FinanceQueryTool(hass, "e1")
+    ctx = SimpleNamespace(context=None)
+    result = await tool.async_call(hass, SimpleNamespace(tool_args={"query_type": "portfolio"}), ctx)
+    assert result == {"error": "permission_denied"}
+    summary = await tool.async_call(hass, SimpleNamespace(tool_args={"query_type": "market_summary"}), ctx)
+    assert all(value is None for value in summary["portfolio_totals"].values())

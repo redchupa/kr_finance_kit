@@ -6,7 +6,7 @@ add_position:
   name: Add / update holding
   description: >
     Add or update a holding (quantity + average purchase price). Stored
-    in encrypted ConfigEntry options — never persisted to source files.
+    in Home Assistant ConfigEntry options — never persisted to source files.
     Supports Korean (KR) and US stocks only. Crypto, FX, and futures
     (BTC-USD, EUR=X, GC=F, …) expose price sensors but are not tracked
     as positions — pick from the "market" radio (KR or US).
