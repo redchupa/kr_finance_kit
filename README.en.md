@@ -14,9 +14,9 @@ No dashboard YAML to write, and no brokerage account login required.
 
 ### External data refresh
 
-During market hours, quotes refresh every five minutes. Outside market hours and for filings, the interval is fifteen minutes. Per-symbol lookup time adds to these intervals. Brief price crossings or one-minute movements may be missed.
+During market hours, quotes refresh every three minutes. Outside market hours the interval is ten minutes. Filings refresh every fifteen minutes. Per-symbol lookup time adds to these intervals. Brief price crossings or one-minute movements may be missed.
 
-Each HA instance allows one lookup at a time per provider, with an 8–12 second gap after completion. Clients share cached quotes for five minutes and detailed metadata for six hours. Uncached Yahoo chart and search operations share a budget of 60 per hour. Refreshing the panel reads HA's snapshot.
+Each HA instance allows one lookup at a time per provider, with a 6–9 second gap for Yahoo and an 8–12 second gap for OpenDart after completion. Clients share cached quotes for three minutes and detailed metadata for six hours. Uncached Yahoo chart and search operations share a budget of 60 per hour. Refreshing the panel reads HA's snapshot.
 
 A provider limit pauses lookups for at least fifteen minutes or longer when requested by Retry-After. OpenDart quota status 020 pauses requests for 24 hours. Cooldowns and caches are held in memory for the lifetime of the HA process.
 

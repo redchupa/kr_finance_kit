@@ -100,5 +100,5 @@ _gates = WeakKeyDictionary()
 def gate(provider):
     gates = _gates.setdefault(asyncio.get_running_loop(), {})
     if provider not in gates:
-        gates[provider] = RequestGate()
+        gates[provider] = RequestGate(gap=6) if provider == "yahoo" else RequestGate()
     return gates[provider]

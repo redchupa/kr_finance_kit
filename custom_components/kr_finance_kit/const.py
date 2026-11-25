@@ -64,8 +64,8 @@ DEFAULT_SHORT_WINDOW_MINUTES = (1, 5, 15, 30, 60, 90, 120, 180)
 # users who want the data turn it on in Options.
 CONF_INCLUDE_DETAILED_ATTRS = "include_detailed_attrs"
 
-SCAN_INTERVAL_MARKET = 300       # seconds — at least one market open
-SCAN_INTERVAL_MARKET_IDLE = 900  # seconds — both markets closed (overnight, weekends)
+SCAN_INTERVAL_MARKET = 180       # seconds — at least one market open
+SCAN_INTERVAL_MARKET_IDLE = 600  # seconds — both markets closed (overnight, weekends)
 SCAN_INTERVAL_DISCLOSURE = 900   # seconds — OpenDart polling
 
 INDEX_KOSPI = "KOSPI"

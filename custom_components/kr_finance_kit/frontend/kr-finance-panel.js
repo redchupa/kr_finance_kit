@@ -10,7 +10,7 @@
  * open sheet (with inputs the user is typing into) is never clobbered.
  */
 
-const PANEL_VERSION = "0.2.17";
+const PANEL_VERSION = "0.2.18";
 const LS_KEY = "kr_finance_kit.prefs";
 
 const I18N = {
@@ -18,8 +18,8 @@ const I18N = {
     title: "Finance Kit",
     loading: "데이터를 불러오는 중…",
     initial_failed: "첫 조회를 완료하지 못했습니다. 자동으로 다시 시도합니다.",
-    partial: "약 10초 간격으로 다음 종목을 조회합니다. 도착한 시세부터 표시합니다.",
-    warming: "종목을 약 10초 간격으로 하나씩 조회합니다. 서버 응답에 따라 더 걸릴 수 있습니다.",
+    partial: "응답을 받은 뒤 6~9초 쉬고 다음 종목을 조회합니다. 도착한 시세부터 표시합니다.",
+    warming: "종목을 하나씩 조회하며 응답 사이에 6~9초 쉽니다. 서버 응답에 따라 더 걸릴 수 있습니다.",
     next_check: "{n}초 후 화면을 자동으로 확인합니다.",
     not_configured: "Finance Kit 통합이 아직 설정되지 않았습니다. 설정 → 기기 및 서비스에서 추가해 주세요.",
     refresh: "새로고침",
@@ -67,7 +67,7 @@ const I18N = {
     wait_notice: "{provider} 조회를 잠시 쉬고 있습니다. 약 {n}분 후 다시 조회할 수 있습니다. 그동안 마지막 수신 데이터를 표시합니다.",
     search_limit: "외부 검색이 잠시 제한되어 저장된 종목만 검색합니다. 종목 코드는 직접 입력할 수 있습니다.",
     chart_limit: "요청 제한으로 차트를 아직 불러오지 못했습니다. 잠시 후 새로고침해 주세요.",
-    refresh_note: "시세는 장중 5분, 장외 15분마다, 공시는 15분마다 조회합니다. 검색과 차트의 새 조회는 합계 시간당 60회까지입니다. 화면을 새로고침해도 이 제한은 유지됩니다.",
+    refresh_note: "시세는 장중 3분, 장외 10분마다, 공시는 15분마다 조회합니다. 검색과 차트의 새 조회는 합계 시간당 60회까지입니다. 화면을 새로고침해도 이 제한은 유지됩니다.",
     refresh_requested: "갱신을 요청했습니다. 조회 간격에 따라 마지막 시세가 표시될 수 있습니다.",
     searching: "검색 중…",
     no_results: "검색 결과가 없어요. 코드를 직접 입력해도 됩니다.",
@@ -135,8 +135,8 @@ const I18N = {
     title: "Finance Kit",
     loading: "Loading…",
     initial_failed: "The first refresh could not finish. Finance Kit will retry automatically.",
-    partial: "Checking the next symbol at roughly 10-second intervals. Showing quotes as they arrive.",
-    warming: "Looking up one symbol about every 10 seconds. Slow responses can extend the wait.",
+    partial: "After each response, the next lookup starts in 6–9 seconds. Showing quotes as they arrive.",
+    warming: "Looking up one symbol at a time, pausing 6–9 seconds after each response. Slow responses can extend the wait.",
     next_check: "Checking for new data in {n}s.",
     not_configured: "Finance Kit isn't set up yet. Add it under Settings → Devices & services.",
     refresh: "Refresh",
@@ -183,7 +183,7 @@ const I18N = {
     wait_notice: "{provider} lookups are paused. They can resume in about {n} min. Showing the last available data.",
     search_limit: "External search is temporarily limited. Only local matches are shown. You can still enter a symbol directly.",
     chart_limit: "Chart lookup temporarily limited. Try refreshing later.",
-    refresh_note: "Prices update every 5 minutes during active hours and every 15 minutes when idle. Disclosures update every 15 minutes. Search and charts share 60 new lookups per hour. Refreshing the screen keeps these limits in place.",
+    refresh_note: "Prices update every 3 minutes during active hours and every 10 minutes when idle. Disclosures update every 15 minutes. Search and charts share 60 new lookups per hour. Refreshing the screen keeps these limits in place.",
     refresh_requested: "Refresh requested. Prices may stay the same until the next allowed lookup.",
     searching: "Searching…",
     no_results: "No matches. You can still type the code directly.",

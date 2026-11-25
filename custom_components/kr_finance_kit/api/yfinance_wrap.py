@@ -253,7 +253,7 @@ async def _gather(symbols: list[str]) -> dict[str, dict[str, Any]]:
         return {}
     out: dict[str, dict[str, Any]] = {}
     for sym in dict.fromkeys(symbols):
-        quote = await _cached("price", 300, _fetch_single, sym)
+        quote = await _cached("price", 180, _fetch_single, sym)
         if not quote:
             quote = await _cached("fallback", 900, _fallback_quote, sym)
         out[sym] = quote
