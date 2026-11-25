@@ -11,15 +11,6 @@ No dashboard YAML to write, and no brokerage account login required.
 
 ---
 
-
-### External data refresh
-
-During market hours, quotes refresh every three minutes. Outside market hours the interval is ten minutes. Filings refresh every fifteen minutes. Per-symbol lookup time adds to these intervals. Brief price crossings or one-minute movements may be missed.
-
-Each HA instance allows one lookup at a time per provider, with a 6–9 second gap for Yahoo and an 8–12 second gap for OpenDart after completion. Clients share cached quotes for three minutes and detailed metadata for six hours. Uncached Yahoo chart and search operations share a budget of 60 per hour. Refreshing the panel reads HA's snapshot.
-
-A provider limit pauses lookups for at least fifteen minutes or longer when requested by Retry-After. OpenDart quota status 020 pauses requests for 24 hours. Cooldowns and caches are held in memory for the lifetime of the HA process.
-
 ## What makes it useful
 
 - **Ready-to-use sidebar screen** — Installing Finance Kit adds a dedicated entry to your Home Assistant sidebar with indices, watchlist, crypto, holdings, and filings on one page. No custom dashboard required.
@@ -78,6 +69,12 @@ Once installed, open **Finance Kit** from the Home Assistant sidebar.
 - **Customize**: Tap the settings icon to switch themes, layouts, gain colors, section order, and language (English / Korean).
 
 > Only Home Assistant administrators can add or remove symbols and edit holdings; other household members get a safe read-only view.
+
+### Quote and filing refresh
+
+- **Automatic schedule**: Quotes refresh every **3 minutes** during market hours and every **10 minutes** when markets are closed; disclosures refresh every **15 minutes**.
+- **One symbol at a time**: To stay respectful of free public data providers, symbols are fetched sequentially. On first startup or with a large watchlist, loading every quote can take a couple of minutes — quotes appear on screen as soon as they arrive.
+- **Automatic cooldown**: If a data provider temporarily rate-limits requests, Finance Kit pauses for at least 15 minutes and keeps showing the last received prices until lookups resume automatically.
 
 ---
 

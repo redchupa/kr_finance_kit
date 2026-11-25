@@ -10,17 +10,17 @@
  * open sheet (with inputs the user is typing into) is never clobbered.
  */
 
-const PANEL_VERSION = "0.2.19";
+const PANEL_VERSION = "0.2.20";
 const LS_KEY = "kr_finance_kit.prefs";
 
 const I18N = {
   ko: {
     title: "Finance Kit",
     loading: "데이터를 불러오는 중…",
-    initial_failed: "첫 조회를 완료하지 못했습니다. 자동으로 다시 시도합니다.",
-    partial: "응답을 받은 뒤 6~9초 쉬고 다음 종목을 조회합니다. 도착한 시세부터 표시합니다.",
-    warming: "종목을 하나씩 조회하며 응답 사이에 6~9초 쉽니다. 서버 응답에 따라 더 걸릴 수 있습니다.",
-    next_check: "{n}초 후 화면을 자동으로 확인합니다.",
+    initial_failed: "첫 시세를 아직 불러오지 못했습니다. 잠시 후 자동으로 다시 시도합니다.",
+    partial: "나머지 종목 시세를 순서대로 불러오는 중입니다. 불러온 종목부터 화면에 표시됩니다.",
+    warming: "첫 시세를 차례대로 불러오는 중입니다. 종목 수에 따라 1~2분 이상 걸릴 수 있으며, 불러온 종목부터 화면에 표시됩니다.",
+    next_check: "{n}초 후 자동으로 새로 확인합니다.",
     not_configured: "Finance Kit 통합이 아직 설정되지 않았습니다. 설정 → 기기 및 서비스에서 추가해 주세요.",
     refresh: "새로고침",
     settings: "설정",
@@ -67,8 +67,8 @@ const I18N = {
     wait_notice: "{provider} 조회를 잠시 쉬고 있습니다. 약 {n}분 후 다시 조회할 수 있습니다. 그동안 마지막 수신 데이터를 표시합니다.",
     search_limit: "외부 검색이 잠시 제한되어 저장된 종목만 검색합니다. 종목 코드는 직접 입력할 수 있습니다.",
     chart_limit: "요청 제한으로 차트를 아직 불러오지 못했습니다. 잠시 후 새로고침해 주세요.",
-    quote_schedule: "시세 갱신 · 장중 3분 / 장외 10분",
-    refresh_note: "시세는 장중 3분, 장외 10분마다, 공시는 15분마다 조회합니다. 검색과 차트의 새 조회는 합계 시간당 60회까지입니다. 화면을 새로고침해도 이 제한은 유지됩니다.",
+    quote_schedule: "시세 자동 갱신 · 장중 3분 / 장외 10분",
+    refresh_note: "시세는 장중 3분, 장외 10분, 공시는 15분 간격으로 자동 갱신됩니다. 검색과 차트 조회는 시간당 60회까지 제한됩니다.",
     refresh_requested: "갱신을 요청했습니다. 조회 간격에 따라 마지막 시세가 표시될 수 있습니다.",
     searching: "검색 중…",
     no_results: "검색 결과가 없어요. 코드를 직접 입력해도 됩니다.",
@@ -135,10 +135,10 @@ const I18N = {
   en: {
     title: "Finance Kit",
     loading: "Loading…",
-    initial_failed: "The first refresh could not finish. Finance Kit will retry automatically.",
-    partial: "After each response, the next lookup starts in 6–9 seconds. Showing quotes as they arrive.",
-    warming: "Looking up one symbol at a time, pausing 6–9 seconds after each response. Slow responses can extend the wait.",
-    next_check: "Checking for new data in {n}s.",
+    initial_failed: "Could not load the first quotes yet. Retrying automatically.",
+    partial: "Loading remaining quotes in order. Symbols appear as soon as their prices arrive.",
+    warming: "Loading quotes one by one. Depending on how many symbols you have, this may take a couple of minutes — quotes appear as they arrive.",
+    next_check: "Checking again in {n}s.",
     not_configured: "Finance Kit isn't set up yet. Add it under Settings → Devices & services.",
     refresh: "Refresh",
     settings: "Settings",
@@ -184,8 +184,8 @@ const I18N = {
     wait_notice: "{provider} lookups are paused. They can resume in about {n} min. Showing the last available data.",
     search_limit: "External search is temporarily limited. Only local matches are shown. You can still enter a symbol directly.",
     chart_limit: "Chart lookup temporarily limited. Try refreshing later.",
-    quote_schedule: "Quote refresh · Market open: 3 min / Closed: 10 min",
-    refresh_note: "Prices update every 3 minutes during active hours and every 10 minutes when idle. Disclosures update every 15 minutes. Search and charts share 60 new lookups per hour. Refreshing the screen keeps these limits in place.",
+    quote_schedule: "Auto-refresh · Market open: 3 min / Closed: 10 min",
+    refresh_note: "Quotes update every 3 minutes during market hours and every 10 minutes when closed (filings every 15 minutes). Search and chart lookups share a limit of 60 per hour.",
     refresh_requested: "Refresh requested. Prices may stay the same until the next allowed lookup.",
     searching: "Searching…",
     no_results: "No matches. You can still type the code directly.",
@@ -505,7 +505,7 @@ class KRFinancePanel extends HTMLElement {
       <div class="root" id="root">
         <header id="header"></header>
         <nav class="tabs top" id="tabsTop"></nav>
-        <div class="scroller" id="scroller"><div id="quoteSchedule" class="muted small pad"></div><div id="providerWait" role="status"></div><main id="content"></main><div class="bottom-pad"></div></div>
+        <div class="scroller" id="scroller"><div class="top-meta"><div id="quoteSchedule" class="muted small"></div><div id="providerWait" role="status"></div></div><main id="content"></main><div class="bottom-pad"></div></div>
         <nav class="tabs bottom" id="tabsBottom"></nav>
         <div id="sheet"></div>
         <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -1852,6 +1852,8 @@ header { display:flex; align-items:center; gap:8px; padding:10px 16px; padding-t
 .tab.on { background:var(--accent); color:var(--on-accent); border-color:transparent; }
 .scroller { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
 main { max-width:1200px; margin:0 auto; padding:8px 16px 24px; }
+.top-meta { max-width:1200px; margin:0 auto; padding:8px 16px 0; }
+.root.narrow .top-meta { padding:6px 12px 0; }
 .bottom-pad { height:24px; }
 .add-btn { height:40px; padding:0 14px 0 10px; border-radius:20px; border:none; background:var(--accent); color:var(--on-accent); font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:4px; box-shadow:0 2px 8px rgba(0,0,0,.15); }
 .add-btn .plus { font-size:20px; line-height:1; }

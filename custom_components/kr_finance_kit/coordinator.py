@@ -26,7 +26,6 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import opendart, yfinance_wrap
 from .const import (
-    CONF_DISCLOSURE_CATEGORIES,
     CONF_INCLUDE_DETAILED_ATTRS,
     CONF_INCLUDE_FX,
     CONF_INCLUDE_GLOBAL_INDICES,

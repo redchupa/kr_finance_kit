@@ -36,7 +36,6 @@ from .pacing import Backoff, gate, retry_delay
 
 from ..const import (
     FX_USDKRW,
-    GLOBAL_INDICES,
     INDEX_DAX,
     INDEX_DOW,
     INDEX_FTSE,
@@ -46,10 +45,8 @@ from ..const import (
     INDEX_NASDAQ,
     INDEX_NIKKEI,
     INDEX_SP500,
-    KR_INDICES,
     LOGGER,
     MARKET_KR,
-    US_INDICES,
 )
 
 

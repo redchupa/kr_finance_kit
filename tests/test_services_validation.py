@@ -11,7 +11,6 @@ are voluptuous, so they run synchronously.
 """
 from __future__ import annotations
 
-import math
 import sys
 from pathlib import Path
 
