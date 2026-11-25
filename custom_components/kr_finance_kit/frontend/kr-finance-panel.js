@@ -10,7 +10,7 @@
  * open sheet (with inputs the user is typing into) is never clobbered.
  */
 
-const PANEL_VERSION = "0.2.8";
+const PANEL_VERSION = "0.2.9";
 const LS_KEY = "kr_finance_kit.prefs";
 
 const I18N = {
@@ -88,9 +88,10 @@ const I18N = {
     alert_hit_low: "손절가 도달",
     alert_hint: "도달 시 HA 가격 알림 센서(binary_sensor)가 ON 되고 kr_finance_kit_price_alert 이벤트가 발생합니다.",
     err_alert_bounds: "손절가는 목표가보다 낮아야 해요.",
-    save: "저장", delete: "삭제", cancel: "취소", close: "닫기",
-    position_saved: "보유 정보 저장됨 — 잠시 후 반영됩니다",
-    position_deleted: "보유 정보 삭제됨",
+    err_qty_avg: "수량과 평단가는 0보다 큰 숫자를 입력해 주세요.",
+    save: "저장", saving: "저장 중…", saved: "✓ 저장 완료", delete: "삭제", deleting: "삭제 중…", cancel: "취소", close: "닫기",
+    position_saved: "저장 완료! 보유 정보가 반영되었습니다.",
+    position_deleted: "삭제 완료! 보유 목록에서 제거되었습니다.",
     position_unsupported: "보유 입력은 국내·미국 주식만 지원합니다.",
     unit_krw: "원 (KRW)", unit_usd: "달러 (USD)",
     open_history: "HA 기록 보기",
@@ -192,9 +193,10 @@ const I18N = {
     alert_hit_low: "Stop-loss hit",
     alert_hint: "Turns the HA price alert binary_sensor ON and fires kr_finance_kit_price_alert when reached.",
     err_alert_bounds: "Stop-loss must be lower than target price.",
-    save: "Save", delete: "Delete", cancel: "Cancel", close: "Close",
-    position_saved: "Position saved — updates in a moment",
-    position_deleted: "Position deleted",
+    err_qty_avg: "Quantity and average price must be greater than 0.",
+    save: "Save", saving: "Saving…", saved: "✓ Saved", delete: "Delete", deleting: "Deleting…", cancel: "Cancel", close: "Close",
+    position_saved: "Saved! Your holding has been updated.",
+    position_deleted: "Deleted! Removed from holdings.",
     position_unsupported: "Holdings are supported for Korean and US stocks only.",
     unit_krw: "KRW", unit_usd: "USD",
     open_history: "Open HA history",
@@ -1316,22 +1318,29 @@ class KRFinancePanel extends HTMLElement {
       ? `<p class="muted small mono">🔔 ${pos.alert_high != null ? `↑${esc(this._price(pos.alert_high, ccy))}` : ""} ${pos.alert_low != null ? `↓${esc(this._price(pos.alert_low, ccy))}` : ""}</p>` : "";
     const readOnlyHolding = pos
       ? `<h4>${esc(this.t("my_position"))}</h4>${alertBanner}${posSummary}<p class="muted small mono">${esc(this._num(pos.quantity, { maximumFractionDigits: 4 }))} × ${esc(this._price(pos.avg_price, ccy))}</p>${roAlerts}` : "";
+    const posStatus = st.posStatus
+      ? `<div id="posstatus" class="pos-status ${st.posStatus.kind}" role="status" aria-live="polite">${st.posStatus.kind === "ok" ? "✓" : "⚠"} ${esc(st.posStatus.text)}</div>`
+      : `<div id="posstatus" class="pos-status" hidden></div>`;
+    const saveCls = st.posSaved ? "btn saved" : "btn primary";
+    const saveLbl = st.posBusy === "save" ? this.t("saving") : st.posSaved ? this.t("saved") : this.t("save");
+    const delLbl = st.posBusy === "del" ? this.t("deleting") : this.t("delete");
     const holding = ["INDEX", "FX"].includes(it.market) ? "" : !this.isAdmin ? readOnlyHolding : `<h4>${esc(this.t("my_position"))}</h4>
       ${canHold ? `${alertBanner}${posSummary}
         <div class="field two">
-          <label><span>${esc(this.t("qty"))}</span><input id="pq" class="inp mono" type="number" inputmode="decimal" min="0" step="any" value="${pos ? esc(pos.quantity) : ""}"></label>
-          <label><span>${esc(this.t("avg"))} · ${esc(unit)}</span><input id="pa" class="inp mono" type="number" inputmode="decimal" min="0" step="any" value="${pos ? esc(pos.avg_price) : ""}"></label>
+          <label><span>${esc(this.t("qty"))}</span><input id="pq" class="inp mono" type="number" inputmode="decimal" min="0" step="any" data-posinp="1" value="${pos ? esc(pos.quantity) : ""}"></label>
+          <label><span>${esc(this.t("avg"))} · ${esc(unit)}</span><input id="pa" class="inp mono" type="number" inputmode="decimal" min="0" step="any" data-posinp="1" value="${pos ? esc(pos.avg_price) : ""}"></label>
         </div>
         <div class="alert-box">
           <div class="muted small">${esc(this.t("price_alert"))}</div>
           <div class="field two">
-            <label><span>${esc(this.t("alert_high"))} · ${esc(unit)}</span><input id="pah" class="inp mono" type="number" inputmode="decimal" min="0" step="any" placeholder="—" value="${pos?.alert_high != null ? esc(pos.alert_high) : ""}"></label>
-            <label><span>${esc(this.t("alert_low"))} · ${esc(unit)}</span><input id="pal" class="inp mono" type="number" inputmode="decimal" min="0" step="any" placeholder="—" value="${pos?.alert_low != null ? esc(pos.alert_low) : ""}"></label>
+            <label><span>${esc(this.t("alert_high"))} · ${esc(unit)}</span><input id="pah" class="inp mono" type="number" inputmode="decimal" min="0" step="any" data-posinp="1" placeholder="—" value="${pos?.alert_high != null ? esc(pos.alert_high) : ""}"></label>
+            <label><span>${esc(this.t("alert_low"))} · ${esc(unit)}</span><input id="pal" class="inp mono" type="number" inputmode="decimal" min="0" step="any" data-posinp="1" placeholder="—" value="${pos?.alert_low != null ? esc(pos.alert_low) : ""}"></label>
           </div>
           <div class="muted small">${esc(this.t("alert_hint"))}</div>
         </div>
-        <div class="btn-row">${pos ? `<button class="btn danger" data-act="posdel">${esc(this.t("delete"))}</button>` : ""}
-          <button class="btn primary" data-act="possave">${esc(this.t("save"))}</button></div>`
+        ${posStatus}
+        <div class="btn-row">${pos ? `<button class="btn danger" data-act="posdel" ${st.posBusy ? "disabled" : ""}>${esc(delLbl)}</button>` : ""}
+          <button class="${saveCls}" data-act="possave" ${st.posBusy ? "disabled" : ""}>${esc(saveLbl)}</button></div>`
         : `<p class="muted small">${esc(this.t("position_unsupported"))}</p>`}`;
     return `
       <div class="d-top">
@@ -1391,35 +1400,123 @@ class KRFinancePanel extends HTMLElement {
       chg.textContent = `${this._arrow(it.change_pct)} ${this._money(it.change, it.currency)} (${this._pct(it.change_pct)})`;
     }
   }
+  _setPosStatus(kind, text) {
+    if (!this._sheet || this._sheet.type !== "detail") return;
+    this._sheet.posStatus = kind ? { kind, text } : null;
+    const el = this.shadowRoot.getElementById("posstatus");
+    if (!el) return;
+    if (!kind) {
+      el.hidden = true;
+      el.textContent = "";
+      el.className = "pos-status";
+      return;
+    }
+    el.hidden = false;
+    el.className = `pos-status ${kind}`;
+    el.textContent = `${kind === "ok" ? "✓" : "⚠"} ${text}`;
+  }
   async _savePosition() {
-    const it = this._findItem(this._sheet.key);
+    const st = this._sheet;
+    if (!st || st.type !== "detail" || st.posBusy) return;
+    const it = this._findItem(st.key);
     const r = this.shadowRoot;
     const qty = parseFloat(r.getElementById("pq")?.value);
     const avg = parseFloat(r.getElementById("pa")?.value);
-    if (!(qty > 0) || !(avg > 0)) { this._toast(this.t("err_generic", { m: `${this.t("qty")} / ${this.t("avg")} > 0` })); return; }
+    if (!(qty > 0) || !(avg > 0)) {
+      const msg = this.t("err_qty_avg");
+      this._setPosStatus("err", msg);
+      this._toast(`⚠ ${msg}`);
+      return;
+    }
     const rawH = (r.getElementById("pah")?.value || "").trim();
     const rawL = (r.getElementById("pal")?.value || "").trim();
     const alertHigh = rawH ? parseFloat(rawH) : null;
     const alertLow = rawL ? parseFloat(rawL) : null;
-    if (alertHigh !== null && !(alertHigh > 0)) { this._toast(this.t("err_generic", { m: `${this.t("alert_high")} > 0` })); return; }
-    if (alertLow !== null && !(alertLow > 0)) { this._toast(this.t("err_generic", { m: `${this.t("alert_low")} > 0` })); return; }
-    if (alertHigh !== null && alertLow !== null && alertLow >= alertHigh) { this._toast(this.t("err_alert_bounds")); return; }
+    if (alertHigh !== null && !(alertHigh > 0)) {
+      const msg = this.t("err_generic", { m: `${this.t("alert_high")} > 0` });
+      this._setPosStatus("err", msg);
+      this._toast(`⚠ ${msg}`);
+      return;
+    }
+    if (alertLow !== null && !(alertLow > 0)) {
+      const msg = this.t("err_generic", { m: `${this.t("alert_low")} > 0` });
+      this._setPosStatus("err", msg);
+      this._toast(`⚠ ${msg}`);
+      return;
+    }
+    if (alertHigh !== null && alertLow !== null && alertLow >= alertHigh) {
+      const msg = this.t("err_alert_bounds");
+      this._setPosStatus("err", msg);
+      this._toast(`⚠ ${msg}`);
+      return;
+    }
     const payload = { ticker: it.ticker, market: it.market, quantity: qty, avg_price: avg };
     if (alertHigh !== null) payload.alert_high = alertHigh;
     if (alertLow !== null) payload.alert_low = alertLow;
+    st.posBusy = "save";
+    st.posSaved = false;
+    st.posStatus = null;
+    this._renderDetailKeepInputs();
     try {
       await this._hass.callService("kr_finance_kit", "add_position", payload);
-      this._toast(this.t("position_saved"));
+      if (this._sheet === st) {
+        st.posBusy = null;
+        st.posSaved = true;
+        st.posStatus = { kind: "ok", text: this.t("position_saved") };
+        this._renderDetailKeepInputs();
+        clearTimeout(this._savedBtnTimer);
+        this._savedBtnTimer = setTimeout(() => {
+          if (this._sheet === st && st.posSaved) {
+            st.posSaved = false;
+            this._renderDetailKeepInputs();
+          }
+        }, 2500);
+      }
+      this._toast(`✓ ${this.t("position_saved")}`);
       this._pollAfterChange(null);
-    } catch (e) { this._toast(this._errText(e)); }
+    } catch (e) {
+      const msg = this._errText(e);
+      if (this._sheet === st) {
+        st.posBusy = null;
+        st.posSaved = false;
+        st.posStatus = { kind: "err", text: msg };
+        this._renderDetailKeepInputs();
+      }
+      this._toast(`⚠ ${msg}`);
+    }
   }
   async _deletePosition() {
-    const it = this._findItem(this._sheet.key);
+    const st = this._sheet;
+    if (!st || st.type !== "detail" || st.posBusy) return;
+    const it = this._findItem(st.key);
+    st.posBusy = "del";
+    st.posSaved = false;
+    st.posStatus = null;
+    this._renderDetailKeepInputs();
     try {
       await this._hass.callService("kr_finance_kit", "remove_position", { ticker: it.ticker, market: it.market });
-      this._toast(this.t("position_deleted"));
+      if (this._sheet === st) {
+        st.posBusy = null;
+        st.posStatus = { kind: "ok", text: this.t("position_deleted") };
+        // Clear inputs locally so the user immediately sees it's gone
+        this._renderSheet();
+        const r = this.shadowRoot;
+        for (const id of ["pq", "pa", "pah", "pal"]) {
+          const inp = r.getElementById(id);
+          if (inp) inp.value = "";
+        }
+      }
+      this._toast(`✓ ${this.t("position_deleted")}`);
       this._pollAfterChange(null);
-    } catch (e) { this._toast(this._errText(e)); }
+    } catch (e) {
+      const msg = this._errText(e);
+      if (this._sheet === st) {
+        st.posBusy = null;
+        st.posStatus = { kind: "err", text: msg };
+        this._renderDetailKeepInputs();
+      }
+      this._toast(`⚠ ${msg}`);
+    }
   }
   // Two-tap confirmation instead of window.confirm(): the HA mobile apps'
   // WebViews don't reliably show native JS dialogs.
@@ -1624,6 +1721,11 @@ class KRFinancePanel extends HTMLElement {
       clearTimeout(this._searchTimer);
       const q = el.value;
       this._searchTimer = setTimeout(() => this._doSearch(q), 400);
+    } else if (el.dataset?.posinp && this._sheet?.type === "detail") {
+      if (this._sheet.posStatus || this._sheet.posSaved) {
+        this._sheet.posSaved = false;
+        this._setPosStatus(null, "");
+      }
     }
   }
 }
@@ -1892,7 +1994,12 @@ main { max-width:1200px; margin:0 auto; padding:8px 16px 24px; }
 .btn { min-height:46px; padding:0 18px; border-radius:12px; border:1px solid var(--border); background:var(--card2); font-weight:600; }
 .btn.sm { min-height:38px; padding:0 14px; }
 .btn.primary { background:var(--accent); color:var(--on-accent); border-color:transparent; }
+.btn.saved { background:#12a150; color:#fff; border-color:transparent; }
 .btn.danger { color:#e5484d; }
+.pos-status { margin-top:10px; padding:10px 12px; border-radius:10px; font-size:13.5px; font-weight:600; }
+.pos-status[hidden] { display:none; }
+.pos-status.ok { background:rgba(18,161,80,.14); color:#12a150; border:1px solid rgba(18,161,80,.45); }
+.pos-status.err { background:rgba(229,72,77,.14); color:#e5484d; border:1px solid rgba(229,72,77,.45); }
 .armed { background:#e5484d !important; color:#fff !important; border-color:transparent !important; }
 .btn:disabled { opacity:.6; }
 .err { color:#e5484d; font-size:13.5px; margin-top:6px; }
