@@ -240,9 +240,11 @@ _FORM_FIELDS = {
             # Labels come from translations/<lang>.json
             # (selector.disclosure_category.options.*) so English
             # installs read "A — Periodic reports" and Korean ones
-            # "A — 정기공시". The wire format stays the single
-            # letter so OpenDart requests don't change.
-            options=list(DISCLOSURE_CATEGORY_CODES),
+            # "A — 정기공시". hassfest requires translated option values
+            # to be lowercase, so the form uses "a".."j" and the flow
+            # stores the upper-case OpenDart code (_categories_in /
+            # _categories_out) — stored data and API calls are unchanged.
+            options=[c.lower() for c in DISCLOSURE_CATEGORY_CODES],
             multiple=True,
             mode=SelectSelectorMode.DROPDOWN,
             translation_key="disclosure_category",
@@ -250,6 +252,21 @@ _FORM_FIELDS = {
     ),
 }
 _FORM_SCHEMA = vol.Schema(_FORM_FIELDS)
+
+
+def _categories_in(values: Any) -> list[str]:
+    """Form value ("a".."j") -> stored OpenDart code ("A".."J")."""
+    out: list[str] = []
+    for v in values or []:
+        code = str(v).strip().upper()
+        if code in DISCLOSURE_CATEGORY_CODES and code not in out:
+            out.append(code)
+    return out
+
+
+def _categories_out(values: Any) -> list[str]:
+    """Stored OpenDart code -> lowercase form value for pre-fill."""
+    return [str(v).strip().lower() for v in values or [] if str(v).strip().upper() in DISCLOSURE_CATEGORY_CODES]
 
 
 # The install form adds one config-flow-only checkbox right after the ticker
@@ -347,7 +364,7 @@ class KRFinanceKitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_INCLUDE_DETAILED_ATTRS: user_input.get(CONF_INCLUDE_DETAILED_ATTRS, False),
                         CONF_TARGET_CURRENCY_KRW: user_input.get(CONF_TARGET_CURRENCY_KRW, False),
                         CONF_PORTFOLIO_PL_ALERT_PCT: user_input.get(CONF_PORTFOLIO_PL_ALERT_PCT, 0),
-                        CONF_DISCLOSURE_CATEGORIES: user_input.get(CONF_DISCLOSURE_CATEGORIES, []),
+                        CONF_DISCLOSURE_CATEGORIES: _categories_in(user_input.get(CONF_DISCLOSURE_CATEGORIES)),
                         CONF_POSITIONS: [],
                     },
                 )
@@ -430,7 +447,7 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
                         CONF_INCLUDE_DETAILED_ATTRS: user_input.get(CONF_INCLUDE_DETAILED_ATTRS, False),
                         CONF_TARGET_CURRENCY_KRW: user_input.get(CONF_TARGET_CURRENCY_KRW, False),
                         CONF_PORTFOLIO_PL_ALERT_PCT: user_input.get(CONF_PORTFOLIO_PL_ALERT_PCT, 0),
-                        CONF_DISCLOSURE_CATEGORIES: user_input.get(CONF_DISCLOSURE_CATEGORIES, []),
+                        CONF_DISCLOSURE_CATEGORIES: _categories_in(user_input.get(CONF_DISCLOSURE_CATEGORIES)),
                         # Holdings are service-managed; keep whatever we already have.
                         CONF_POSITIONS: self._current(CONF_POSITIONS, []),
                     },
@@ -459,7 +476,7 @@ class KRFinanceKitOptionsFlow(config_entries.OptionsFlow):
             CONF_INCLUDE_DETAILED_ATTRS: self._current(CONF_INCLUDE_DETAILED_ATTRS, False),
             CONF_TARGET_CURRENCY_KRW: self._current(CONF_TARGET_CURRENCY_KRW, False),
             CONF_PORTFOLIO_PL_ALERT_PCT: self._current(CONF_PORTFOLIO_PL_ALERT_PCT, 0),
-            CONF_DISCLOSURE_CATEGORIES: self._current(CONF_DISCLOSURE_CATEGORIES, []),
+            CONF_DISCLOSURE_CATEGORIES: _categories_out(self._current(CONF_DISCLOSURE_CATEGORIES, [])),
         }
         return self.async_show_form(
             step_id="init",

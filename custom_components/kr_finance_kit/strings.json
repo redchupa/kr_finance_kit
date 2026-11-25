@@ -77,22 +77,16 @@
   "selector": {
     "disclosure_category": {
       "options": {
-        "A": "A — Periodic reports",
-        "B": "B — Major event reports",
-        "C": "C — Securities issuance",
-        "D": "D — Shareholding disclosures",
-        "E": "E — Other disclosures",
-        "F": "F — External audit",
-        "G": "G — Fund disclosures",
-        "H": "H — Asset-backed securities",
-        "I": "I — Exchange disclosures",
-        "J": "J — Fair Trade Commission"
-      }
-    },
-    "market": {
-      "options": {
-        "KR": "KR — Korean stocks (KOSPI / KOSDAQ)",
-        "US": "US — US stocks (NYSE / NASDAQ)"
+        "a": "A — Periodic reports",
+        "b": "B — Major event reports",
+        "c": "C — Securities issuance",
+        "d": "D — Shareholding disclosures",
+        "e": "E — Other disclosures",
+        "f": "F — External audit",
+        "g": "G — Fund disclosures",
+        "h": "H — Asset-backed securities",
+        "i": "I — Exchange disclosures",
+        "j": "J — Fair Trade Commission"
       }
     }
   }

@@ -292,3 +292,17 @@ def test_options_form_has_no_seed_field():
     assert "seed_defaults" not in keys
     user_keys = [str(k) for k in cf._USER_FIELDS]
     assert user_keys.index("seed_defaults") == user_keys.index("other_tickers") + 1
+
+
+def test_disclosure_categories_form_values_are_lowercase_but_stored_upper():
+    """hassfest: translated selector option values must be lowercase."""
+    from custom_components.kr_finance_kit import config_flow as cf
+
+    assert cf._categories_in(["a", "J", "x", "a", None]) == ["A", "J"]
+    assert cf._categories_out(["A", "C", "Z"]) == ["a", "c"]
+
+
+@sync
+async def test_config_flow_stores_upper_case_categories():
+    res = await _flow().async_step_user({**_BLANK, "seed_defaults": False, "disclosure_categories": ["a", "d"]})
+    assert res["data"]["disclosure_categories"] == ["A", "D"]
