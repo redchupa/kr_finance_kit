@@ -10,7 +10,7 @@
  * open sheet (with inputs the user is typing into) is never clobbered.
  */
 
-const PANEL_VERSION = "0.2.18";
+const PANEL_VERSION = "0.2.19";
 const LS_KEY = "kr_finance_kit.prefs";
 
 const I18N = {
@@ -67,6 +67,7 @@ const I18N = {
     wait_notice: "{provider} 조회를 잠시 쉬고 있습니다. 약 {n}분 후 다시 조회할 수 있습니다. 그동안 마지막 수신 데이터를 표시합니다.",
     search_limit: "외부 검색이 잠시 제한되어 저장된 종목만 검색합니다. 종목 코드는 직접 입력할 수 있습니다.",
     chart_limit: "요청 제한으로 차트를 아직 불러오지 못했습니다. 잠시 후 새로고침해 주세요.",
+    quote_schedule: "시세 갱신 · 장중 3분 / 장외 10분",
     refresh_note: "시세는 장중 3분, 장외 10분마다, 공시는 15분마다 조회합니다. 검색과 차트의 새 조회는 합계 시간당 60회까지입니다. 화면을 새로고침해도 이 제한은 유지됩니다.",
     refresh_requested: "갱신을 요청했습니다. 조회 간격에 따라 마지막 시세가 표시될 수 있습니다.",
     searching: "검색 중…",
@@ -183,6 +184,7 @@ const I18N = {
     wait_notice: "{provider} lookups are paused. They can resume in about {n} min. Showing the last available data.",
     search_limit: "External search is temporarily limited. Only local matches are shown. You can still enter a symbol directly.",
     chart_limit: "Chart lookup temporarily limited. Try refreshing later.",
+    quote_schedule: "Quote refresh · Market open: 3 min / Closed: 10 min",
     refresh_note: "Prices update every 3 minutes during active hours and every 10 minutes when idle. Disclosures update every 15 minutes. Search and charts share 60 new lookups per hour. Refreshing the screen keeps these limits in place.",
     refresh_requested: "Refresh requested. Prices may stay the same until the next allowed lookup.",
     searching: "Searching…",
@@ -503,7 +505,7 @@ class KRFinancePanel extends HTMLElement {
       <div class="root" id="root">
         <header id="header"></header>
         <nav class="tabs top" id="tabsTop"></nav>
-        <div class="scroller" id="scroller"><div id="providerWait" role="status"></div><main id="content"></main><div class="bottom-pad"></div></div>
+        <div class="scroller" id="scroller"><div id="quoteSchedule" class="muted small pad"></div><div id="providerWait" role="status"></div><main id="content"></main><div class="bottom-pad"></div></div>
         <nav class="tabs bottom" id="tabsBottom"></nav>
         <div id="sheet"></div>
         <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -541,6 +543,7 @@ class KRFinancePanel extends HTMLElement {
   _renderHeader() {
     const h = this.shadowRoot.getElementById("header");
     if (!h) return;
+    this.shadowRoot.getElementById("quoteSchedule").textContent = this.t("quote_schedule");
     const notice = this.shadowRoot.getElementById("providerWait");
     const waits = Object.entries(this._snap?.provider_wait_minutes || {});
     const message = waits.map(([key, n]) => this.t("wait_notice", { provider: key === "dart" ? "OpenDart" : "Yahoo", n })).join(" ");
