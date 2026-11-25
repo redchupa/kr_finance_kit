@@ -10,7 +10,7 @@
  * open sheet (with inputs the user is typing into) is never clobbered.
  */
 
-const PANEL_VERSION = "0.2.10";
+const PANEL_VERSION = "0.2.11";
 const LS_KEY = "kr_finance_kit.prefs";
 
 const I18N = {
@@ -1805,6 +1805,10 @@ main { max-width:1200px; margin:0 auto; padding:8px 16px 24px; }
 .root.narrow .add-btn .add-l { display:none; }
 
 /* narrow / mobile */
+/* HA can mount the panel in an auto-height wrapper. Give the flex column
+   a definite height so the content, including its last card, can scroll. */
+.root.narrow { height:100vh; height:100dvh; max-height:100%; min-height:0; }
+.root.narrow .scroller { min-height:0; }
 .root.narrow .tabs.top { display:none; }
 .root.narrow .tabs.bottom { display:flex; position:relative; z-index:5; background:var(--card); border-top:1px solid var(--border);
   padding:4px 4px calc(4px + env(safe-area-inset-bottom, 0px)); backdrop-filter: var(--blur); }
