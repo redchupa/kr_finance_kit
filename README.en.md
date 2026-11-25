@@ -38,6 +38,13 @@ All on **free APIs** (yfinance + OpenDart free key), no brokerage account needed
 - Home Assistant + [HACS](https://hacs.xyz)
 
 ### Step 1 · Add HACS repository
+
+Click the button to open this repository in HACS on your own Home Assistant — no URL copy-paste needed.
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=redchupa&repository=kr_finance_kit&category=integration)
+
+If the button doesn't work, add it manually:
+
 1. HACS → ⋮ → **Custom repositories**
 2. URL `https://github.com/redchupa/kr_finance_kit`, Type `Integration` → Add
 
