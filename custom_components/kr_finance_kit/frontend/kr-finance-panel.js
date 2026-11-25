@@ -10,7 +10,7 @@
  * open sheet (with inputs the user is typing into) is never clobbered.
  */
 
-const PANEL_VERSION = "0.2.2";
+const PANEL_VERSION = "0.2.3";
 const LS_KEY = "kr_finance_kit.prefs";
 
 const I18N = {
