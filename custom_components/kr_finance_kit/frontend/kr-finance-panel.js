@@ -10,7 +10,7 @@
  * open sheet (with inputs the user is typing into) is never clobbered.
  */
 
-const PANEL_VERSION = "0.2.13";
+const PANEL_VERSION = "0.2.14";
 const LS_KEY = "kr_finance_kit.prefs";
 
 const I18N = {
@@ -61,6 +61,11 @@ const I18N = {
     adding: "추가하는 중…",
     added: "{t} 추가됨 — 시세가 곧 표시됩니다",
     removed: "{t} 삭제됨",
+    wait_notice: "{provider} 조회를 잠시 쉬고 있습니다. 약 {n}분 후 다시 조회할 수 있습니다. 그동안 마지막 수신 데이터를 표시합니다.",
+    search_limit: "외부 검색이 잠시 제한되어 저장된 종목만 검색합니다. 종목 코드는 직접 입력할 수 있습니다.",
+    chart_limit: "요청 제한으로 차트를 아직 불러오지 못했습니다. 잠시 후 새로고침해 주세요.",
+    refresh_note: "시세는 장중 5분, 장외 15분마다, 공시는 15분마다 조회합니다. 검색과 차트의 새 조회는 합계 시간당 60회까지입니다. 화면을 새로고침해도 이 제한은 유지됩니다.",
+    refresh_requested: "갱신을 요청했습니다. 조회 간격에 따라 마지막 시세가 표시될 수 있습니다.",
     searching: "검색 중…",
     no_results: "검색 결과가 없어요. 코드를 직접 입력해도 됩니다.",
     add_hint_kr: "6자리 종목코드. 코스닥은 뒤에 .KQ (예: 035720.KQ)",
@@ -169,6 +174,11 @@ const I18N = {
     adding: "Adding…",
     added: "{t} added — quotes will appear shortly",
     removed: "{t} removed",
+    wait_notice: "{provider} lookups are paused. They can resume in about {n} min. Showing the last available data.",
+    search_limit: "External search is temporarily limited. Only local matches are shown. You can still enter a symbol directly.",
+    chart_limit: "Chart lookup temporarily limited. Try refreshing later.",
+    refresh_note: "Prices update every 5 minutes during active hours and every 15 minutes when idle. Disclosures update every 15 minutes. Search and charts share 60 new lookups per hour. Refreshing the screen keeps these limits in place.",
+    refresh_requested: "Refresh requested. Prices may stay the same until the next allowed lookup.",
     searching: "Searching…",
     no_results: "No matches. You can still type the code directly.",
     add_hint_kr: "6-digit KRX code. KOSDAQ needs .KQ (e.g. 035720.KQ)",
@@ -353,6 +363,7 @@ class KRFinancePanel extends HTMLElement {
     this._spark = {}; // period -> key -> {t,c}
     this._sparkPending = new Set();
     this._sparkFailed = new Set();
+    this._sparkLimited = new Set();
     this._catalogCache = {}; // "lang:market:category" -> catalog payload
     this._timers = [];
     this._built = false;
@@ -421,7 +432,7 @@ class KRFinancePanel extends HTMLElement {
     this._timers.push(setInterval(() => { if (!document.hidden) this._loadSnapshot(); }, every));
     this._timers.push(setInterval(() => this._tick(), 1000));
     // Long-lived wall tablets: let mini charts refresh twice an hour.
-    this._timers.push(setInterval(() => { this._spark = {}; this._sparkFailed.clear(); this._ensureSparks(); }, 30 * 60 * 1000));
+    this._timers.push(setInterval(() => { this._spark = {}; this._sparkFailed.clear(); this._sparkLimited.clear(); this._ensureSparks(); }, 30 * 60 * 1000));
     this._onVis = () => { if (!document.hidden) this._loadSnapshot(); };
     document.addEventListener("visibilitychange", this._onVis);
   }
@@ -475,7 +486,7 @@ class KRFinancePanel extends HTMLElement {
       <div class="root" id="root">
         <header id="header"></header>
         <nav class="tabs top" id="tabsTop"></nav>
-        <div class="scroller" id="scroller"><main id="content"></main><div class="bottom-pad"></div></div>
+        <div class="scroller" id="scroller"><div id="providerWait" role="status"></div><main id="content"></main><div class="bottom-pad"></div></div>
         <nav class="tabs bottom" id="tabsBottom"></nav>
         <div id="sheet"></div>
         <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -513,6 +524,11 @@ class KRFinancePanel extends HTMLElement {
   _renderHeader() {
     const h = this.shadowRoot.getElementById("header");
     if (!h) return;
+    const notice = this.shadowRoot.getElementById("providerWait");
+    const waits = Object.entries(this._snap?.provider_wait_minutes || {});
+    const message = waits.map(([key, n]) => this.t("wait_notice", { provider: key === "dart" ? "OpenDart" : "Yahoo", n })).join(" ");
+    if (notice.textContent !== message) notice.textContent = message;
+    notice.className = message ? "pad" : "";
     this._hdrSig = this._headerSig();
     const menu = this._narrow
       ? `<button class="icon-btn" data-act="menu" aria-label="menu">☰</button>` : "";
@@ -660,6 +676,7 @@ class KRFinancePanel extends HTMLElement {
       this._spark[period] = this._spark[period] || {};
       for (const k of keys) {
         const s = res.series?.[k];
+        if (!s && res.limited) this._sparkLimited.add(period + k);
         if (s && s.c && s.c.length > 1) this._spark[period][k] = s;
         else this._sparkFailed.add(period + k);
       }
@@ -1029,6 +1046,7 @@ class KRFinancePanel extends HTMLElement {
       ${toggle("compact_numbers")}
       ${toggle("show_krw")}
       <div class="field inline"><span>${esc(this.t("refresh_every"))}</span>${refresh}</div>
+      <p class="muted small">${esc(this.t("refresh_note"))}</p>
       <div class="field"><button class="btn" data-act="reset">${esc(this.t("reset"))}</button></div>
       <h4>${esc(this.t("about"))}</h4>
       <p class="muted small">${esc(this.t("about_text"))}<br>Finance Kit v${esc(this._snap?.version || this._panelCfg?.config?.version || PANEL_VERSION)}</p>`;
@@ -1171,9 +1189,11 @@ class KRFinancePanel extends HTMLElement {
     const st = this._sheet || {};
     if (st.searching) return `<div class="muted small pad">${esc(this.t("searching"))}</div>`;
     if (!st.results) return "";
+    const notice = st.limited ? `<div class="muted small pad" role="status">${esc(this.t("search_limit"))}</div>` : "";
+    if (!st.results.length && notice) return notice;
     if (!st.results.length) return `<div class="muted small pad">${esc(this.t("no_results"))}</div>`;
     const quote = st.quote || "KRW";
-    return st.results.map((r, i) => {
+    return notice + st.results.map((r, i) => {
       const watched = this._isWatched(r.market, r.symbol, quote);
       const adding = st.addingKey === this._watchNormKey(r.market, r.symbol, quote);
       return `<div class="cat-row">
@@ -1206,8 +1226,11 @@ class KRFinancePanel extends HTMLElement {
     try {
       const res = await this._hass.callWS({ type: "kr_finance_kit/search", query: q.trim(), lang: this.lang });
       if (!this._sheet || this._sheet.type !== "add" || this._sheet.query !== q) return;
+      this._sheet.limited = !!res.limited;
       this._sheet.results = res.results || [];
     } catch (_e) {
+      if (this._sheet?.type !== "add" || this._sheet.query !== q) return;
+      this._sheet.limited = false;
       this._sheet.results = [];
     }
     this._sheet.searching = false;
@@ -1355,7 +1378,7 @@ class KRFinancePanel extends HTMLElement {
         <div class="d-chg mono ${this._dir(it.change_pct)}" id="dchg">${this._arrow(it.change_pct)} ${esc(this._money(it.change, ccy))} (${esc(this._pct(it.change_pct))})</div>
       </div>
       <div class="seg wide">${PERIODS.map((x) => `<button class="${period === x ? "on" : ""}" data-act="period" data-val="${x}">${esc(this.t("p_" + x))}</button>`).join("")}</div>
-      ${failed ? `<div class="chart-msg">${esc(this.t("chart_empty"))}</div>` : this._chartSvg(series, ccy)}
+      ${failed ? `<div class="chart-msg">${esc(this.t(this._sparkLimited.has(period + it.hkey) ? "chart_limit" : "chart_empty"))}</div>` : this._chartSvg(series, ccy)}
       ${dayRange ? `<div class="muted small">${esc(this.t("day_range"))}</div>${dayRange}` : ""}
       ${wkRange ? `<div class="muted small">${esc(this.t("w52"))}</div>${wkRange}` : ""}
       <div class="stats">${stats}</div>
@@ -1591,8 +1614,8 @@ class KRFinancePanel extends HTMLElement {
         this.dispatchEvent(new Event("hass-toggle-menu", { bubbles: true, composed: true }));
         break;
       case "refresh":
-        this._toast("⟳");
-        this._sparkFailed.clear();
+        this._toast(this.t("refresh_requested"));
+        this._sparkFailed.clear(); this._sparkLimited.clear();
         this._hass.callService("kr_finance_kit", "refresh_now", {}).catch(() => {}).finally(() => this._loadSnapshot());
         break;
       case "lang":

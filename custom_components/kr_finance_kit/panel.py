@@ -28,7 +28,7 @@ from homeassistant.helpers.storage import Store
 from . import panel_data as pd
 from .access import can_read_holdings
 from .credentials import unseal
-from .api.pacing import Backoff, ProviderBusy
+from .api.pacing import Backoff, ProviderBusy, gate
 from .api import yfinance_wrap
 from .api.yfinance_wrap import FX_TICKERS, INDEX_TICKERS, normalize_kr_ticker
 from .const import (
@@ -236,6 +236,11 @@ async def ws_snapshot(hass: HomeAssistant, connection, msg: dict[str, Any]) -> N
         "opendart": bool((cfg.get(CONF_OPENDART_API_KEY) or "").strip()),
         "detailed_attrs": bool(cfg.get(CONF_INCLUDE_DETAILED_ATTRS, False)),
         "entry_id": entry.entry_id,
+        "provider_wait_minutes": {
+            name: int((remaining + 59.999) // 60)
+            for name in ("yahoo", "dart")
+            if (remaining := gate(name).resume - time.monotonic()) > 0
+        },
         "last_update_success": bool(market.last_update_success),
         "version": _state(hass).get("version"),
     })
@@ -264,6 +269,7 @@ async def ws_history(hass: HomeAssistant, connection, msg: dict[str, Any]) -> No
     ttl = _HISTORY_TTL.get(period, 3600)
     cache: dict[tuple[str, str], tuple[float, dict[str, Any]]] = st["history"]
     out: dict[str, Any] = {}
+    limited = False
     for item in msg["symbols"]:
         key = f"{item['market']}:{item['ticker']}"
         sym = _yahoo_symbol(item["market"], item["ticker"])
@@ -277,12 +283,13 @@ async def ws_history(hass: HomeAssistant, connection, msg: dict[str, Any]) -> No
         try:
             series = await yfinance_wrap.fetch_history(sym, period)
         except (Backoff, ProviderBusy):
+            limited = True
             break
         if len(cache) >= _HISTORY_CACHE_MAX:
             cache.clear()
         cache[ck] = (time.monotonic() + ttl, series)
         out[key] = series
-    connection.send_result(msg["id"], {"period": period, "series": out})
+    connection.send_result(msg["id"], {"period": period, "series": out, "limited": limited})
 
 
 async def _get_corp_map_cached(
@@ -366,9 +373,11 @@ async def ws_search(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
         mapping = await _get_corp_map_cached(hass, api_key)
         if mapping:
             results.extend(pd.match_kr_companies(mapping, query, limit=6))
+    limited = False
     try:
         yahoo_hits = await yfinance_wrap.search_symbols(query, limit=8)
     except (Backoff, ProviderBusy):
+        limited = True
         yahoo_hits = []
 
     seen = {(r["market"], r["symbol"]) for r in results}
@@ -397,8 +406,12 @@ async def ws_search(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
         })
     if len(st["search"]) > 200:
         st["search"].clear()
-    st["search"][cache_key] = (time.monotonic() + _SEARCH_TTL, results)
-    connection.send_result(msg["id"], {"results": results})
+    if not limited:
+        st["search"][cache_key] = (time.monotonic() + _SEARCH_TTL, results)
+    payload = {"results": results}
+    if limited:
+        payload["limited"] = True
+    connection.send_result(msg["id"], payload)
 
 
 def _commit_watchlist(hass, entry, original, original_options, proposed, *, removing):

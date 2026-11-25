@@ -531,3 +531,26 @@ async def test_options_open_before_watchlist_change_cannot_overwrite_it():
     result = await flow.async_step_init({})
     assert result == {"reason": "config_changed"}
     assert entry.options[CONF_US_TICKERS] == ["SAMPLE"]
+
+
+@sync
+async def test_search_limit_preserves_matches_and_recovers(monkeypatch):
+    attempts = 0
+
+    async def recover(query, limit=8):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise panel.ProviderBusy()
+        return []
+
+    monkeypatch.setattr(panel.yfinance_wrap, "search_symbols", recover)
+    hass = _hass(_entry({}), {})
+    conn = FakeConn(admin=False)
+    msg = {"id": 1, "query": "삼성전자", "lang": "ko"}
+    await raw(panel.ws_search)(hass, conn, msg)
+    assert conn.results[-1]["limited"]
+    assert conn.results[-1]["results"]
+    await raw(panel.ws_search)(hass, conn, msg)
+    assert not conn.results[-1].get("limited")
+    assert attempts == 2
