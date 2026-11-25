@@ -81,7 +81,25 @@ def _short_window_attrs(coordinator: "MarketCoordinator", ticker: str) -> dict[s
     return out
 
 
-def _krw_attr(coordinator: "MarketCoordinator", market: str, price: float | None) -> dict[str, Any]:
+def _quote_unit(market: str, ticker: str) -> str:
+    """Native price unit for a QuoteSensor.
+
+    KR → KRW. Crypto pairs quoted in a non-USD currency (BTC-KRW, ETH-EUR)
+    → that currency. Everything else keeps USD, the pre-v0.2.2 default, so
+    existing long-term statistics keep their unit.
+    """
+    if market == MARKET_KR:
+        return "KRW"
+    if market == MARKET_OTHER and "-" in ticker:
+        quote = ticker.rsplit("-", 1)[1].upper()
+        if quote in ("KRW", "EUR", "JPY", "GBP"):
+            return quote
+    return "USD"
+
+
+def _krw_attr(
+    coordinator: "MarketCoordinator", market: str, price: float | None, ticker: str = ""
+) -> dict[str, Any]:
     """Add a ``price_krw`` attribute for USD-denominated assets when the
     target-currency option is enabled.
 
@@ -94,6 +112,10 @@ def _krw_attr(coordinator: "MarketCoordinator", market: str, price: float | None
     if not coordinator._config.get(CONF_TARGET_CURRENCY_KRW, False):
         return {}
     if market not in (MARKET_US, MARKET_OTHER):
+        return {}
+    # Only USD-priced assets convert at USD/KRW — a BTC-KRW price is already
+    # in KRW, and EUR/JPY-quoted pairs would be converted wrongly.
+    if _quote_unit(market, ticker) != "USD":
         return {}
     if price is None:
         return {}
@@ -320,7 +342,10 @@ class QuoteSensor(_MarketBase):
         # them in USD for the common ticker forms (BTC-USD, ETH-USD,
         # EUR=X, GC=F). Users who want native currency or KRW conversion
         # can layer that on top via target_currency in a later release.
-        self._attr_native_unit_of_measurement = "KRW" if market == MARKET_KR else "USD"
+        # Crypto pairs quoted in another currency (BTC-KRW, ETH-EUR, ...)
+        # carry that currency instead of the blanket USD. Everything else
+        # keeps the previous unit so existing statistics don't change.
+        self._attr_native_unit_of_measurement = _quote_unit(market, ticker)
 
     @property
     def _quote(self) -> dict[str, Any]:
@@ -339,7 +364,7 @@ class QuoteSensor(_MarketBase):
     def extra_state_attributes(self) -> dict[str, Any]:
         base = {k: v for k, v in self._quote.items() if k != "price"}
         base.update(_info_attrs(self.coordinator, self._ticker, self.native_value))
-        base.update(_krw_attr(self.coordinator, self._market, self.native_value))
+        base.update(_krw_attr(self.coordinator, self._market, self.native_value, self._ticker))
         base.update(_short_window_attrs(self.coordinator, self._ticker))
         return base
 

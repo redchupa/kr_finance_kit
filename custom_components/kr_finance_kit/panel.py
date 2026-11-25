@@ -61,6 +61,13 @@ _HISTORY_TTL = {"1d": 300, "5d": 900, "1mo": 3600, "6mo": 3600 * 6, "1y": 3600 *
 _HISTORY_MAX_SYMBOLS = 12
 _HISTORY_CACHE_MAX = 500
 _SEARCH_TTL = 600
+# Corp-code map download failures (bad/expired OpenDart key) are remembered
+# for this long so every search keystroke doesn't re-download the ~MB zip.
+_CORP_MAP_RETRY = 600
+# yfinance interpolates the symbol into the request path without encoding,
+# so anything reaching it from the websocket is limited to Yahoo's symbol
+# alphabet (same grammar as panel_data's watchlist validation).
+_SYMBOL_RE = r"^[A-Za-z0-9^][A-Za-z0-9.\-=^]{0,23}$"
 
 
 def _state(hass: HomeAssistant) -> dict[str, Any]:
@@ -237,7 +244,7 @@ async def ws_snapshot(hass: HomeAssistant, connection, msg: dict[str, Any]) -> N
             [
                 {
                     vol.Required("market"): vol.In([MARKET_KR, MARKET_US, MARKET_OTHER, "INDEX", "FX"]),
-                    vol.Required("ticker"): vol.All(str, vol.Length(min=1, max=24)),
+                    vol.Required("ticker"): vol.All(str, vol.Match(_SYMBOL_RE)),
                 }
             ],
             vol.Length(max=_HISTORY_MAX_SYMBOLS),
@@ -293,17 +300,24 @@ async def ws_search(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
     entry, _store = _active(hass)
     cfg = pd.merged_config(entry.data, entry.options) if entry else {}
     api_key = (cfg.get(CONF_OPENDART_API_KEY) or "").strip()
-    if api_key:
-        try:
-            from .api.opendart import _load_corp_code_map
+    # Same lock as chart requests: any logged-in user can call this, so
+    # outbound traffic is serialized rather than fanned out.
+    async with st["lock"]:
+        if api_key and st.get("corp_map_failed_until", 0) < time.monotonic():
+            try:
+                from .api.opendart import _load_corp_code_map
 
-            mapping = await _load_corp_code_map(hass, api_key)
-            results.extend(pd.match_kr_companies(mapping, query, limit=6))
-        except Exception as err:  # noqa: BLE001
-            LOGGER.debug("KR company search failed: %s", err)
+                mapping = await _load_corp_code_map(hass, api_key)
+                if not mapping:
+                    st["corp_map_failed_until"] = time.monotonic() + _CORP_MAP_RETRY
+                results.extend(pd.match_kr_companies(mapping, query, limit=6))
+            except Exception as err:  # noqa: BLE001
+                st["corp_map_failed_until"] = time.monotonic() + _CORP_MAP_RETRY
+                LOGGER.debug("KR company search failed: %s", err)
+        yahoo_hits = await yfinance_wrap.search_symbols(query, limit=8)
 
     seen = {r["symbol"] for r in results}
-    for hit_row in await yfinance_wrap.search_symbols(query, limit=8):
+    for hit_row in yahoo_hits:
         market, ticker = pd.classify_search_hit(hit_row["symbol"], hit_row["quote_type"])
         if market == MARKET_KR:
             ticker = ticker[:-3] if ticker.endswith(".KS") else ticker
@@ -426,6 +440,19 @@ async def ws_watchlist_remove(hass: HomeAssistant, connection, msg: dict[str, An
             p for p in cfg.get(CONF_POSITIONS, []) or []
             if not (p.get("ticker") == ticker and p.get("market") == market)
         ]
+    if market == MARKET_KR:
+        api_key = (cfg.get(CONF_OPENDART_API_KEY) or "").strip()
+        if api_key:
+            from .config_flow import _enrich_kr_metadata
+
+            try:
+                corp_codes, _names, corp_names = await _enrich_kr_metadata(
+                    hass, api_key, list(new_options.get(CONF_KR_TICKERS, []))
+                )
+                new_options[CONF_DISCLOSURE_CORP_CODES] = corp_codes
+                new_options[CONF_DISCLOSURE_CORP_NAMES] = corp_names
+            except Exception as err:  # noqa: BLE001 — keep the removal itself
+                LOGGER.debug("Disclosure code refresh after removing %s failed: %s", ticker, err)
     hass.config_entries.async_update_entry(entry, options=new_options)
     connection.send_result(msg["id"], {"market": market, "ticker": ticker})
 

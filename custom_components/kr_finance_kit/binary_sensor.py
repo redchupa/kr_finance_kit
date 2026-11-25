@@ -11,6 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
+    CONF_DISCLOSURE_CORP_CODES,
     CONF_DISCLOSURE_CORP_NAMES,
     CONF_PORTFOLIO_PL_ALERT_PCT,
     DOMAIN,
@@ -36,7 +37,11 @@ async def async_setup_entry(
 
     disclosure: DisclosureCoordinator | None = store.get("disclosure")
     if disclosure is not None:
-        corp_codes = entry.data.get("disclosure_corp_codes", []) or []
+        # Merged config (options over data): corp codes recomputed by the
+        # options flow or the sidebar panel live in entry.options. Reading
+        # entry.data alone meant KR tickers added after install never got
+        # a disclosure binary_sensor.
+        corp_codes = config.get(CONF_DISCLOSURE_CORP_CODES, []) or []
         # corp_name lookup feeds the binary_sensor device label so the
         # HA UI shows "삼성전자 신규 공시" instead of "공시 00126380".
         # Read via the options-first projection so Options edits flow

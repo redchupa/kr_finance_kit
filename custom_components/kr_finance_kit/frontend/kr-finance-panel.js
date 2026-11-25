@@ -10,7 +10,7 @@
  * open sheet (with inputs the user is typing into) is never clobbered.
  */
 
-const PANEL_VERSION = "0.2.4";
+const PANEL_VERSION = "0.2.5";
 const LS_KEY = "kr_finance_kit.prefs";
 
 const I18N = {
@@ -254,6 +254,43 @@ function hashHue(str) {
   return h;
 }
 
+// Client-side mirror of panel_data.sanitize_prefs. Local copies come from
+// localStorage, which can hold anything (old versions, manual edits); an
+// unchecked refresh_sec of "abc" would make setInterval spin at 0 ms and a
+// non-array `sections` would crash rendering.
+function sanitizePrefs(raw) {
+  const src = raw && typeof raw === "object" ? raw : {};
+  const out = JSON.parse(JSON.stringify(DEFAULT_PREFS));
+  const pick = (key, allowed) => { if (allowed.includes(src[key])) out[key] = src[key]; };
+  pick("lang", ["auto", "ko", "en"]);
+  pick("theme", THEMES.map((t) => t.id));
+  pick("layout", LAYOUTS.map((l) => l.id));
+  pick("up_color", ["auto", "red", "green"]);
+  pick("spark_period", PERIODS);
+  for (const key of ["sparkline", "compact_numbers", "show_krw"]) {
+    if (typeof src[key] === "boolean") out[key] = src[key];
+  }
+  if (typeof src.refresh_sec === "number" && isFinite(src.refresh_sec)) {
+    out.refresh_sec = Math.min(600, Math.max(10, Math.floor(src.refresh_sec)));
+  }
+  if (Array.isArray(src.sections)) {
+    const seen = new Set();
+    const secs = [];
+    for (const s of src.sections) {
+      if (s && SECTION_IDS.includes(s.id) && !seen.has(s.id)) {
+        seen.add(s.id);
+        secs.push({ id: s.id, visible: s.visible !== false });
+      }
+    }
+    for (const id of SECTION_IDS) if (!seen.has(id)) secs.push({ id, visible: true });
+    out.sections = secs;
+  }
+  if (Array.isArray(src.order)) {
+    out.order = [...new Set(src.order.filter((k) => typeof k === "string" && /^(KR|US|OTHER):[A-Z0-9^][A-Z0-9.\-=^]{0,23}$/.test(k)))].slice(0, 200);
+  }
+  return out;
+}
+
 class KRFinancePanel extends HTMLElement {
   constructor() {
     super();
@@ -313,13 +350,13 @@ class KRFinancePanel extends HTMLElement {
     this._buildShell();
     try {
       const ls = localStorage.getItem(LS_KEY);
-      if (ls) this._prefs = { ...this._prefs, ...JSON.parse(ls) };
-    } catch (_e) { /* private mode */ }
+      if (ls) this._prefs = sanitizePrefs(JSON.parse(ls));
+    } catch (_e) { /* private mode or corrupt JSON */ }
     this._applyTheme();
     this._renderAll();
     try {
       const res = await this._hass.callWS({ type: "kr_finance_kit/prefs/get" });
-      if (res && res.prefs && (res.stored || !localStorage.getItem(LS_KEY))) this._prefs = res.prefs;
+      if (res && res.prefs && (res.stored || !localStorage.getItem(LS_KEY))) this._prefs = sanitizePrefs(res.prefs);
     } catch (_e) { /* backend older than panel — keep local prefs */ }
     this._applyTheme();
     this._renderAll();
@@ -858,7 +895,7 @@ class KRFinancePanel extends HTMLElement {
     if (!rows.length) return this._section("disclosures", `<div class="empty">${esc(this.t("no_disclosures"))}</div>`);
     const fmt = (d) => (d && d.length === 8 ? `${d.slice(4, 6)}/${d.slice(6, 8)}` : esc(d || ""));
     return this._section("disclosures", `<div class="disc">${rows.map((r) => `
-      <a class="disc-row" href="${esc(r.url || "#")}" target="_blank" rel="noopener noreferrer">
+      <a class="disc-row" href="${esc(/^https:\/\//i.test(r.url || "") ? r.url : "#")}" target="_blank" rel="noopener noreferrer">
         <span class="disc-d mono">${fmt(r.rcept_dt)}</span>
         <span class="disc-t"><b>${esc(r.corp_name)}</b><span>${esc(r.report_nm)}</span></span>
         <span class="muted">↗</span>
@@ -1064,15 +1101,22 @@ class KRFinancePanel extends HTMLElement {
     const pos = (this._snap.portfolio?.positions || []).find((p) => p.market === it.market && p.ticker === it.ticker);
     const canHold = it.market === "KR" || it.market === "US";
     const unit = it.market === "KR" ? this.t("unit_krw") : this.t("unit_usd");
-    const holding = !["INDEX", "FX"].includes(it.market) ? `<h4>${esc(this.t("my_position"))}</h4>
-      ${canHold ? `${pos && pos.pl != null ? `<div class="pos-sum ${this._dir(pos.pl)}"><b class="mono">${esc(this._money(pos.pl, ccy))}</b> <span class="mono">(${esc(this._pct(pos.pl_pct))})</span> · <span class="mono">${esc(this._price(pos.value, ccy))}</span></div>` : ""}
+    const posSummary = pos && pos.pl != null
+      ? `<div class="pos-sum ${this._dir(pos.pl)}"><b class="mono">${esc(this._money(pos.pl, ccy))}</b> <span class="mono">(${esc(this._pct(pos.pl_pct))})</span> · <span class="mono">${esc(this._price(pos.value, ccy))}</span></div>` : "";
+    // Holdings are written through the add/remove_position services; the
+    // panel only offers the form to administrators (read-only for others,
+    // matching the watchlist controls).
+    const readOnlyHolding = pos
+      ? `<h4>${esc(this.t("my_position"))}</h4>${posSummary}<p class="muted small mono">${esc(this._num(pos.quantity, { maximumFractionDigits: 4 }))} × ${esc(this._price(pos.avg_price, ccy))}</p>` : "";
+    const holding = ["INDEX", "FX"].includes(it.market) ? "" : !this.isAdmin ? readOnlyHolding : `<h4>${esc(this.t("my_position"))}</h4>
+      ${canHold ? `${posSummary}
         <div class="field two">
           <label><span>${esc(this.t("qty"))}</span><input id="pq" class="inp mono" type="number" inputmode="decimal" min="0" step="any" value="${pos ? esc(pos.quantity) : ""}"></label>
           <label><span>${esc(this.t("avg"))} · ${esc(unit)}</span><input id="pa" class="inp mono" type="number" inputmode="decimal" min="0" step="any" value="${pos ? esc(pos.avg_price) : ""}"></label>
         </div>
         <div class="btn-row">${pos ? `<button class="btn danger" data-act="posdel">${esc(this.t("delete"))}</button>` : ""}
           <button class="btn primary" data-act="possave">${esc(this.t("save"))}</button></div>`
-        : `<p class="muted small">${esc(this.t("position_unsupported"))}</p>`}` : "";
+        : `<p class="muted small">${esc(this.t("position_unsupported"))}</p>`}`;
     return `
       <div class="d-top">
         <div><span class="badge">${GROUP_FLAG[it.market] || GROUP_FLAG[it.group] || "🌐"} ${esc(it.ticker)}</span>

@@ -306,3 +306,88 @@ def test_disclosure_categories_form_values_are_lowercase_but_stored_upper():
 async def test_config_flow_stores_upper_case_categories():
     res = await _flow().async_step_user({**_BLANK, "seed_defaults": False, "disclosure_categories": ["a", "d"]})
     assert res["data"]["disclosure_categories"] == ["A", "D"]
+
+
+# ---------------------------------------------------------------- final review hardening
+
+@pytest.mark.parametrize("ticker", ["../v7/x", "a/b", "x?y=1", "x#y", "", "<b>", "a b"])
+def test_history_rejects_unsafe_tickers(ticker):
+    """yfinance puts the symbol in the URL path unencoded."""
+    import voluptuous as vol
+
+    with pytest.raises(vol.Invalid):
+        panel.ws_history._ws_schema({"type": "kr_finance_kit/history", "id": 1,
+                                     "symbols": [{"market": "US", "ticker": ticker}]})
+
+
+@pytest.mark.parametrize("ticker", ["005930", "035720.KQ", "BTC-KRW", "^GSPC", "EUR=X", "GC=F", "BRK-B"])
+def test_history_accepts_real_symbols(ticker):
+    panel.ws_history._ws_schema({"type": "kr_finance_kit/history", "id": 1,
+                                 "symbols": [{"market": "OTHER", "ticker": ticker}]})
+
+
+@sync
+async def test_search_negative_caches_corp_map_failure(monkeypatch):
+    from custom_components.kr_finance_kit.api import opendart
+
+    calls = []
+
+    async def failing_map(hass, key):
+        calls.append(key)
+        return {}
+
+    async def no_yahoo(query, limit=8):
+        return []
+
+    monkeypatch.setattr(opendart, "_load_corp_code_map", failing_map)
+    monkeypatch.setattr(panel.yfinance_wrap, "search_symbols", no_yahoo)
+    hass = _hass(_entry({"opendart_api_key": "k"}), {})
+    conn = FakeConn(admin=False)
+    await raw(panel.ws_search)(hass, conn, {"id": 1, "query": "삼성"})
+    await raw(panel.ws_search)(hass, conn, {"id": 2, "query": "하이닉스"})
+    assert calls == ["k"]  # second search skipped the re-download
+    assert conn.results[-1] == {"results": []}
+
+
+@sync
+async def test_remove_kr_refreshes_disclosure_codes(monkeypatch):
+    from custom_components.kr_finance_kit import config_flow as cf
+
+    seen = {}
+
+    async def fake_enrich(hass, key, kr):
+        seen["kr"] = kr
+        return ["00164779"], {"000660": "SK하이닉스"}, {"00164779": "SK하이닉스"}
+
+    monkeypatch.setattr(cf, "_enrich_kr_metadata", fake_enrich)
+    entry = _entry({CONF_KR_TICKERS: ["005930", "000660"], "opendart_api_key": "k",
+                    "disclosure_corp_codes": ["00126380", "00164779"]})
+    hass = _hass(entry, {})
+    conn = FakeConn()
+    await raw(panel.ws_watchlist_remove)(hass, conn, {"id": 1, "market": "KR", "ticker": "005930", "force": False})
+    saved = hass.config_entries.updated[-1]
+    assert seen["kr"] == ["000660"]
+    assert saved["disclosure_corp_codes"] == ["00164779"]
+
+
+@pytest.mark.parametrize("market,ticker,unit", [
+    ("KR", "005930", "KRW"), ("US", "AAPL", "USD"), ("OTHER", "BTC-KRW", "KRW"),
+    ("OTHER", "BTC-USD", "USD"), ("OTHER", "BTC-USDT", "USD"), ("OTHER", "ETH-EUR", "EUR"),
+    ("OTHER", "EUR=X", "USD"), ("OTHER", "GC=F", "USD"),
+])
+def test_quote_sensor_unit(market, ticker, unit):
+    from custom_components.kr_finance_kit import sensor
+
+    assert sensor._quote_unit(market, ticker) == unit
+
+
+def test_krw_attr_skips_non_usd_assets():
+    from custom_components.kr_finance_kit import sensor
+
+    coord = SimpleNamespace(
+        _config={"target_currency_krw": True},
+        data={"fx": {"USDKRW": {"price": 1400.0}}},
+    )
+    assert sensor._krw_attr(coord, "OTHER", 100.0, "BTC-USD") == {"price_krw": 140000.0}
+    assert sensor._krw_attr(coord, "OTHER", 79_000_000.0, "BTC-KRW") == {}
+    assert sensor._krw_attr(coord, "US", 200.0, "AAPL") == {"price_krw": 280000.0}

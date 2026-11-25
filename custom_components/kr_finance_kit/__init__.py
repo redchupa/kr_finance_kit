@@ -48,47 +48,91 @@ def _expected_object_id(domain: str, entity_id_prefix: str, unique_id: str) -> s
     return f"{entity_id_prefix}_{slug}"
 
 
-async def _migrate_legacy_entity_ids(hass: "HomeAssistant") -> None:
-    """Rename pre-v0.1.31 Korean-slug entity_ids onto the fi_* form.
+def _plan_entity_id_migrations(
+    entities: list[tuple[str, str, str]],
+    handled: set[str],
+    first_run: bool,
+    domain: str,
+    prefix: str,
+) -> tuple[list[tuple[str, str]], set[str]]:
+    """Decide which entities to rename — pure, unit-tested.
 
-    Why this exists: pre-0.1.31 the integration set Korean device
-    names without a ``suggested_object_id``, so HA slugified those
-    Korean names into the entity_id ("sensor.hangug_sijang_jipyo_kospi"
-    instead of "sensor.fi_kospi"). New installs are already correct,
-    but users who upgraded carry the Korean slug forever because HA's
-    entity registry pins entity_id by unique_id on first registration.
-    This sweep runs once on setup and renames each stuck entity to its
-    new ``fi_*`` slug. History/statistics stay attached because HA
-    updates them via the registry update.
+    ``entities`` is ``[(entity_domain, entity_id, unique_id), ...]`` for
+    this integration. An entity is considered exactly once (tracked by
+    unique_id in ``handled``): the first time it's seen it gets its
+    ``fi_*`` slug, after that it's left alone, so an entity_id the user
+    renamed in the UI sticks. On the very first run after upgrading
+    (``first_run``) existing entities are only recorded, never renamed —
+    earlier versions already normalised them on every setup.
 
-    No-op on already-correct entities — safe to run every setup.
+    Returns ``(renames, new_handled)``; ``new_handled`` is pruned to
+    unique_ids still in the registry.
     """
-    from homeassistant.helpers import entity_registry as er
-    from .const import DOMAIN, ENTITY_ID_PREFIX, LOGGER
-
-    registry = er.async_get(hass)
-    # list(...) — we're mutating during iteration.
-    for entry in list(registry.entities.values()):
-        if entry.platform != DOMAIN:
-            continue
-        expected = _expected_object_id(DOMAIN, ENTITY_ID_PREFIX, entry.unique_id)
+    renames: list[tuple[str, str]] = []
+    present: set[str] = set()
+    new_handled = set(handled)
+    for ent_domain, entity_id, unique_id in entities:
+        expected = _expected_object_id(domain, prefix, unique_id)
         if expected is None:
             continue
-        new_entity_id = f"{entry.domain}.{expected}"
-        if entry.entity_id == new_entity_id:
+        present.add(unique_id)
+        if unique_id in handled:
             continue
-        # Collision guard — if a fresh entity already claimed the
-        # target slug we leave the stuck one alone rather than blow
-        # up the setup. Practically rare (same unique_id can't be
-        # registered twice) but defensive.
-        if registry.async_get(new_entity_id) is not None:
+        new_handled.add(unique_id)
+        if first_run:
+            continue
+        target = f"{ent_domain}.{expected}"
+        if entity_id != target:
+            renames.append((entity_id, target))
+    return renames, new_handled & present
+
+
+async def _migrate_legacy_entity_ids(hass: "HomeAssistant") -> None:
+    """Give each entity its short ``fi_*`` entity_id — once.
+
+    Why: pre-0.1.31 installs got Korean-slug entity_ids, and Home
+    Assistant 2026.x ignores ``_attr_suggested_object_id`` so brand-new
+    entities are registered under a name-based slug
+    ("sensor.ethereum_krw"). This sweep renames such entities to
+    ``fi_*`` the first time it sees them and records them in a small
+    Store, so a later rename by the user is never reverted (v0.2.1 and
+    earlier re-ran the rename on every setup).
+
+    Called twice per setup: before the platforms (existing entities) and
+    right after them (entities created in this setup).
+    """
+    from homeassistant.helpers import entity_registry as er
+    from homeassistant.helpers.storage import Store
+
+    from .const import DOMAIN, ENTITY_ID_PREFIX, LOGGER
+
+    store = Store(hass, 1, f"{DOMAIN}.entity_migration")
+    stored = await store.async_load()
+    first_run = not isinstance(stored, dict)
+    handled = set((stored or {}).get("handled", []) if not first_run else [])
+
+    registry = er.async_get(hass)
+    entities = [
+        (e.domain, e.entity_id, e.unique_id)
+        for e in list(registry.entities.values())
+        if e.platform == DOMAIN
+    ]
+    renames, new_handled = _plan_entity_id_migrations(
+        entities, handled, first_run, DOMAIN, ENTITY_ID_PREFIX
+    )
+    for old_id, new_id in renames:
+        # Collision guard — leave the entity alone rather than fail setup.
+        if registry.async_get(new_id) is not None:
             LOGGER.warning(
                 "Skipping entity_id migration: %s -> %s (target already exists)",
-                entry.entity_id, new_entity_id,
+                old_id, new_id,
             )
             continue
-        LOGGER.info("Migrating entity_id %s -> %s", entry.entity_id, new_entity_id)
-        registry.async_update_entity(entry.entity_id, new_entity_id=new_entity_id)
+        LOGGER.info("Migrating entity_id %s -> %s", old_id, new_id)
+        registry.async_update_entity(old_id, new_entity_id=new_id)
+
+    if first_run or new_handled != handled:
+        await store.async_save({"handled": sorted(new_handled)})
 
 
 async def async_setup_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> bool:
