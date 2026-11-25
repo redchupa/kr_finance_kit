@@ -10,7 +10,7 @@
  * open sheet (with inputs the user is typing into) is never clobbered.
  */
 
-const PANEL_VERSION = "0.2.16";
+const PANEL_VERSION = "0.2.17";
 const LS_KEY = "kr_finance_kit.prefs";
 
 const I18N = {
@@ -18,8 +18,8 @@ const I18N = {
     title: "Finance Kit",
     loading: "데이터를 불러오는 중…",
     initial_failed: "첫 조회를 완료하지 못했습니다. 자동으로 다시 시도합니다.",
-    partial: "첫 조회 중입니다. 도착한 시세부터 표시합니다.",
-    warming: "첫 시세를 조회 중입니다. 시작 분산 대기는 최대 30초이며 응답 시간은 별도입니다.",
+    partial: "약 10초 간격으로 다음 종목을 조회합니다. 도착한 시세부터 표시합니다.",
+    warming: "종목을 약 10초 간격으로 하나씩 조회합니다. 서버 응답에 따라 더 걸릴 수 있습니다.",
     next_check: "{n}초 후 화면을 자동으로 확인합니다.",
     not_configured: "Finance Kit 통합이 아직 설정되지 않았습니다. 설정 → 기기 및 서비스에서 추가해 주세요.",
     refresh: "새로고침",
@@ -135,8 +135,8 @@ const I18N = {
     title: "Finance Kit",
     loading: "Loading…",
     initial_failed: "The first refresh could not finish. Finance Kit will retry automatically.",
-    partial: "First refresh in progress. Showing quotes as they arrive.",
-    warming: "Fetching the first quote. Startup pacing can take up to 30 seconds, plus provider response time.",
+    partial: "Checking the next symbol at roughly 10-second intervals. Showing quotes as they arrive.",
+    warming: "Looking up one symbol about every 10 seconds. Slow responses can extend the wait.",
     next_check: "Checking for new data in {n}s.",
     not_configured: "Finance Kit isn't set up yet. Add it under Settings → Devices & services.",
     refresh: "Refresh",
