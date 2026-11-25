@@ -107,7 +107,7 @@ async def async_setup_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
     if not st["ws"]:
         for handler in (
-            ws_snapshot, ws_history, ws_search, ws_watchlist_add,
+            ws_snapshot, ws_history, ws_search, ws_catalog, ws_watchlist_add,
             ws_watchlist_remove, ws_prefs_get, ws_prefs_set,
         ):
             websocket_api.async_register_command(hass, handler)
@@ -280,17 +280,75 @@ async def ws_history(hass: HomeAssistant, connection, msg: dict[str, Any]) -> No
     connection.send_result(msg["id"], {"period": period, "series": out})
 
 
+async def _get_corp_map_cached(
+    hass: HomeAssistant, api_key: str
+) -> dict[str, tuple[str, str]]:
+    """Load OpenDart corp_code map with negative-cache guard."""
+    if not api_key:
+        return {}
+    st = _state(hass)
+    if st.get("corp_map_failed_until", 0) >= time.monotonic():
+        return {}
+    try:
+        from .api.opendart import _load_corp_code_map
+
+        mapping = await _load_corp_code_map(hass, api_key)
+        if not mapping:
+            st["corp_map_failed_until"] = time.monotonic() + _CORP_MAP_RETRY
+            return {}
+        return mapping
+    except Exception as err:  # noqa: BLE001
+        st["corp_map_failed_until"] = time.monotonic() + _CORP_MAP_RETRY
+        LOGGER.debug("KR company map load failed: %s", err)
+        return {}
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "kr_finance_kit/catalog",
+        vol.Optional("market", default=MARKET_KR): vol.In(list(pd.PANEL_MARKETS)),
+        vol.Optional("category", default="all"): vol.All(str, vol.Length(max=24)),
+        vol.Optional("lang", default="ko"): vol.In(["ko", "en"]),
+        vol.Optional("query", default=""): vol.All(str, vol.Length(max=40)),
+        vol.Optional("limit", default=80): vol.All(int, vol.Range(min=1, max=150)),
+    }
+)
+@websocket_api.async_response
+async def ws_catalog(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Return browsable symbol catalog, categories, and code-lookup URLs."""
+    market = msg["market"]
+    extra_kr_map: dict[str, tuple[str, str]] | None = None
+    if market == MARKET_KR:
+        entry, _store = _active(hass)
+        cfg = pd.merged_config(entry.data, entry.options) if entry else {}
+        api_key = (cfg.get(CONF_OPENDART_API_KEY) or "").strip()
+        if api_key:
+            async with _state(hass)["lock"]:
+                extra_kr_map = await _get_corp_map_cached(hass, api_key)
+    payload = pd.catalog_for_market(
+        market,
+        category=msg["category"],
+        lang=msg["lang"],
+        query=msg["query"],
+        extra_kr_map=extra_kr_map,
+        limit=msg["limit"],
+    )
+    connection.send_result(msg["id"], payload)
+
+
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "kr_finance_kit/search",
         vol.Required("query"): vol.All(str, vol.Length(min=1, max=40)),
+        vol.Optional("lang", default="ko"): vol.In(["ko", "en"]),
     }
 )
 @websocket_api.async_response
 async def ws_search(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     query = msg["query"].strip()
+    lang = msg.get("lang", "ko")
     st = _state(hass)
-    cache_key = query.lower()
+    cache_key = f"{lang}:{query.lower()}"
     hit = st["search"].get(cache_key)
     if hit and hit[0] > time.monotonic():
         connection.send_result(msg["id"], {"results": hit[1]})
@@ -303,27 +361,30 @@ async def ws_search(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
     # Same lock as chart requests: any logged-in user can call this, so
     # outbound traffic is serialized rather than fanned out.
     async with st["lock"]:
-        if api_key and st.get("corp_map_failed_until", 0) < time.monotonic():
-            try:
-                from .api.opendart import _load_corp_code_map
-
-                mapping = await _load_corp_code_map(hass, api_key)
-                if not mapping:
-                    st["corp_map_failed_until"] = time.monotonic() + _CORP_MAP_RETRY
+        if api_key:
+            mapping = await _get_corp_map_cached(hass, api_key)
+            if mapping:
                 results.extend(pd.match_kr_companies(mapping, query, limit=6))
-            except Exception as err:  # noqa: BLE001
-                st["corp_map_failed_until"] = time.monotonic() + _CORP_MAP_RETRY
-                LOGGER.debug("KR company search failed: %s", err)
         yahoo_hits = await yfinance_wrap.search_symbols(query, limit=8)
 
-    seen = {r["symbol"] for r in results}
+    seen = {(r["market"], r["symbol"]) for r in results}
+    # Curated catalog matches provide instant Korean/English lookup even
+    # without an OpenDart API key (Yahoo Search does not index Korean names).
+    for cat_row in pd.match_catalog(query, lang=lang, limit=8):
+        key = (cat_row["market"], cat_row["symbol"])
+        if key in seen:
+            continue
+        seen.add(key)
+        results.append(cat_row)
+
     for hit_row in yahoo_hits:
         market, ticker = pd.classify_search_hit(hit_row["symbol"], hit_row["quote_type"])
         if market == MARKET_KR:
             ticker = ticker[:-3] if ticker.endswith(".KS") else ticker
-        if ticker in seen:
+        key = (market, ticker)
+        if key in seen:
             continue
-        seen.add(ticker)
+        seen.add(key)
         results.append({
             "symbol": ticker,
             "name": hit_row["name"],

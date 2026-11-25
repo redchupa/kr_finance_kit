@@ -343,10 +343,44 @@ async def test_search_negative_caches_corp_map_failure(monkeypatch):
     monkeypatch.setattr(panel.yfinance_wrap, "search_symbols", no_yahoo)
     hass = _hass(_entry({"opendart_api_key": "k"}), {})
     conn = FakeConn(admin=False)
-    await raw(panel.ws_search)(hass, conn, {"id": 1, "query": "삼성"})
-    await raw(panel.ws_search)(hass, conn, {"id": 2, "query": "하이닉스"})
+    await raw(panel.ws_search)(hass, conn, {"id": 1, "query": "없는종목알파"})
+    await raw(panel.ws_search)(hass, conn, {"id": 2, "query": "없는종목베타"})
     assert calls == ["k"]  # second search skipped the re-download
     assert conn.results[-1] == {"results": []}
+
+
+@sync
+async def test_search_uses_curated_catalog_without_opendart(monkeypatch):
+    async def no_yahoo(query, limit=8):
+        return []
+
+    monkeypatch.setattr(panel.yfinance_wrap, "search_symbols", no_yahoo)
+    hass = _hass(_entry({}), {})
+    conn = FakeConn(admin=False)
+    await raw(panel.ws_search)(hass, conn, {"id": 1, "query": "삼성전자", "lang": "ko"})
+    results = conn.results[-1]["results"]
+    assert results and results[0]["symbol"] == "005930" and results[0]["market"] == "KR"
+
+
+@sync
+async def test_catalog_ws_returns_links_and_krx_all(monkeypatch):
+    from custom_components.kr_finance_kit.api import opendart
+
+    async def fake_map(hass, key):
+        return {"005930": ("00126380", "삼성전자"), "035420": ("00266961", "NAVER")}
+
+    monkeypatch.setattr(opendart, "_load_corp_code_map", fake_map)
+    hass = _hass(_entry({"opendart_api_key": "k"}), {})
+    conn = FakeConn(admin=False)
+    await raw(panel.ws_catalog)(
+        hass, conn, {"id": 1, "market": "KR", "category": "all", "lang": "ko", "query": "", "limit": 80}
+    )
+    res = conn.results[-1]
+    assert res["market"] == "KR"
+    assert res["krx_total"] == 2
+    assert any(c["id"] == "krx_all" for c in res["categories"])
+    assert any("kind.krx.co.kr" in link["url"] for link in res["links"])
+    assert len(res["items"]) >= 20
 
 
 @sync

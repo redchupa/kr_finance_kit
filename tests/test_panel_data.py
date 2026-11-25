@@ -394,3 +394,47 @@ def test_default_symbols_returns_fresh_copies():
     a = pd.default_symbols("en")
     a["us"].append("X")
     assert "X" not in pd.default_symbols("en")["us"]
+
+
+# ---------------------------------------------------------------- catalog
+
+@pytest.mark.parametrize("market", ["KR", "US", "CRYPTO", "OTHER"])
+def test_catalog_for_market_populates_items_categories_and_urls(market):
+    res = pd.catalog_for_market(market, lang="ko")
+    assert res["market"] == market
+    assert len(res["items"]) >= 15
+    assert len(res["categories"]) >= 3
+    assert res["categories"][0]["id"] == "all"
+    assert len(res["links"]) >= 1
+    assert all(link["url"].startswith("https://") for link in res["links"])
+
+
+def test_catalog_for_market_category_filter_and_language():
+    etfs_ko = pd.catalog_for_market("US", category="etf", lang="ko")
+    etfs_en = pd.catalog_for_market("US", category="etf", lang="en")
+    assert all(r["category"] == "etf" for r in etfs_ko["items"])
+    assert any(r["symbol"] == "SPY" for r in etfs_ko["items"])
+    assert etfs_ko["items"][0]["name"] != etfs_en["items"][0]["name"]
+
+
+def test_catalog_for_market_krx_all_with_opendart_map():
+    extra = {
+        "005930": ("00126380", "삼성전자"),
+        "000660": ("00164779", "SK하이닉스"),
+        "999999": ("00999999", "가나다테스트"),
+    }
+    res = pd.catalog_for_market("KR", category="krx_all", lang="ko", extra_kr_map=extra)
+    assert res["krx_total"] == 3
+    assert any(c["id"] == "krx_all" for c in res["categories"])
+    assert [r["symbol"] for r in res["items"]] == ["000660", "999999", "005930"]
+    filtered = pd.catalog_for_market("KR", category="krx_all", query="가나다", extra_kr_map=extra)
+    assert [r["symbol"] for r in filtered["items"]] == ["999999"]
+
+
+def test_match_catalog_korean_and_english_without_opendart():
+    assert pd.match_catalog("삼성전자", lang="ko")[0]["symbol"] == "005930"
+    assert pd.match_catalog("엔비디아", lang="ko")[0]["symbol"] == "NVDA"
+    assert pd.match_catalog("비트코인", lang="ko")[0]["symbol"] == "BTC"
+    assert pd.match_catalog("금 선물", lang="ko")[0]["symbol"] == "GC=F"
+    assert pd.match_catalog("Apple", lang="en")[0]["symbol"] == "AAPL"
+    assert pd.match_catalog("", lang="ko") == []

@@ -10,7 +10,7 @@
  * open sheet (with inputs the user is typing into) is never clobbered.
  */
 
-const PANEL_VERSION = "0.2.5";
+const PANEL_VERSION = "0.2.6";
 const LS_KEY = "kr_finance_kit.prefs";
 
 const I18N = {
@@ -51,6 +51,13 @@ const I18N = {
     ticker_ph_kr: "005930", ticker_ph_us: "AAPL", ticker_ph_crypto: "BTC", ticker_ph_other: "EUR=X, GC=F",
     quote_ccy: "기준 통화",
     quick: "빠른 선택",
+    lookup_sites: "종목코드 검색 사이트",
+    browse_title: "종목 선택해서 바로 추가",
+    catalog_loading: "종목 데이터를 불러오는 중…",
+    catalog_empty: "표시할 종목이 없어요.",
+    already_added: "추가됨",
+    quick_add: "추가",
+    direct_input: "직접 코드 입력",
     adding: "추가하는 중…",
     added: "{t} 추가됨 — 시세가 곧 표시됩니다",
     removed: "{t} 삭제됨",
@@ -142,6 +149,13 @@ const I18N = {
     ticker_ph_kr: "005930", ticker_ph_us: "AAPL", ticker_ph_crypto: "BTC", ticker_ph_other: "EUR=X, GC=F",
     quote_ccy: "Quote currency",
     quick: "Quick pick",
+    lookup_sites: "Find ticker codes",
+    browse_title: "Pick & add from list",
+    catalog_loading: "Loading symbols…",
+    catalog_empty: "No symbols to show.",
+    already_added: "Added",
+    quick_add: "Add",
+    direct_input: "Enter code manually",
     adding: "Adding…",
     added: "{t} added — quotes will appear shortly",
     removed: "{t} removed",
@@ -231,7 +245,23 @@ const VIEWS = {
 const VIEW_ICONS = { all: "◎", market: "📈", watch: "⭐", portfolio: "💼", news: "📰" };
 const PERIODS = ["1d", "5d", "1mo", "6mo", "1y"];
 const REFRESH_CHOICES = [15, 30, 60, 120, 300];
-const CRYPTO_QUICK = ["BTC", "ETH", "XRP", "SOL", "DOGE", "ADA"];
+const FALLBACK_LOOKUP_URLS = {
+  KR: [
+    { label_ko: "KRX 상장법인 목록", label_en: "KRX Listed Companies", url: "https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage" },
+    { label_ko: "네이버 금융 시세", label_en: "Naver Finance", url: "https://finance.naver.com/sise/sise_market_sum.naver" },
+  ],
+  US: [
+    { label_ko: "Yahoo Finance 종목 검색", label_en: "Yahoo Finance Lookup", url: "https://finance.yahoo.com/lookup" },
+  ],
+  CRYPTO: [
+    { label_ko: "Yahoo Finance 코인 목록", label_en: "Yahoo Finance Crypto", url: "https://finance.yahoo.com/markets/crypto/all/" },
+    { label_ko: "Yahoo Finance 검색", label_en: "Yahoo Finance Lookup", url: "https://finance.yahoo.com/lookup" },
+  ],
+  OTHER: [
+    { label_ko: "Yahoo Finance 검색", label_en: "Yahoo Finance Lookup", url: "https://finance.yahoo.com/lookup" },
+    { label_ko: "Yahoo Finance 원자재·선물", label_en: "Yahoo Finance Commodities", url: "https://finance.yahoo.com/markets/commodities/" },
+  ],
+};
 const DEFAULT_PREFS = {
   lang: "auto", theme: "ha", layout: "cards", up_color: "auto",
   sections: SECTION_IDS.map((id) => ({ id, visible: true })),
@@ -303,6 +333,7 @@ class KRFinancePanel extends HTMLElement {
     this._spark = {}; // period -> key -> {t,c}
     this._sparkPending = new Set();
     this._sparkFailed = new Set();
+    this._catalogCache = {}; // "lang:market:category" -> catalog payload
     this._timers = [];
     this._built = false;
   }
@@ -976,38 +1007,158 @@ class KRFinancePanel extends HTMLElement {
   }
 
   // ---- add
+  _watchNormKey(market, symbol, quote) {
+    const s = String(symbol || "").trim().toUpperCase();
+    if (market === "KR") return `KR:${s.replace(/\.KS$/i, "")}`;
+    if (market === "CRYPTO") {
+      const q = (quote || "KRW").toUpperCase();
+      return `OTHER:${s.includes("-") ? s : `${s}-${q}`}`;
+    }
+    return `${market}:${s}`;
+  }
+  _isWatched(market, symbol, quote) {
+    const key = this._watchNormKey(market, symbol, quote);
+    if (this._sheet?.justAdded?.has(key)) return true;
+    for (const q of this._snap?.quotes || []) {
+      const qKey = q.market === "KR" ? `KR:${String(q.ticker).toUpperCase().replace(/\.KS$/i, "")}` : `${q.market}:${String(q.ticker).toUpperCase()}`;
+      if (qKey === key) return true;
+    }
+    return false;
+  }
+  _lookupLinks(market, cat) {
+    if (cat?.links?.length) return cat.links;
+    const isKo = this.lang === "ko";
+    return (FALLBACK_LOOKUP_URLS[market] || []).map((l) => ({
+      label: isKo ? l.label_ko : l.label_en,
+      url: l.url,
+    }));
+  }
   _addBody() {
     const st = this._sheet;
     const m = st.market || "KR";
+    const cat = st.catalog;
     const segBtn = (v) => `<button class="${m === v ? "on" : ""}" data-act="addmarket" data-val="${v}">${esc(this.t("m_" + v.toLowerCase()))}</button>`;
-    const quick = m === "CRYPTO" ? `<div class="field"><span>${esc(this.t("quick"))}</span><div class="quick">${CRYPTO_QUICK.map((c) =>
-      `<button class="chip-btn" data-act="quick" data-val="${c}">${c}</button>`).join("")}</div></div>
-      <div class="field"><span>${esc(this.t("quote_ccy"))}</span><div class="seg">${["KRW", "USD", "USDT"].map((c) =>
-        `<button class="${(st.quote || "KRW") === c ? "on" : ""}" data-act="addquote" data-val="${c}">${c}</button>`).join("")}</div></div>` : "";
+    const links = this._lookupLinks(m, cat);
+    const linksHtml = links.length ? `<div class="lookup-box">
+      <div class="lookup-h">🔗 ${esc(this.t("lookup_sites"))}</div>
+      <div class="lookup-links">${links.map((l) =>
+        `<a class="lookup-link" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" title="${esc(l.url)}">${esc(l.label)} ↗</a>`).join("")}</div>
+    </div>` : "";
+    const cryptoQuote = m === "CRYPTO" ? `<div class="field"><span>${esc(this.t("quote_ccy"))}</span><div class="seg">${["KRW", "USD", "USDT"].map((c) =>
+      `<button class="${(st.quote || "KRW") === c ? "on" : ""}" data-act="addquote" data-val="${c}">${c}</button>`).join("")}</div></div>` : "";
     return `
       <div class="seg wide">${["KR", "US", "CRYPTO", "OTHER"].map(segBtn).join("")}</div>
       <p class="muted small">${esc(this.t("add_hint_" + m.toLowerCase()))}</p>
+      ${linksHtml}
       <div class="field"><input id="q" class="inp" type="search" autocomplete="off" placeholder="${esc(this.t("search_ph"))}" value="${esc(st.query || "")}" data-act="search"></div>
       <div id="results" class="results">${this._resultsHtml()}</div>
-      ${quick}
-      <div class="field two">
-        <label><span>${esc(this.t("ticker"))}</span><input id="tk" class="inp mono" autocapitalize="characters" autocomplete="off" placeholder="${esc(this.t("ticker_ph_" + m.toLowerCase()))}" value="${esc(st.ticker || "")}" data-enter="doadd"></label>
-        <label><span>${esc(this.t("label"))}</span><input id="lb" class="inp" autocomplete="off" value="${esc(st.label || "")}" data-enter="doadd"></label>
+      ${cryptoQuote}
+      <div class="field">
+        <span>${esc(this.t("browse_title"))}</span>
+        <div id="catalog">${this._catalogHtml()}</div>
       </div>
-      <div id="adderr" class="err" ${st.error ? "" : "hidden"}>${esc(st.error || "")}</div>
-      <div class="btn-row">
-        ${st.canForce ? `<button class="btn" data-act="doadd" data-force="1">${esc(this.t("force_add"))}</button>` : ""}
-        <button class="btn primary" data-act="doadd" ${st.busy ? "disabled" : ""}>${esc(st.busy ? this.t("adding") : this.t("add"))}</button>
+      <div class="direct-box">
+        <div class="muted small">${esc(this.t("direct_input"))}</div>
+        <div class="field two">
+          <label><span>${esc(this.t("ticker"))}</span><input id="tk" class="inp mono" autocapitalize="characters" autocomplete="off" placeholder="${esc(this.t("ticker_ph_" + m.toLowerCase()))}" value="${esc(st.ticker || "")}" data-enter="doadd"></label>
+          <label><span>${esc(this.t("label"))}</span><input id="lb" class="inp" autocomplete="off" value="${esc(st.label || "")}" data-enter="doadd"></label>
+        </div>
+        <div id="adderr" class="err" ${st.error ? "" : "hidden"}>${esc(st.error || "")}</div>
+        <div class="btn-row">
+          ${st.canForce ? `<button class="btn" data-act="doadd" data-force="1">${esc(this.t("force_add"))}</button>` : ""}
+          <button class="btn primary" data-act="doadd" ${st.busy ? "disabled" : ""}>${esc(st.busy ? this.t("adding") : this.t("add"))}</button>
+        </div>
       </div>`;
+  }
+  _catalogHtml() {
+    const st = this._sheet || {};
+    const m = st.market || "KR";
+    const quote = st.quote || "KRW";
+    if (st.catLoading && !st.catalog) return `<div class="muted small pad">${esc(this.t("catalog_loading"))}</div>`;
+    const cat = st.catalog;
+    if (!cat) return "";
+    const curCat = st.category || "all";
+    const tabs = (cat.categories || []).length > 1
+      ? `<div class="cat-tabs">${cat.categories.map((c) =>
+          `<button class="cat-tab ${curCat === c.id ? "on" : ""}" data-act="cat" data-val="${esc(c.id)}">${esc(c.label)}</button>`).join("")}</div>` : "";
+    const items = cat.items || [];
+    if (!items.length) return `${tabs}<div class="muted small pad">${esc(this.t("catalog_empty"))}</div>`;
+    const rows = items.map((r, i) => {
+      const dispSym = m === "CRYPTO" ? `${r.symbol}-${quote}` : r.symbol;
+      const watched = this._isWatched(m, r.symbol, quote);
+      const adding = st.addingKey === this._watchNormKey(m, r.symbol, quote);
+      return `<div class="cat-row">
+        <button class="cat-pick" data-act="catpick" data-i="${i}">
+          <span class="badge">${esc(dispSym)}</span>
+          <span class="res-n"><b>${esc(r.name)}</b></span>
+          <span class="muted small">${esc(r.exchange || "")}</span>
+        </button>
+        ${watched
+          ? `<span class="cat-added">✓ ${esc(this.t("already_added"))}</span>`
+          : `<button class="cat-add-btn" data-act="catadd" data-i="${i}" ${adding ? "disabled" : ""}>${adding ? "…" : `＋ ${esc(this.t("quick_add"))}`}</button>`}
+      </div>`;
+    }).join("");
+    return `${tabs}<div class="cat-list">${rows}</div>`;
+  }
+  _updateCatalog() {
+    const el = this.shadowRoot.getElementById("catalog");
+    if (el) el.innerHTML = this._catalogHtml();
+  }
+  async _loadCatalog() {
+    const st = this._sheet;
+    if (!st || st.type !== "add") return;
+    const market = st.market || "KR";
+    const category = st.category || "all";
+    const lang = this.lang;
+    const cacheKey = `${lang}:${market}:${category}`;
+    if (this._catalogCache[cacheKey]) {
+      st.catalog = this._catalogCache[cacheKey];
+      st.catLoading = false;
+      this._updateCatalog();
+      return;
+    }
+    st.catLoading = true;
+    this._updateCatalog();
+    try {
+      const res = await this._hass.callWS({
+        type: "kr_finance_kit/catalog",
+        market,
+        category,
+        lang,
+        limit: 80,
+      });
+      this._catalogCache[cacheKey] = res;
+      if (!this._sheet || this._sheet.type !== "add" || (this._sheet.market || "KR") !== market || (this._sheet.category || "all") !== category) return;
+      this._sheet.catalog = res;
+    } catch (_e) {
+      if (!this._sheet || this._sheet.type !== "add") return;
+      this._sheet.catalog = { market, categories: [], items: [], links: this._lookupLinks(market, null) };
+    }
+    if (this._sheet && this._sheet.type === "add") {
+      this._sheet.catLoading = false;
+      this._updateCatalog();
+    }
   }
   _resultsHtml() {
     const st = this._sheet || {};
     if (st.searching) return `<div class="muted small pad">${esc(this.t("searching"))}</div>`;
     if (!st.results) return "";
     if (!st.results.length) return `<div class="muted small pad">${esc(this.t("no_results"))}</div>`;
-    return st.results.map((r, i) => `<button class="res" data-act="pick" data-i="${i}">
-        <span class="badge">${GROUP_FLAG[r.market === "CRYPTO" ? "OTHER" : r.market] || "🌐"} ${esc(r.market === "CRYPTO" ? "🪙" : "")}${esc(r.symbol)}</span>
-        <span class="res-n">${esc(r.name)}</span><span class="muted small">${esc(r.exchange || "")}</span></button>`).join("");
+    const quote = st.quote || "KRW";
+    return st.results.map((r, i) => {
+      const watched = this._isWatched(r.market, r.symbol, quote);
+      const adding = st.addingKey === this._watchNormKey(r.market, r.symbol, quote);
+      return `<div class="cat-row">
+        <button class="cat-pick" data-act="pick" data-i="${i}">
+          <span class="badge">${GROUP_FLAG[r.market === "CRYPTO" ? "OTHER" : r.market] || "🌐"} ${esc(r.market === "CRYPTO" ? "🪙" : "")}${esc(r.symbol)}</span>
+          <span class="res-n">${esc(r.name)}</span>
+          <span class="muted small">${esc(r.exchange || "")}</span>
+        </button>
+        ${watched
+          ? `<span class="cat-added">✓ ${esc(this.t("already_added"))}</span>`
+          : `<button class="cat-add-btn" data-act="resadd" data-i="${i}" ${adding ? "disabled" : ""}>${adding ? "…" : `＋ ${esc(this.t("quick_add"))}`}</button>`}
+      </div>`;
+    }).join("");
   }
   _updateResults() {
     const el = this.shadowRoot.getElementById("results");
@@ -1025,7 +1176,7 @@ class KRFinancePanel extends HTMLElement {
     if (!q || q.trim().length < 1) { this._sheet.results = null; this._updateResults(); return; }
     this._sheet.searching = true; this._updateResults();
     try {
-      const res = await this._hass.callWS({ type: "kr_finance_kit/search", query: q.trim() });
+      const res = await this._hass.callWS({ type: "kr_finance_kit/search", query: q.trim(), lang: this.lang });
       if (!this._sheet || this._sheet.type !== "add" || this._sheet.query !== q) return;
       this._sheet.results = res.results || [];
     } catch (_e) {
@@ -1033,6 +1184,37 @@ class KRFinancePanel extends HTMLElement {
     }
     this._sheet.searching = false;
     this._updateResults();
+  }
+  async _quickAddSymbol(market, symbol, label) {
+    const st = this._sheet;
+    if (!st || st.type !== "add" || st.addingKey) return;
+    const quote = market === "CRYPTO" ? (symbol.includes("-") ? symbol.split("-").pop() : (st.quote || "KRW")) : undefined;
+    const normKey = this._watchNormKey(market, symbol, quote);
+    st.addingKey = normKey;
+    st.error = null;
+    this._updateCatalog();
+    this._updateResults();
+    const msg = { type: "kr_finance_kit/watchlist/add", market, ticker: symbol, force: false };
+    if (market === "CRYPTO") msg.quote = quote;
+    if (label && label.trim()) msg.label = label.trim();
+    try {
+      const res = await this._hass.callWS(msg);
+      if (!st.justAdded) st.justAdded = new Set();
+      st.justAdded.add(normKey);
+      this._toast(this.t("added", { t: label || res.ticker }));
+      this._pollAfterChange(res.market + ":" + res.ticker);
+    } catch (e) {
+      if (e?.code === "duplicate") {
+        if (!st.justAdded) st.justAdded = new Set();
+        st.justAdded.add(normKey);
+      }
+      this._toast(this._errText(e));
+    }
+    if (this._sheet && this._sheet.type === "add") {
+      this._sheet.addingKey = null;
+      this._updateCatalog();
+      this._updateResults();
+    }
   }
   async _doAdd(force) {
     this._readAddInputs();
@@ -1276,7 +1458,10 @@ class KRFinancePanel extends HTMLElement {
         this.shadowRoot.getElementById("scroller").scrollTop = 0;
         break;
       case "edit": this._edit = !this._edit; this._renderContent(); break;
-      case "add": this._openSheet({ type: "add", market: d.market || "KR", quote: this.lang === "ko" ? "KRW" : "USD" }); break;
+      case "add":
+        this._openSheet({ type: "add", market: d.market || "KR", category: "all", quote: this.lang === "ko" ? "KRW" : "USD", justAdded: new Set() });
+        this._loadCatalog();
+        break;
       case "detail": if (!this._edit) this._openSheet({ type: "detail", key: d.key }); break;
       case "pref": this._setPrefs({ [d.key]: d.val }); break;
       case "secmove": {
@@ -1306,17 +1491,45 @@ class KRFinancePanel extends HTMLElement {
         break;
       case "addmarket":
         this._readAddInputs();
-        this._sheet.market = d.val; this._sheet.error = null; this._sheet.canForce = false;
+        this._sheet.market = d.val;
+        this._sheet.category = "all";
+        this._sheet.catalog = null;
+        this._sheet.error = null;
+        this._sheet.canForce = false;
         this._renderSheet();
+        this._loadCatalog();
         break;
       case "addquote":
         this._readAddInputs();
-        this._sheet.quote = d.val; this._renderSheet();
+        this._sheet.quote = d.val;
+        this._renderSheet();
         break;
-      case "quick":
+      case "cat":
         this._readAddInputs();
-        this._sheet.ticker = d.val; this._sheet.error = null; this._renderSheet();
+        this._sheet.category = d.val;
+        this._sheet.catalog = null;
+        this._loadCatalog();
         break;
+      case "catpick": {
+        this._readAddInputs();
+        const r = this._sheet.catalog?.items?.[Number(d.i)];
+        if (!r) break;
+        this._sheet.ticker = r.symbol;
+        this._sheet.label = r.name || "";
+        this._sheet.error = null;
+        this._renderSheet();
+        break;
+      }
+      case "catadd": {
+        const r = this._sheet.catalog?.items?.[Number(d.i)];
+        if (r) this._quickAddSymbol(this._sheet.market || r.market || "KR", r.symbol, r.name || "");
+        break;
+      }
+      case "resadd": {
+        const r = this._sheet.results?.[Number(d.i)];
+        if (r) this._quickAddSymbol(r.market, r.symbol, r.name || "");
+        break;
+      }
       case "pick": {
         this._readAddInputs();
         const r = this._sheet.results?.[Number(d.i)];
@@ -1327,6 +1540,7 @@ class KRFinancePanel extends HTMLElement {
         this._sheet.label = r.name || "";
         this._sheet.error = null;
         this._renderSheet();
+        this._loadCatalog();
         break;
       }
       case "doadd": this._doAdd(d.force === "1"); break;
@@ -1601,10 +1815,25 @@ main { max-width:1200px; margin:0 auto; padding:8px 16px 24px; }
 .field label { display:flex; flex-direction:column; gap:6px; }
 .inp, select { width:100%; min-height:46px; border-radius:12px; border:1px solid var(--border); background:var(--card2); color:var(--text); padding:10px 12px; font-size:16px; }
 .inp:focus, select:focus { outline:2px solid var(--accent); outline-offset:0; }
-.results { display:flex; flex-direction:column; gap:4px; max-height:260px; overflow-y:auto; }
+.results { display:flex; flex-direction:column; gap:4px; max-height:240px; overflow-y:auto; }
 .res { display:flex; gap:8px; align-items:center; text-align:left; border:1px solid var(--border); background:var(--card2); border-radius:10px; padding:10px 12px; min-height:46px; }
 .res-n { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .pad { padding:8px 4px; }
+.lookup-box { padding:10px 12px; border-radius:12px; background:var(--card2); border:1px solid var(--border); margin:6px 0 10px; }
+.lookup-h { font-size:12px; color:var(--muted); font-weight:600; margin-bottom:6px; }
+.lookup-links { display:flex; flex-wrap:wrap; gap:6px; }
+.lookup-link { display:inline-flex; align-items:center; gap:4px; padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--accent); font-size:12.5px; font-weight:600; text-decoration:none; }
+.lookup-link:hover { border-color:var(--accent); }
+.cat-tabs { display:flex; gap:6px; overflow-x:auto; padding:2px 0 8px; scrollbar-width:thin; }
+.cat-tab { flex:0 0 auto; border:1px solid var(--border); background:var(--card2); border-radius:999px; padding:6px 12px; font-size:12.5px; white-space:nowrap; }
+.cat-tab.on { background:var(--accent); color:var(--on-accent); border-color:transparent; font-weight:600; }
+.cat-list { display:flex; flex-direction:column; gap:4px; max-height:280px; overflow-y:auto; border:1px solid var(--border); border-radius:12px; padding:6px; background:var(--card2); }
+.cat-row { display:flex; align-items:center; gap:6px; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:4px 6px 4px 10px; min-height:46px; }
+.cat-pick { flex:1; min-width:0; display:flex; align-items:center; gap:8px; text-align:left; border:none; background:none; padding:4px 0; }
+.cat-add-btn { flex:0 0 auto; border:none; border-radius:8px; background:var(--accent); color:var(--on-accent); font-size:12.5px; font-weight:600; padding:7px 11px; min-height:34px; white-space:nowrap; }
+.cat-add-btn:disabled { opacity:.5; }
+.cat-added { flex:0 0 auto; font-size:12px; font-weight:600; color:var(--muted); padding:6px 8px; white-space:nowrap; }
+.direct-box { margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
 .quick { display:flex; gap:6px; flex-wrap:wrap; }
 .chip-btn { border:1px solid var(--border); background:var(--card2); border-radius:999px; padding:8px 14px; font-family:var(--mono); font-weight:600; min-height:40px; }
 .btn-row { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; flex-wrap:wrap; }

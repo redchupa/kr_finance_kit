@@ -646,3 +646,375 @@ def default_symbols(language: str | None) -> dict[str, Any]:
         "us_labels": dict(names["us"]),
         "other_labels": dict(names["other"]),
     }
+
+
+# --------------------------------------------------------------------------
+# Curated symbol catalog & code lookup URLs (broad selection in Add sheet)
+# --------------------------------------------------------------------------
+
+# Public, well-known market-cap leaders, major ETFs, top crypto assets,
+# commodities, FX pairs, and global benchmarks only.
+CODE_LOOKUP_URLS: dict[str, list[dict[str, str]]] = {
+    MARKET_KR: [
+        {
+            "id": "krx",
+            "label_ko": "KRX 상장법인 목록",
+            "label_en": "KRX Listed Companies",
+            "url": "https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage",
+        },
+        {
+            "id": "naver",
+            "label_ko": "네이버 금융 시세",
+            "label_en": "Naver Finance",
+            "url": "https://finance.naver.com/sise/sise_market_sum.naver",
+        },
+    ],
+    MARKET_US: [
+        {
+            "id": "yahoo_lookup",
+            "label_ko": "Yahoo Finance 종목 검색",
+            "label_en": "Yahoo Finance Lookup",
+            "url": "https://finance.yahoo.com/lookup",
+        },
+    ],
+    MARKET_CRYPTO: [
+        {
+            "id": "yahoo_crypto",
+            "label_ko": "Yahoo Finance 코인 목록",
+            "label_en": "Yahoo Finance Crypto",
+            "url": "https://finance.yahoo.com/markets/crypto/all/",
+        },
+        {
+            "id": "yahoo_lookup",
+            "label_ko": "Yahoo Finance 검색",
+            "label_en": "Yahoo Finance Lookup",
+            "url": "https://finance.yahoo.com/lookup",
+        },
+    ],
+    MARKET_OTHER: [
+        {
+            "id": "yahoo_lookup",
+            "label_ko": "Yahoo Finance 검색",
+            "label_en": "Yahoo Finance Lookup",
+            "url": "https://finance.yahoo.com/lookup",
+        },
+        {
+            "id": "yahoo_commodities",
+            "label_ko": "Yahoo Finance 원자재·선물",
+            "label_en": "Yahoo Finance Commodities",
+            "url": "https://finance.yahoo.com/markets/commodities/",
+        },
+    ],
+}
+
+CATALOG_CATEGORIES: dict[str, list[tuple[str, str, str]]] = {
+    # (category_id, label_ko, label_en)
+    MARKET_KR: [
+        ("all", "전체", "All"),
+        ("tech", "반도체·IT", "Tech & Semi"),
+        ("industrial", "자동차·배터리·중공업", "Auto & Industrial"),
+        ("bio_fin", "바이오·금융·소비재", "Bio & Finance"),
+        ("kosdaq", "코스닥 (.KQ)", "KOSDAQ (.KQ)"),
+        ("etf", "국내 ETF", "KR ETF"),
+    ],
+    MARKET_US: [
+        ("all", "전체", "All"),
+        ("tech", "빅테크·AI", "Big Tech & AI"),
+        ("bluechip", "금융·소비재·헬스", "Blue Chips"),
+        ("etf", "미국 ETF", "US ETF"),
+    ],
+    MARKET_CRYPTO: [
+        ("all", "전체", "All"),
+        ("major", "메이저", "Major"),
+        ("alt", "알트·밈", "Alt & Meme"),
+    ],
+    MARKET_OTHER: [
+        ("all", "전체", "All"),
+        ("commodity", "원자재·선물", "Commodities"),
+        ("fx", "환율", "FX"),
+        ("macro", "채권·변동성·글로벌", "Rates & Global"),
+    ],
+}
+
+# Tuple layout: (symbol, name_ko, name_en, category, exchange)
+SYMBOL_CATALOG: dict[str, tuple[tuple[str, str, str, str, str], ...]] = {
+    MARKET_KR: (
+        # tech
+        ("005930", "삼성전자", "Samsung Electronics", "tech", "KOSPI"),
+        ("000660", "SK하이닉스", "SK hynix", "tech", "KOSPI"),
+        ("035420", "NAVER", "NAVER", "tech", "KOSPI"),
+        ("035720", "카카오", "Kakao", "tech", "KOSPI"),
+        ("006400", "삼성SDI", "Samsung SDI", "tech", "KOSPI"),
+        ("009150", "삼성전기", "Samsung Electro-Mechanics", "tech", "KOSPI"),
+        ("018260", "삼성에스디에스", "Samsung SDS", "tech", "KOSPI"),
+        ("066570", "LG전자", "LG Electronics", "tech", "KOSPI"),
+        ("017670", "SK텔레콤", "SK Telecom", "tech", "KOSPI"),
+        ("030200", "KT", "KT Corp", "tech", "KOSPI"),
+        ("259960", "크래프톤", "Krafton", "tech", "KOSPI"),
+        # industrial
+        ("005380", "현대차", "Hyundai Motor", "industrial", "KOSPI"),
+        ("000270", "기아", "Kia", "industrial", "KOSPI"),
+        ("012330", "현대모비스", "Hyundai Mobis", "industrial", "KOSPI"),
+        ("373220", "LG에너지솔루션", "LG Energy Solution", "industrial", "KOSPI"),
+        ("051910", "LG화학", "LG Chem", "industrial", "KOSPI"),
+        ("005490", "POSCO홀딩스", "POSCO Holdings", "industrial", "KOSPI"),
+        ("012450", "한화에어로스페이스", "Hanwha Aerospace", "industrial", "KOSPI"),
+        ("329180", "HD현대중공업", "HD Hyundai Heavy Ind.", "industrial", "KOSPI"),
+        ("034020", "두산에너빌리티", "Doosan Enerbility", "industrial", "KOSPI"),
+        # bio_fin
+        ("207940", "삼성바이오로직스", "Samsung Biologics", "bio_fin", "KOSPI"),
+        ("068270", "셀트리온", "Celltrion", "bio_fin", "KOSPI"),
+        ("105560", "KB금융", "KB Financial", "bio_fin", "KOSPI"),
+        ("055550", "신한지주", "Shinhan Financial", "bio_fin", "KOSPI"),
+        ("086790", "하나금융지주", "Hana Financial", "bio_fin", "KOSPI"),
+        ("028260", "삼성물산", "Samsung C&T", "bio_fin", "KOSPI"),
+        ("032830", "삼성생명", "Samsung Life", "bio_fin", "KOSPI"),
+        ("033780", "KT&G", "KT&G", "bio_fin", "KOSPI"),
+        # kosdaq
+        ("247540.KQ", "에코프로비엠", "EcoPro BM", "kosdaq", "KOSDAQ"),
+        ("086520.KQ", "에코프로", "EcoPro", "kosdaq", "KOSDAQ"),
+        ("196170.KQ", "알테오젠", "Alteogen", "kosdaq", "KOSDAQ"),
+        ("028300.KQ", "HLB", "HLB", "kosdaq", "KOSDAQ"),
+        ("058470.KQ", "리노공업", "Leeno Industrial", "kosdaq", "KOSDAQ"),
+        ("277810.KQ", "레인보우로보틱스", "Rainbow Robotics", "kosdaq", "KOSDAQ"),
+        ("263750.KQ", "펄어비스", "Pearl Abyss", "kosdaq", "KOSDAQ"),
+        ("035900.KQ", "JYP Ent.", "JYP Entertainment", "kosdaq", "KOSDAQ"),
+        ("041510.KQ", "에스엠", "SM Entertainment", "kosdaq", "KOSDAQ"),
+        # etf
+        ("069500", "KODEX 200", "KODEX 200 ETF", "etf", "ETF"),
+        ("102110", "TIGER 200", "TIGER 200 ETF", "etf", "ETF"),
+        ("360750", "TIGER 미국S&P500", "TIGER US S&P500", "etf", "ETF"),
+        ("133690", "TIGER 미국나스닥100", "TIGER US Nasdaq100", "etf", "ETF"),
+        ("379800", "KODEX 미국S&P500", "KODEX US S&P500", "etf", "ETF"),
+        ("379810", "KODEX 미국나스닥100", "KODEX US Nasdaq100", "etf", "ETF"),
+        ("122630", "KODEX 레버리지", "KODEX Leverage", "etf", "ETF"),
+        ("252670", "KODEX 200선물인버스2X", "KODEX Inverse 2X", "etf", "ETF"),
+    ),
+    MARKET_US: (
+        # tech
+        ("AAPL", "애플", "Apple", "tech", "NASDAQ"),
+        ("MSFT", "마이크로소프트", "Microsoft", "tech", "NASDAQ"),
+        ("NVDA", "엔비디아", "NVIDIA", "tech", "NASDAQ"),
+        ("GOOGL", "알파벳 (구글)", "Alphabet (Google)", "tech", "NASDAQ"),
+        ("AMZN", "아마존", "Amazon", "tech", "NASDAQ"),
+        ("META", "메타", "Meta Platforms", "tech", "NASDAQ"),
+        ("TSLA", "테슬라", "Tesla", "tech", "NASDAQ"),
+        ("AVGO", "브로드컴", "Broadcom", "tech", "NASDAQ"),
+        ("AMD", "AMD", "AMD", "tech", "NASDAQ"),
+        ("TSM", "TSMC", "Taiwan Semiconductor", "tech", "NYSE"),
+        ("ORCL", "오라클", "Oracle", "tech", "NYSE"),
+        ("NFLX", "넷플릭스", "Netflix", "tech", "NASDAQ"),
+        ("PLTR", "팔란티어", "Palantir", "tech", "NASDAQ"),
+        ("INTC", "인텔", "Intel", "tech", "NASDAQ"),
+        ("QCOM", "퀄컴", "Qualcomm", "tech", "NASDAQ"),
+        ("ARM", "ARM", "Arm Holdings", "tech", "NASDAQ"),
+        # bluechip
+        ("BRK-B", "버크셔 해서웨이", "Berkshire Hathaway B", "bluechip", "NYSE"),
+        ("JPM", "JP모건", "JPMorgan Chase", "bluechip", "NYSE"),
+        ("V", "비자", "Visa", "bluechip", "NYSE"),
+        ("MA", "마스터카드", "Mastercard", "bluechip", "NYSE"),
+        ("LLY", "일라이 릴리", "Eli Lilly", "bluechip", "NYSE"),
+        ("UNH", "유나이티드헬스", "UnitedHealth", "bluechip", "NYSE"),
+        ("JNJ", "존슨앤드존슨", "Johnson & Johnson", "bluechip", "NYSE"),
+        ("WMT", "월마트", "Walmart", "bluechip", "NYSE"),
+        ("COST", "코스트코", "Costco", "bluechip", "NASDAQ"),
+        ("KO", "코카콜라", "Coca-Cola", "bluechip", "NYSE"),
+        ("PEP", "펩시코", "PepsiCo", "bluechip", "NASDAQ"),
+        ("MCD", "맥도날드", "McDonald's", "bluechip", "NYSE"),
+        ("SBUX", "스타벅스", "Starbucks", "bluechip", "NASDAQ"),
+        ("DIS", "디즈니", "Walt Disney", "bluechip", "NYSE"),
+        ("NKE", "나이키", "Nike", "bluechip", "NYSE"),
+        ("XOM", "엑슨모빌", "Exxon Mobil", "bluechip", "NYSE"),
+        ("BA", "보잉", "Boeing", "bluechip", "NYSE"),
+        # etf
+        ("SPY", "S&P 500 (SPY)", "SPDR S&P 500 ETF", "etf", "ETF"),
+        ("VOO", "Vanguard S&P 500", "Vanguard S&P 500 ETF", "etf", "ETF"),
+        ("QQQ", "나스닥 100 (QQQ)", "Invesco QQQ Trust", "etf", "ETF"),
+        ("QQQM", "나스닥 100 미니 (QQQM)", "Invesco NASDAQ 100", "etf", "ETF"),
+        ("SCHD", "미국 배당 (SCHD)", "Schwab US Dividend ETF", "etf", "ETF"),
+        ("SOXX", "반도체 (SOXX)", "iShares Semiconductor ETF", "etf", "ETF"),
+        ("SMH", "반에크 반도체 (SMH)", "VanEck Semiconductor ETF", "etf", "ETF"),
+        ("TQQQ", "나스닥 3x (TQQQ)", "ProShares UltraPro QQQ", "etf", "ETF"),
+        ("SQQQ", "나스닥 인버스 3x", "ProShares UltraPro Short QQQ", "etf", "ETF"),
+        ("SOXL", "반도체 3x (SOXL)", "Direxion Semi Bull 3X", "etf", "ETF"),
+        ("TLT", "미국 장기국채 (TLT)", "iShares 20+ Yr Treasury", "etf", "ETF"),
+        ("GLD", "금 현물 ETF (GLD)", "SPDR Gold Shares", "etf", "ETF"),
+        ("JEPI", "커버드콜 배당 (JEPI)", "JPMorgan Equity Premium", "etf", "ETF"),
+        ("JEPQ", "나스닥 커버드콜 (JEPQ)", "JPMorgan Nasdaq Premium", "etf", "ETF"),
+        ("IBIT", "비트코인 현물 ETF", "iShares Bitcoin Trust", "etf", "ETF"),
+    ),
+    MARKET_CRYPTO: (
+        # major
+        ("BTC", "비트코인", "Bitcoin", "major", "Crypto"),
+        ("ETH", "이더리움", "Ethereum", "major", "Crypto"),
+        ("SOL", "솔라나", "Solana", "major", "Crypto"),
+        ("XRP", "리플", "XRP", "major", "Crypto"),
+        ("BNB", "바이낸스코인", "BNB", "major", "Crypto"),
+        ("ADA", "에이다", "Cardano", "major", "Crypto"),
+        ("AVAX", "아발란체", "Avalanche", "major", "Crypto"),
+        ("LINK", "체인링크", "Chainlink", "major", "Crypto"),
+        ("DOT", "폴카닷", "Polkadot", "major", "Crypto"),
+        ("TRX", "트론", "TRON", "major", "Crypto"),
+        ("TON", "톤코인", "Toncoin", "major", "Crypto"),
+        ("SUI", "수이", "Sui", "major", "Crypto"),
+        ("LTC", "라이트코인", "Litecoin", "major", "Crypto"),
+        ("BCH", "비트코인캐시", "Bitcoin Cash", "major", "Crypto"),
+        ("UNI", "유니스왑", "Uniswap", "major", "Crypto"),
+        ("ATOM", "코스모스", "Cosmos", "major", "Crypto"),
+        ("NEAR", "니어프로토콜", "NEAR Protocol", "major", "Crypto"),
+        ("APT", "앱토스", "Aptos", "major", "Crypto"),
+        # alt
+        ("DOGE", "도지코인", "Dogecoin", "alt", "Crypto"),
+        ("SHIB", "시바이누", "Shiba Inu", "alt", "Crypto"),
+        ("PEPE", "페페", "Pepe", "alt", "Crypto"),
+        ("POL", "폴리곤", "Polygon", "alt", "Crypto"),
+        ("XLM", "스텔라루멘", "Stellar", "alt", "Crypto"),
+        ("ETC", "이더리움클래식", "Ethereum Classic", "alt", "Crypto"),
+        ("HBAR", "헤데라", "Hedera", "alt", "Crypto"),
+    ),
+    MARKET_OTHER: (
+        # commodity
+        ("GC=F", "금 선물", "Gold Futures", "commodity", "COMEX"),
+        ("SI=F", "은 선물", "Silver Futures", "commodity", "COMEX"),
+        ("HG=F", "구리 선물", "Copper Futures", "commodity", "COMEX"),
+        ("CL=F", "WTI 원유", "Crude Oil (WTI)", "commodity", "NYMEX"),
+        ("BZ=F", "브렌트유", "Brent Crude Oil", "commodity", "ICE"),
+        ("NG=F", "천연가스", "Natural Gas", "commodity", "NYMEX"),
+        ("ZW=F", "밀 선물", "Wheat Futures", "commodity", "CBOT"),
+        ("ZC=F", "옥수수 선물", "Corn Futures", "commodity", "CBOT"),
+        # fx
+        ("JPYKRW=X", "엔/원 환율", "JPY/KRW", "fx", "FX"),
+        ("EURKRW=X", "유로/원 환율", "EUR/KRW", "fx", "FX"),
+        ("CNYKRW=X", "위안/원 환율", "CNY/KRW", "fx", "FX"),
+        ("EURUSD=X", "유로/달러", "EUR/USD", "fx", "FX"),
+        ("USDJPY=X", "달러/엔", "USD/JPY", "fx", "FX"),
+        ("GBPUSD=X", "파운드/달러", "GBP/USD", "fx", "FX"),
+        ("DX-Y.NYB", "달러 인덱스 (DXY)", "US Dollar Index", "fx", "ICE"),
+        # macro
+        ("^VIX", "공포지수 (VIX)", "CBOE Volatility Index", "macro", "CBOE"),
+        ("^TNX", "미국 10년물 국채금리", "US 10-Yr Treasury Yield", "macro", "CBOE"),
+        ("^TYX", "미국 30년물 국채금리", "US 30-Yr Treasury Yield", "macro", "CBOE"),
+        ("^IRX", "미국 13주 국채금리", "US 13-Week T-Bill", "macro", "CBOE"),
+        ("7203.T", "토요타 (일본)", "Toyota Motor", "macro", "TSE"),
+        ("6758.T", "소니 (일본)", "Sony Group", "macro", "TSE"),
+        ("9988.HK", "알리바바 (홍콩)", "Alibaba Group", "macro", "HKEX"),
+        ("0700.HK", "텐센트 (홍콩)", "Tencent Holdings", "macro", "HKEX"),
+    ),
+}
+
+
+def catalog_for_market(
+    market: str,
+    *,
+    category: str = "all",
+    lang: str = "ko",
+    query: str = "",
+    extra_kr_map: dict[str, tuple[str, str]] | None = None,
+    limit: int = 80,
+) -> dict[str, Any]:
+    """Return browsable symbol catalog, categories, and code-lookup URLs.
+
+    When ``market == "KR"`` and ``extra_kr_map`` (OpenDart's full ~2,600
+    listed company map) is supplied, an extra ``krx_all`` category lets the
+    user browse or filter every KRX listed stock directly.
+    """
+    is_ko = str(lang or "").lower().startswith("ko")
+    m = market if market in SYMBOL_CATALOG else MARKET_KR
+    q = (query or "").strip().lower().replace(" ", "")
+
+    categories = [
+        {"id": cid, "label": l_ko if is_ko else l_en}
+        for cid, l_ko, l_en in CATALOG_CATEGORIES.get(m, [])
+    ]
+    if m == MARKET_KR and extra_kr_map:
+        categories.append({
+            "id": "krx_all",
+            "label": f"KRX 전체 ({len(extra_kr_map):,})" if is_ko else f"All KRX ({len(extra_kr_map):,})",
+        })
+
+    links = [
+        {
+            "id": link["id"],
+            "label": link["label_ko"] if is_ko else link["label_en"],
+            "url": link["url"],
+        }
+        for link in CODE_LOOKUP_URLS.get(m, [])
+    ]
+
+    items: list[dict[str, Any]] = []
+    if m == MARKET_KR and category == "krx_all" and extra_kr_map:
+        if q:
+            items = match_kr_companies(extra_kr_map, query, limit=limit)
+        else:
+            ordered = sorted(extra_kr_map.items(), key=lambda kv: (kv[1][1] or kv[0]))
+            items = [
+                {"symbol": code, "name": name, "exchange": "KRX", "market": MARKET_KR, "category": "krx_all"}
+                for code, (_corp, name) in ordered[:limit]
+            ]
+    else:
+        for sym, name_ko, name_en, cat, exch in SYMBOL_CATALOG[m]:
+            if category and category != "all" and cat != category:
+                continue
+            if q:
+                hay = f"{sym} {name_ko} {name_en} {exch}".lower().replace(" ", "")
+                if q not in hay:
+                    continue
+            items.append({
+                "symbol": sym,
+                "name": name_ko if is_ko else name_en,
+                "name_en": name_en,
+                "category": cat,
+                "exchange": exch,
+                "market": m,
+            })
+            if len(items) >= limit:
+                break
+
+    return {
+        "market": m,
+        "categories": categories,
+        "items": items,
+        "links": links,
+        "krx_total": len(extra_kr_map) if (m == MARKET_KR and extra_kr_map) else 0,
+    }
+
+
+def match_catalog(
+    query: str,
+    *,
+    market: str | None = None,
+    lang: str = "ko",
+    limit: int = 8,
+) -> list[dict[str, Any]]:
+    """Search the built-in catalog by Korean/English name or symbol.
+
+    Gives instant Korean-name search even without an OpenDart API key,
+    and complements Yahoo Search (which doesn't index Korean names).
+    """
+    q = (query or "").strip()
+    if not q:
+        return []
+    q_low = q.lower().replace(" ", "")
+    is_ko = str(lang or "").lower().startswith("ko")
+    markets = (market,) if market in SYMBOL_CATALOG else tuple(SYMBOL_CATALOG)
+    scored: list[tuple[int, int, str, str, str, str]] = []
+    for m in markets:
+        for sym, name_ko, name_en, _cat, exch in SYMBOL_CATALOG[m]:
+            sym_low = sym.lower()
+            ko_low = name_ko.lower().replace(" ", "")
+            en_low = name_en.lower().replace(" ", "")
+            if q_low in (sym_low, sym_low.split(".")[0], ko_low, en_low):
+                tier = 0
+            elif sym_low.startswith(q_low) or ko_low.startswith(q_low) or en_low.startswith(q_low):
+                tier = 1
+            elif q_low in sym_low or q_low in ko_low or q_low in en_low:
+                tier = 2
+            else:
+                continue
+            display = name_ko if is_ko else name_en
+            scored.append((tier, len(display), sym, display, exch, m))
+    scored.sort()
+    return [
+        {"symbol": sym, "name": display, "exchange": exch, "market": m}
+        for _t, _l, sym, display, exch, m in scored[:limit]
+    ]
