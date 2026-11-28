@@ -10,8 +10,20 @@
  * open sheet (with inputs the user is typing into) is never clobbered.
  */
 
-const PANEL_VERSION = "0.2.20";
+const PANEL_VERSION = "0.2.21";
 const LS_KEY = "kr_finance_kit.prefs";
+const LANG_OPTIONS = [
+  { id: "ko", short: "KO", label: "한국어", locale: "ko-KR", upRed: true },
+  { id: "en", short: "EN", label: "English", locale: "en-US", upRed: false },
+  { id: "ja", short: "JA", label: "日本語", locale: "ja-JP", upRed: true },
+  { id: "zh", short: "ZH", label: "中文", locale: "zh-CN", upRed: true },
+  { id: "es", short: "ES", label: "Español", locale: "es-ES", upRed: false },
+  { id: "fr", short: "FR", label: "Français", locale: "fr-FR", upRed: false },
+  { id: "de", short: "DE", label: "Deutsch", locale: "de-DE", upRed: false },
+  { id: "pt", short: "PT", label: "Português", locale: "pt-BR", upRed: false },
+];
+const SUPPORTED_LANGS = LANG_OPTIONS.map((l) => l.id);
+const LANG_MAP = Object.fromEntries(LANG_OPTIONS.map((l) => [l.id, l]));
 
 const I18N = {
   ko: {
@@ -247,6 +259,296 @@ const I18N = {
     kind_stock: "Stock", kind_crypto: "Crypto", kind_fx: "FX", kind_future: "Futures", kind_index: "Index", kind_other: "Other",
     readonly: "View only (only administrators can add or remove symbols)",
   },
+  ja: {
+    loading: "読み込み中…",
+    initial_failed: "最初の株価取得に失敗しました。自動で再試行します。",
+    partial: "残りの銘柄を順番に取得しています。取得できた銘柄から表示されます。",
+    warming: "銘柄を順番に取得しています。銘柄数によっては1〜2分以上かかる場合があります。",
+    next_check: "{n}秒後に自動確認します。",
+    not_configured: "Finance Kit がまだ設定されていません。設定 → デバイスとサービスから追加してください。",
+    refresh: "更新", settings: "設定", add: "銘柄追加", updated: "更新",
+    ago_s: "{n}秒前", ago_m: "{n}分前", ago_h: "{n}時間前",
+    tab_all: "すべて", tab_market: "市場", tab_watch: "ウォッチ", tab_portfolio: "保有", tab_news: "開示",
+    sec_summary: "今日の市場", sec_indices: "指数", sec_watchlist: "ウォッチリスト", sec_crypto: "暗号資産",
+    sec_portfolio: "保有銘柄", sec_disclosures: "最近の開示",
+    kr_market: "韓国市場", us_market: "米国市場", open: "取引中", closed: "休場",
+    until_close: "終了まで {t}", until_open: "開始まで {t}",
+    usdkrw: "USD/KRW", kimchi: "キムチプレミアム",
+    total_value: "評価額合計", total_pl: "評価損益", kr_sub: "韓国", us_sub: "米国",
+    no_positions: "保有銘柄がありません。銘柄をタップして数量と平均取得単価を入力してください。",
+    no_watch: "ウォッチリストが空です。＋ボタンから追加してください。",
+    no_crypto: "暗号資産がありません。＋ → 暗号資産から追加してください。",
+    no_disclosures: "最近の開示はありません。",
+    disclosure_off: "OpenDart APIキーを設定すると韓国企業の開示が表示されます。",
+    no_indices: "表示する指数がありません。",
+    allocation: "保有比率", qty: "数量", avg: "平均単価", current: "現在値", value: "評価額", pl: "損益",
+    edit_order: "並び替え", done: "完了",
+    add_title: "銘柄追加", m_kr: "🇰🇷 韓国", m_us: "🇺🇸 米国", m_crypto: "🪙 暗号資産", m_other: "🌐 その他",
+    search_ph: "銘柄名またはコード検索 (例: Samsung, AAPL, BTC)",
+    ticker: "コード", label: "表示名 (任意)", quote_ccy: "基準通貨",
+    lookup_sites: "コード検索サイト", browse_title: "一覧から選んで追加",
+    catalog_loading: "銘柄一覧を読み込み中…", catalog_empty: "表示できる銘柄がありません。",
+    already_added: "追加済", quick_add: "追加", direct_input: "コード直接入力",
+    adding: "追加中…", added: "{t} を追加しました", removed: "{t} を削除しました",
+    quote_schedule: "自動更新 · 市場中 3分 / 時間外 10分",
+    refresh_note: "市場中は3分、時間外は10分、開示は15分ごとに自動更新されます。検索とチャート取得は1時間あたり60回までです。",
+    refresh_requested: "更新をリクエストしました。",
+    searching: "検索中…", no_results: "一致する銘柄がありません。コードを直接入力できます。",
+    my_position: "保有情報", price_alert: "🔔 価格アラート (任意)",
+    alert_high: "目標価格 (以上)", alert_low: "損切り価格 (以下)",
+    alert_hit_high: "目標価格に到達", alert_hit_low: "損切り価格に到達",
+    err_alert_bounds: "損切り価格は目標価格より低くしてください。",
+    err_qty_avg: "数量と平均単価は0より大きい値を入力してください。",
+    save: "保存", saving: "保存中…", saved: "✓ 保存完了", delete: "削除", deleting: "削除中…", cancel: "キャンセル", close: "閉じる",
+    position_saved: "保存しました！保有情報が更新されました。",
+    position_deleted: "削除しました！保有リストから除外されました。",
+    open_history: "HA履歴を見る", remove_watch: "削除", confirm_tap: "もう一度タップして削除",
+    chart_empty: "チャートを取得できませんでした。", chart_loading: "チャート読み込み中…",
+    waiting_prices: "価格待機中", stale: "前日データ",
+    s_language: "言語", lang_auto: "自動 (HA設定)", s_theme: "カードテーマ", s_layout: "レイアウト",
+    s_upcolor: "上昇色", up_auto: "言語に合わせる", up_red: "🔴 赤 = 上昇", up_green: "🟢 緑 = 上昇",
+    s_sections: "セクション順序・表示", s_display: "表示設定",
+    sparkline: "ミニチャート表示", spark_period: "ミニチャート期間",
+    compact_numbers: "大きな数値を省略表示", show_krw: "USD資産をKRW換算表示",
+    refresh_every: "画面更新間隔", sec_unit: "{n}秒", min_unit: "{n}分",
+    reset: "初期設定に戻す", reset_done: "設定を初期化しました", about: "情報",
+    layout_cards: "カード", layout_list: "リスト", layout_compact: "コンパクト",
+    layout_big: "ビッグ", layout_heatmap: "ヒートマップ", layout_tape: "ティッカー",
+    p_1d: "1日", p_5d: "5日", p_1mo: "1ヶ月", p_6mo: "6ヶ月", p_1y: "1年",
+    kind_stock: "株式", kind_crypto: "暗号資産", kind_fx: "為替", kind_future: "先物", kind_index: "指数", kind_other: "その他",
+    readonly: "閲覧専用 (管理者のみ編集可能)",
+  },
+  zh: {
+    loading: "加载中…",
+    initial_failed: "首次行情加载失败，将自动重试。",
+    partial: "正在按顺序加载其余行情，已获取的标的将陆续显示。",
+    warming: "正在逐一获取行情。根据标的數量可能需要 1 至 2 分钟以上，已加载的将立即显示。",
+    next_check: "{n}秒后自动检查更新。",
+    not_configured: "尚未配置 Finance Kit。请在 设置 → 设备与服务 中添加。",
+    refresh: "刷新", settings: "设置", add: "添加标的", updated: "更新",
+    ago_s: "{n}秒前", ago_m: "{n}分钟前", ago_h: "{n}小时前",
+    tab_all: "全部", tab_market: "市场", tab_watch: "自选", tab_portfolio: "持仓", tab_news: "公告",
+    sec_summary: "今日市场", sec_indices: "指数", sec_watchlist: "自选列表", sec_crypto: "加密货币",
+    sec_portfolio: "我的持仓", sec_disclosures: "最新公告",
+    kr_market: "韩国股市", us_market: "美国股市", open: "交易中", closed: "已休市",
+    until_close: "距收盘 {t}", until_open: "距开盘 {t}",
+    usdkrw: "美元/韩元", kimchi: "泡菜溢价",
+    total_value: "总市值", total_pl: "浮动盈亏", kr_sub: "韩国", us_sub: "美国",
+    no_positions: "暂无持仓。点击标的在详情页输入数量和成本价。",
+    no_watch: "自选列表为空，点击 ＋ 按钮添加。",
+    no_crypto: "暂无加密货币，点击 ＋ → 加密货币 添加。",
+    no_disclosures: "暂无最新公告。",
+    disclosure_off: "配置 OpenDart API 密钥后可查看韩国上市公司公告。",
+    no_indices: "未启用指数显示。",
+    allocation: "持仓占比", qty: "数量", avg: "成本价", current: "现价", value: "市值", pl: "盈亏",
+    edit_order: "排序", done: "完成",
+    add_title: "添加标的", m_kr: "🇰🇷 韩国", m_us: "🇺🇸 美国", m_crypto: "🪙 币圈", m_other: "🌐 其他",
+    search_ph: "搜索名称或代码 (如 Samsung, AAPL, BTC)",
+    ticker: "代码", label: "显示名称 (可选)", quote_ccy: "计价货币",
+    lookup_sites: "代码查询网站", browse_title: "从列表快速添加",
+    catalog_loading: "正在加载列表…", catalog_empty: "暂无可显示标的。",
+    already_added: "已添加", quick_add: "添加", direct_input: "手动输入代码",
+    adding: "添加中…", added: "已添加 {t}", removed: "已移除 {t}",
+    quote_schedule: "自动更新 · 盘中 3分钟 / 休市 10分钟",
+    refresh_note: "盘中每3分钟、休市每10分钟更新行情，每15分钟更新公告。搜索和图表每小时限60次。",
+    refresh_requested: "已请求刷新。",
+    searching: "搜索中…", no_results: "无匹配结果，可直接输入代码。",
+    my_position: "我的持仓", price_alert: "🔔 价格提醒 (可选)",
+    alert_high: "目标价 (≥)", alert_low: "止损价 (≤)",
+    alert_hit_high: "已达目标价", alert_hit_low: "已达止损价",
+    err_alert_bounds: "止损价必须低于目标价。",
+    err_qty_avg: "数量和成本价必须大于 0。",
+    save: "保存", saving: "保存中…", saved: "✓ 已保存", delete: "删除", deleting: "删除中…", cancel: "取消", close: "关闭",
+    position_saved: "保存成功！持仓已更新。",
+    position_deleted: "已删除！已从持仓中移除。",
+    open_history: "查看 HA 历史", remove_watch: "移除", confirm_tap: "再次点击确认删除",
+    chart_empty: "无法加载图表数据。", chart_loading: "加载图表中…",
+    waiting_prices: "等待行情", stale: "前日数据",
+    s_language: "语言", lang_auto: "自动 (HA 设置)", s_theme: "卡片主题", s_layout: "布局",
+    s_upcolor: "上涨颜色", up_auto: "跟随语言", up_red: "🔴 红涨绿跌", up_green: "🟢 绿涨红跌",
+    s_sections: "板块顺序与显示", s_display: "显示选项",
+    sparkline: "显示迷你走势图", spark_period: "迷你图周期",
+    compact_numbers: "缩写大数字", show_krw: "美元资产换算韩元",
+    refresh_every: "界面刷新间隔", sec_unit: "{n}秒", min_unit: "{n}分钟",
+    reset: "恢复默认", reset_done: "已重置设置", about: "关于",
+    layout_cards: "卡片", layout_list: "列表", layout_compact: "紧凑",
+    layout_big: "大字", layout_heatmap: "热力图", layout_tape: "滚动条",
+    p_1d: "1天", p_5d: "5天", p_1mo: "1月", p_6mo: "6月", p_1y: "1年",
+    kind_stock: "股票", kind_crypto: "加密货币", kind_fx: "外汇", kind_future: "期货", kind_index: "指数", kind_other: "其他",
+    readonly: "仅查看 (仅管理员可编辑)",
+  },
+  es: {
+    loading: "Cargando…",
+    initial_failed: "No se pudieron cargar las cotizaciones iniciales. Reintentando…",
+    partial: "Cargando cotizaciones restantes en orden. Aparecerán a medida que lleguen.",
+    warming: "Cargando cotizaciones una por una. Puede tardar 1–2 minutos según la cantidad de símbolos.",
+    next_check: "Comprobando de nuevo en {n}s.",
+    refresh: "Actualizar", settings: "Ajustes", add: "Añadir", updated: "Actualizado",
+    ago_s: "hace {n}s", ago_m: "hace {n}m", ago_h: "hace {n}h",
+    tab_all: "Todo", tab_market: "Mercados", tab_watch: "Seguimiento", tab_portfolio: "Cartera", tab_news: "Avisos",
+    sec_summary: "Mercado hoy", sec_indices: "Índices", sec_watchlist: "Lista de seguimiento", sec_crypto: "Cripto",
+    sec_portfolio: "Mi cartera", sec_disclosures: "Comunicados recientes",
+    kr_market: "Corea", us_market: "EE. UU.", open: "Abierto", closed: "Cerrado",
+    until_close: "cierra en {t}", until_open: "abre en {t}",
+    total_value: "Valor total", total_pl: "Ganancia/Pérdida", kr_sub: "Corea", us_sub: "EE. UU.",
+    allocation: "Distribución", qty: "Cant.", avg: "Precio medio", current: "Precio", value: "Valor", pl: "G/P",
+    edit_order: "Ordenar", done: "Listo",
+    add_title: "Añadir símbolo", m_kr: "🇰🇷 Corea", m_us: "🇺🇸 EE. UU.", m_crypto: "🪙 Cripto", m_other: "🌐 Otros",
+    search_ph: "Buscar por nombre o código (ej. AAPL, BTC)",
+    ticker: "Símbolo", label: "Nombre (opcional)", quote_ccy: "Moneda",
+    lookup_sites: "Buscar códigos", browse_title: "Elegir de la lista",
+    already_added: "Añadido", quick_add: "Añadir", direct_input: "Introducir código manual",
+    quote_schedule: "Actualización · Abierto: 3 min / Cerrado: 10 min",
+    my_position: "Mi posición", price_alert: "🔔 Alerta de precio (opcional)",
+    alert_high: "Objetivo (≥)", alert_low: "Stop-loss (≤)",
+    alert_hit_high: "Objetivo alcanzado", alert_hit_low: "Stop-loss alcanzado",
+    err_alert_bounds: "El stop-loss debe ser menor que el objetivo.",
+    err_qty_avg: "Cantidad y precio medio deben ser mayores que 0.",
+    save: "Guardar", saving: "Guardando…", saved: "✓ Guardado", delete: "Eliminar", deleting: "Eliminando…", cancel: "Cancelar", close: "Cerrar",
+    position_saved: "¡Guardado! Tu posición se ha actualizado.",
+    position_deleted: "¡Eliminado de tu cartera!",
+    open_history: "Ver historial HA", remove_watch: "Quitar", confirm_tap: "Pulsa de nuevo para quitar",
+    s_language: "Idioma", lang_auto: "Auto (HA)", s_theme: "Tema", s_layout: "Diseño",
+    s_upcolor: "Color de subida", up_auto: "Según idioma", up_red: "🔴 Rojo = sube", up_green: "🟢 Verde = sube",
+    s_sections: "Secciones", s_display: "Pantalla",
+    sparkline: "Mostrar minigráficos", spark_period: "Rango del minigráfico",
+    compact_numbers: "Abreviar números grandes", show_krw: "Mostrar valor en KRW",
+    refresh_every: "Autoactualización", reset: "Restablecer", reset_done: "Ajustes restablecidos", about: "Acerca de",
+    layout_cards: "Tarjetas", layout_list: "Lista", layout_compact: "Compacto",
+    layout_big: "Grande", layout_heatmap: "Mapa calor", layout_tape: "Cinta",
+    p_1d: "1D", p_5d: "5D", p_1mo: "1M", p_6mo: "6M", p_1y: "1A",
+    kind_stock: "Acción", kind_crypto: "Cripto", kind_fx: "Divisa", kind_future: "Futuros", kind_index: "Índice", kind_other: "Otro",
+    readonly: "Solo lectura (solo administradores)",
+  },
+  fr: {
+    loading: "Chargement…",
+    initial_failed: "Impossible de charger les premiers cours. Nouvelle tentative…",
+    partial: "Chargement des cours restants. Ils s'affichent dès réception.",
+    warming: "Chargement des cours un par un. Cela peut prendre 1 à 2 minutes selon votre liste.",
+    next_check: "Vérification dans {n}s.",
+    refresh: "Actualiser", settings: "Paramètres", add: "Ajouter", updated: "Mis à jour",
+    ago_s: "il y a {n}s", ago_m: "il y a {n}m", ago_h: "il y a {n}h",
+    tab_all: "Tout", tab_market: "Marchés", tab_watch: "Suivi", tab_portfolio: "Portefeuille", tab_news: "Annonces",
+    sec_summary: "Marché du jour", sec_indices: "Indices", sec_watchlist: "Liste de suivi", sec_crypto: "Crypto",
+    sec_portfolio: "Mon portefeuille", sec_disclosures: "Annonces récentes",
+    kr_market: "Corée", us_market: "États-Unis", open: "Ouvert", closed: "Fermé",
+    until_close: "ferme dans {t}", until_open: "ouvre dans {t}",
+    total_value: "Valeur totale", total_pl: "Plus/moins-value", kr_sub: "Corée", us_sub: "US",
+    allocation: "Répartition", qty: "Qté", avg: "PRU", current: "Cours", value: "Valeur", pl: "P/L",
+    edit_order: "Réorganiser", done: "Terminé",
+    add_title: "Ajouter un symbole", m_kr: "🇰🇷 Corée", m_us: "🇺🇸 US", m_crypto: "🪙 Crypto", m_other: "🌐 Autre",
+    search_ph: "Rechercher par nom ou code (ex. AAPL, BTC)",
+    ticker: "Symbole", label: "Nom (optionnel)", quote_ccy: "Devise",
+    lookup_sites: "Trouver des codes", browse_title: "Choisir dans la liste",
+    already_added: "Ajouté", quick_add: "Ajouter", direct_input: "Saisie manuelle",
+    quote_schedule: "Mise à jour · Ouvert : 3 min / Fermé : 10 min",
+    my_position: "Ma position", price_alert: "🔔 Alerte de prix (optionnel)",
+    alert_high: "Objectif (≥)", alert_low: "Stop-loss (≤)",
+    alert_hit_high: "Objectif atteint", alert_hit_low: "Stop-loss atteint",
+    err_alert_bounds: "Le stop-loss doit être inférieur à l'objectif.",
+    err_qty_avg: "Quantité et PRU doivent être supérieurs à 0.",
+    save: "Enregistrer", saving: "Enregistrement…", saved: "✓ Enregistré", delete: "Supprimer", deleting: "Suppression…", cancel: "Annuler", close: "Fermer",
+    position_saved: "Enregistré ! Position mise à jour.",
+    position_deleted: "Supprimé du portefeuille.",
+    open_history: "Historique HA", remove_watch: "Retirer", confirm_tap: "Appuyez encore pour retirer",
+    s_language: "Langue", lang_auto: "Auto (HA)", s_theme: "Thème", s_layout: "Disposition",
+    s_upcolor: "Couleur de hausse", up_auto: "Selon la langue", up_red: "🔴 Rouge = hausse", up_green: "🟢 Vert = hausse",
+    s_sections: "Sections", s_display: "Affichage",
+    sparkline: "Mini-graphiques", spark_period: "Période mini-graphique",
+    compact_numbers: "Abréger les grands nombres", show_krw: "Afficher en KRW",
+    refresh_every: "Actualisation auto", reset: "Réinitialiser", reset_done: "Paramètres réinitialisés", about: "À propos",
+    layout_cards: "Cartes", layout_list: "Liste", layout_compact: "Compact",
+    layout_big: "Grand", layout_heatmap: "Heatmap", layout_tape: "Bandeau",
+    p_1d: "1J", p_5d: "5J", p_1mo: "1M", p_6mo: "6M", p_1y: "1A",
+    kind_stock: "Action", kind_crypto: "Crypto", kind_fx: "Devise", kind_future: "Futures", kind_index: "Indice", kind_other: "Autre",
+    readonly: "Lecture seule (administrateurs uniquement)",
+  },
+  de: {
+    loading: "Wird geladen…",
+    initial_failed: "Erster Abruf fehlgeschlagen. Automatischer Neuversuch…",
+    partial: "Weitere Kurse werden geladen und erscheinen sobald verfügbar.",
+    warming: "Kurse werden nacheinander geladen. Je nach Liste kann dies 1–2 Minuten dauern.",
+    next_check: "Nächste Prüfung in {n}s.",
+    refresh: "Aktualisieren", settings: "Einstellungen", add: "Hinzufügen", updated: "Aktualisiert",
+    ago_s: "vor {n}s", ago_m: "vor {n}m", ago_h: "vor {n}h",
+    tab_all: "Alle", tab_market: "Märkte", tab_watch: "Watchlist", tab_portfolio: "Depot", tab_news: "Meldungen",
+    sec_summary: "Markt heute", sec_indices: "Indizes", sec_watchlist: "Watchlist", sec_crypto: "Krypto",
+    sec_portfolio: "Mein Depot", sec_disclosures: "Aktuelle Meldungen",
+    kr_market: "Korea", us_market: "USA", open: "Geöffnet", closed: "Geschlossen",
+    until_close: "schließt in {t}", until_open: "öffnet in {t}",
+    total_value: "Gesamtwert", total_pl: "Gewinn/Verlust", kr_sub: "Korea", us_sub: "USA",
+    allocation: "Gewichtung", qty: "Menge", avg: "Ø-Kurs", current: "Kurs", value: "Wert", pl: "G/V",
+    edit_order: "Sortieren", done: "Fertig",
+    add_title: "Symbol hinzufügen", m_kr: "🇰🇷 Korea", m_us: "🇺🇸 USA", m_crypto: "🪙 Krypto", m_other: "🌐 Sonstige",
+    search_ph: "Nach Name oder Symbol suchen (z. B. AAPL, BTC)",
+    ticker: "Symbol", label: "Anzeigename (optional)", quote_ccy: "Währung",
+    lookup_sites: "Symbole suchen", browse_title: "Aus Liste wählen",
+    already_added: "Hinzugefügt", quick_add: "Hinzufügen", direct_input: "Code manuell eingeben",
+    quote_schedule: "Auto-Update · Markt offen: 3 Min. / Geschlossen: 10 Min.",
+    my_position: "Meine Position", price_alert: "🔔 Kursalarm (optional)",
+    alert_high: "Kursziel (≥)", alert_low: "Stop-Loss (≤)",
+    alert_hit_high: "Kursziel erreicht", alert_hit_low: "Stop-Loss erreicht",
+    err_alert_bounds: "Stop-Loss muss unter dem Kursziel liegen.",
+    err_qty_avg: "Menge und Durchschnittskurs müssen > 0 sein.",
+    save: "Speichern", saving: "Speichert…", saved: "✓ Gespeichert", delete: "Löschen", deleting: "Löscht…", cancel: "Abbrechen", close: "Schließen",
+    position_saved: "Gespeichert! Position aktualisiert.",
+    position_deleted: "Aus Depot entfernt.",
+    open_history: "HA-Verlauf öffnen", remove_watch: "Entfernen", confirm_tap: "Erneut tippen zum Entfernen",
+    s_language: "Sprache", lang_auto: "Auto (HA)", s_theme: "Theme", s_layout: "Layout",
+    s_upcolor: "Farbe für Gewinn", up_auto: "Nach Sprache", up_red: "🔴 Rot = Plus", up_green: "🟢 Grün = Plus",
+    s_sections: "Abschnitte", s_display: "Anzeige",
+    sparkline: "Mini-Charts zeigen", spark_period: "Mini-Chart Zeitraum",
+    compact_numbers: "Große Zahlen kürzen", show_krw: "KRW-Wert anzeigen",
+    refresh_every: "Auto-Aktualisierung", reset: "Zurücksetzen", reset_done: "Zurückgesetzt", about: "Info",
+    layout_cards: "Karten", layout_list: "Liste", layout_compact: "Kompakt",
+    layout_big: "Groß", layout_heatmap: "Heatmap", layout_tape: "Ticker",
+    p_1d: "1T", p_5d: "5T", p_1mo: "1M", p_6mo: "6M", p_1y: "1J",
+    kind_stock: "Aktie", kind_crypto: "Krypto", kind_fx: "Devisen", kind_future: "Futures", kind_index: "Index", kind_other: "Sonstige",
+    readonly: "Nur Lesen (nur Administratoren)",
+  },
+  pt: {
+    loading: "Carregando…",
+    initial_failed: "Não foi possível carregar as cotações iniciais. Tentando novamente…",
+    partial: "Carregando cotações restantes. Elas aparecerão conforme chegarem.",
+    warming: "Carregando cotações uma a uma. Pode levar 1–2 minutos dependendo da sua lista.",
+    next_check: "Verificando novamente em {n}s.",
+    refresh: "Atualizar", settings: "Configurações", add: "Adicionar", updated: "Atualizado",
+    ago_s: "há {n}s", ago_m: "há {n}m", ago_h: "há {n}h",
+    tab_all: "Tudo", tab_market: "Mercados", tab_watch: "Favoritos", tab_portfolio: "Carteira", tab_news: "Fatos",
+    sec_summary: "Mercado hoje", sec_indices: "Índices", sec_watchlist: "Lista de favoritos", sec_crypto: "Cripto",
+    sec_portfolio: "Minha carteira", sec_disclosures: "Comunicados recentes",
+    kr_market: "Coreia", us_market: "EUA", open: "Aberto", closed: "Fechado",
+    until_close: "fecha em {t}", until_open: "abre em {t}",
+    total_value: "Valor total", total_pl: "Lucro/Prejuízo", kr_sub: "Coreia", us_sub: "EUA",
+    allocation: "Alocação", qty: "Qtd.", avg: "Preço médio", current: "Preço", value: "Valor", pl: "L/P",
+    edit_order: "Ordenar", done: "Concluir",
+    add_title: "Adicionar ativo", m_kr: "🇰🇷 Coreia", m_us: "🇺🇸 EUA", m_crypto: "🪙 Cripto", m_other: "🌐 Outros",
+    search_ph: "Buscar por nome ou código (ex. AAPL, BTC)",
+    ticker: "Código", label: "Nome (opcional)", quote_ccy: "Moeda",
+    lookup_sites: "Buscar códigos", browse_title: "Escolher da lista",
+    already_added: "Adicionado", quick_add: "Adicionar", direct_input: "Digitar código manualmente",
+    quote_schedule: "Atualização · Aberto: 3 min / Fechado: 10 min",
+    my_position: "Minha posição", price_alert: "🔔 Alerta de preço (opcional)",
+    alert_high: "Alvo (≥)", alert_low: "Stop-loss (≤)",
+    alert_hit_high: "Alvo atingido", alert_hit_low: "Stop-loss atingido",
+    err_alert_bounds: "O stop-loss deve ser menor que o preço alvo.",
+    err_qty_avg: "Quantidade e preço médio devem ser maiores que 0.",
+    save: "Salvar", saving: "Salvando…", saved: "✓ Salvo", delete: "Excluir", deleting: "Excluindo…", cancel: "Cancelar", close: "Fechar",
+    position_saved: "Salvo! Sua posição foi atualizada.",
+    position_deleted: "Removido da carteira.",
+    open_history: "Histórico HA", remove_watch: "Remover", confirm_tap: "Toque novamente para remover",
+    s_language: "Idioma", lang_auto: "Auto (HA)", s_theme: "Tema", s_layout: "Layout",
+    s_upcolor: "Cor de alta", up_auto: "Seguir idioma", up_red: "🔴 Vermelho = alta", up_green: "🟢 Verde = alta",
+    s_sections: "Seções", s_display: "Exibição",
+    sparkline: "Mini gráficos", spark_period: "Período mini gráfico",
+    compact_numbers: "Abreviar números grandes", show_krw: "Mostrar valor em KRW",
+    refresh_every: "Atualização auto", reset: "Restaurar padrão", reset_done: "Configurações restauradas", about: "Sobre",
+    layout_cards: "Cartões", layout_list: "Lista", layout_compact: "Compacto",
+    layout_big: "Grande", layout_heatmap: "Mapa calor", layout_tape: "Faixa",
+    p_1d: "1D", p_5d: "5D", p_1mo: "1M", p_6mo: "6M", p_1y: "1A",
+    kind_stock: "Ação", kind_crypto: "Cripto", kind_fx: "Câmbio", kind_future: "Futuros", kind_index: "Índice", kind_other: "Outro",
+    readonly: "Somente leitura (apenas administradores)",
+  },
 };
 
 const THEMES = [
@@ -309,6 +611,8 @@ const DEFAULT_PREFS = {
 const INDEX_NAMES = {
   ko: { KOSPI: "코스피", KOSDAQ: "코스닥", NASDAQ: "나스닥", DOW: "다우존스", SP500: "S&P 500", NIKKEI: "니케이 225", HANGSENG: "항셍", FTSE: "FTSE 100", DAX: "DAX" },
   en: { KOSPI: "KOSPI", KOSDAQ: "KOSDAQ", NASDAQ: "Nasdaq", DOW: "Dow Jones", SP500: "S&P 500", NIKKEI: "Nikkei 225", HANGSENG: "Hang Seng", FTSE: "FTSE 100", DAX: "DAX" },
+  ja: { KOSPI: "KOSPI", KOSDAQ: "KOSDAQ", NASDAQ: "ナスダック", DOW: "ダウ平均", SP500: "S&P 500", NIKKEI: "日経225", HANGSENG: "ハンセン", FTSE: "FTSE 100", DAX: "DAX" },
+  zh: { KOSPI: "韩国综合", KOSDAQ: "科斯达克", NASDAQ: "纳斯达克", DOW: "道琼斯", SP500: "标普 500", NIKKEI: "日经 225", HANGSENG: "恒生指数", FTSE: "富时 100", DAX: "德国 DAX" },
 };
 const GROUP_FLAG = { KR: "🇰🇷", US: "🇺🇸", GLOBAL: "🌐", OTHER: "🌐" };
 const CCY_SYMBOL = { KRW: "₩", USD: "$", EUR: "€", JPY: "¥", GBP: "£", CNY: "¥", HKD: "HK$" };
@@ -330,7 +634,7 @@ function sanitizePrefs(raw) {
   const src = raw && typeof raw === "object" ? raw : {};
   const out = JSON.parse(JSON.stringify(DEFAULT_PREFS));
   const pick = (key, allowed) => { if (allowed.includes(src[key])) out[key] = src[key]; };
-  pick("lang", ["auto", "ko", "en"]);
+  pick("lang", ["auto", ...SUPPORTED_LANGS]);
   pick("theme", THEMES.map((t) => t.id));
   pick("layout", LAYOUTS.map((l) => l.id));
   pick("up_color", ["auto", "red", "green"]);
@@ -399,11 +703,12 @@ class KRFinancePanel extends HTMLElement {
 
   // ---------------------------------------------------------------- i18n
   get lang() {
-    if (this._prefs.lang === "ko" || this._prefs.lang === "en") return this._prefs.lang;
-    const hl = (this._hass && (this._hass.locale?.language || this._hass.language)) || navigator.language || "en";
-    return String(hl).toLowerCase().startsWith("ko") ? "ko" : "en";
+    if (SUPPORTED_LANGS.includes(this._prefs.lang)) return this._prefs.lang;
+    const hl = String((this._hass && (this._hass.locale?.language || this._hass.language)) || navigator.language || "en").toLowerCase();
+    const base = hl.split(/[-_]/)[0];
+    return SUPPORTED_LANGS.includes(base) ? base : "en";
   }
-  get locale() { return this.lang === "ko" ? "ko-KR" : "en-US"; }
+  get locale() { return LANG_MAP[this.lang]?.locale || "en-US"; }
   t(key, vars) {
     let s = (I18N[this.lang] && I18N[this.lang][key]) ?? I18N.en[key] ?? key;
     if (vars) for (const [k, v] of Object.entries(vars)) s = s.replace(`{${k}}`, v);
@@ -411,7 +716,7 @@ class KRFinancePanel extends HTMLElement {
   }
   get upColor() {
     if (this._prefs.up_color === "red" || this._prefs.up_color === "green") return this._prefs.up_color;
-    return this.lang === "ko" ? "red" : "green";
+    return LANG_MAP[this.lang]?.upRed ? "red" : "green";
   }
   get isAdmin() { return !!(this._snap?.is_admin ?? this._hass?.user?.is_admin); }
 
@@ -515,7 +820,10 @@ class KRFinancePanel extends HTMLElement {
     root.addEventListener("change", (e) => this._onChange(e));
     root.addEventListener("input", (e) => this._onInput(e));
     root.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && this._sheet) this._closeSheet();
+      if (e.key === "Escape") {
+        if (this._langMenuOpen) { this._langMenuOpen = false; this._renderHeader(); }
+        else if (this._sheet) this._closeSheet();
+      }
       if (e.key === "Enter" && e.target?.dataset?.enter) { e.preventDefault(); this._dispatch(e.target.dataset.enter, e.target); }
     });
     this._built = true;
@@ -537,7 +845,18 @@ class KRFinancePanel extends HTMLElement {
   }
 
   _headerSig() {
-    return `${!!this._snap?.configured}:${this.isAdmin}:${this.lang}:${!!this._narrow}`;
+    return `${!!this._snap?.configured}:${this.isAdmin}:${this.lang}:${this._prefs.lang}:${!!this._narrow}:${!!this._langMenuOpen}`;
+  }
+
+  _langMenuHtml() {
+    if (!this._langMenuOpen) return "";
+    const cur = this._prefs.lang || "auto";
+    const row = (val, label, code) => `<button class="lang-opt ${cur === val ? "on" : ""}" data-act="setlang" data-val="${esc(val)}" role="menuitemradio" aria-checked="${cur === val}">
+      <span class="lang-code">${esc(code)}</span><span class="lang-lbl">${esc(label)}</span><span class="lang-chk">${cur === val ? "✓" : ""}</span></button>`;
+    return `<div class="lang-menu" role="menu">
+      ${row("auto", this.t("lang_auto"), "AUTO")}
+      ${LANG_OPTIONS.map((l) => row(l.id, l.label, l.short)).join("")}
+    </div>`;
   }
 
   _renderHeader() {
@@ -552,6 +871,7 @@ class KRFinancePanel extends HTMLElement {
     this._hdrSig = this._headerSig();
     const menu = this._narrow
       ? `<button class="icon-btn" data-act="menu" aria-label="menu">☰</button>` : "";
+    const curShort = LANG_MAP[this.lang]?.short || "EN";
     h.innerHTML = `
       ${menu}
       <div class="brand">
@@ -560,7 +880,10 @@ class KRFinancePanel extends HTMLElement {
       </div>
       <div class="actions">
         <button class="icon-btn" data-act="refresh" title="${esc(this.t("refresh"))}" aria-label="${esc(this.t("refresh"))}">⟳</button>
-        <button class="pill-btn" data-act="lang" title="Language">${this.lang === "ko" ? "EN" : "한"}</button>
+        <div class="lang-wrap">
+          <button class="pill-btn ${this._langMenuOpen ? "on" : ""}" data-act="lang" title="${esc(this.t("s_language"))}" aria-haspopup="menu" aria-expanded="${!!this._langMenuOpen}">🌐 ${esc(curShort)} ▾</button>
+          ${this._langMenuHtml()}
+        </div>
         <button class="icon-btn" data-act="settings" title="${esc(this.t("settings"))}" aria-label="${esc(this.t("settings"))}">⚙</button>
         ${this._snap?.configured && this.isAdmin
           ? `<button class="add-btn" data-act="add" title="${esc(this.t("add"))}" aria-label="${esc(this.t("add"))}"><span class="plus">＋</span><span class="add-l">${esc(this.t("add"))}</span></button>`
@@ -616,7 +939,12 @@ class KRFinancePanel extends HTMLElement {
     if (ms < 0) ms = 0;
     const s = Math.floor(ms / 1000);
     const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
-    if (d > 0) return this.lang === "ko" ? `${d}일 ${h}시간` : `${d}d ${h}h`;
+    if (d > 0) {
+      if (this.lang === "ko") return `${d}일 ${h}시간`;
+      if (this.lang === "ja") return `${d}日 ${h}時間`;
+      if (this.lang === "zh") return `${d}天 ${h}小时`;
+      return `${d}d ${h}h`;
+    }
     const pad = (n) => String(n).padStart(2, "0");
     return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${m}:${pad(sec)}`;
   }
@@ -642,7 +970,7 @@ class KRFinancePanel extends HTMLElement {
   }
 
   // ---------------------------------------------------------------- data helpers
-  _indexName(key) { return INDEX_NAMES[this.lang][key] || key; }
+  _indexName(key) { return (INDEX_NAMES[this.lang] || INDEX_NAMES.en)[key] || key; }
   _orderedQuotes(filterFn) {
     const quotes = (this._snap?.quotes || []).filter(filterFn);
     const order = this._prefs.order || [];
@@ -1059,9 +1387,13 @@ class KRFinancePanel extends HTMLElement {
     const toggle = (key) => `<label class="sw-row"><input type="checkbox" data-act="prefbool" data-key="${key}" ${p[key] ? "checked" : ""}><span>${esc(this.t(key))}</span></label>`;
     const refresh = `<select data-act="prefnum" data-key="refresh_sec">${REFRESH_CHOICES.map((n) =>
       `<option value="${n}" ${p.refresh_sec === n ? "selected" : ""}>${esc(n < 60 ? this.t("sec_unit", { n }) : this.t("min_unit", { n: n / 60 }))}</option>`).join("")}</select>`;
+    const langSel = `<select data-act="prefstr" data-key="lang">
+      <option value="auto" ${p.lang === "auto" ? "selected" : ""}>${esc(this.t("lang_auto"))}</option>
+      ${LANG_OPTIONS.map((l) => `<option value="${l.id}" ${p.lang === l.id ? "selected" : ""}>${esc(l.label)} (${l.short})</option>`).join("")}
+    </select>`;
     return `
       <h4>${esc(this.t("s_language"))}</h4>
-      ${seg("lang", [["auto", this.t("lang_auto")], ["ko", "한국어"], ["en", "English"]])}
+      <div class="field">${langSel}</div>
       <h4>${esc(this.t("s_theme"))}</h4><div class="theme-grid">${themes}</div>
       <h4>${esc(this.t("s_layout"))}</h4><div class="theme-grid">${layouts}</div>
       <h4>${esc(this.t("s_upcolor"))}</h4>
@@ -1625,10 +1957,14 @@ class KRFinancePanel extends HTMLElement {
 
   // ---------------------------------------------------------------- events
   _onClick(e) {
+    if (this._langMenuOpen && !e.target.closest(".lang-wrap")) {
+      this._langMenuOpen = false;
+      this._renderHeader();
+    }
     const btn = e.target.closest("[data-act]");
     if (!btn || btn.disabled) return;
     const act = btn.dataset.act;
-    if (["search", "secvis", "prefbool", "prefnum"].includes(act)) return; // handled by input/change
+    if (["search", "secvis", "prefbool", "prefnum", "prefstr"].includes(act)) return; // handled by input/change
     if (btn.tagName === "A") return;
     e.preventDefault();
     this._dispatch(act, btn);
@@ -1646,7 +1982,12 @@ class KRFinancePanel extends HTMLElement {
         this._hass.callService("kr_finance_kit", "refresh_now", {}).catch(() => {}).finally(() => this._loadSnapshot());
         break;
       case "lang":
-        this._setPrefs({ lang: this.lang === "ko" ? "en" : "ko" });
+        this._langMenuOpen = !this._langMenuOpen;
+        this._renderHeader();
+        break;
+      case "setlang":
+        this._langMenuOpen = false;
+        this._setPrefs({ lang: d.val });
         break;
       case "settings": this._openSheet({ type: "settings" }); break;
       case "close": this._closeSheet(); break;
@@ -1765,6 +2106,8 @@ class KRFinancePanel extends HTMLElement {
       this._setPrefs({ [el.dataset.key]: el.checked });
     } else if (act === "prefnum") {
       this._setPrefs({ [el.dataset.key]: Number(el.value) });
+    } else if (act === "prefstr") {
+      this._setPrefs({ [el.dataset.key]: el.value });
     }
   }
 
@@ -1844,7 +2187,17 @@ header { display:flex; align-items:center; gap:8px; padding:10px 16px; padding-t
 .icon-btn.sm { min-width:32px; height:32px; font-size:13px; border-radius:9px; }
 .icon-btn.danger { color:#e5484d; }
 .icon-btn:disabled { opacity:.35; cursor:default; }
-.pill-btn { height:40px; min-width:44px; padding:0 12px; border-radius:20px; border:1px solid var(--border); background:var(--card); font-weight:700; font-size:13px; }
+.pill-btn { height:40px; min-width:44px; padding:0 12px; border-radius:20px; border:1px solid var(--border); background:var(--card); font-weight:700; font-size:13px; white-space:nowrap; }
+.pill-btn.on { border-color:var(--accent); color:var(--accent); }
+.lang-wrap { position:relative; }
+.lang-menu { position:absolute; top:calc(100% + 6px); right:0; min-width:190px; background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.22); padding:6px; z-index:25; display:flex; flex-direction:column; gap:2px; }
+.lang-opt { display:flex; align-items:center; gap:8px; width:100%; border:none; background:transparent; color:inherit; padding:9px 10px; border-radius:9px; text-align:left; font-size:13.5px; }
+.lang-opt:hover { background:var(--card2); }
+.lang-opt.on { background:color-mix(in srgb, var(--accent) 14%, transparent); color:var(--accent); font-weight:700; }
+.lang-code { font-family:var(--mono); font-size:11px; color:var(--muted); min-width:34px; }
+.lang-opt.on .lang-code { color:var(--accent); }
+.lang-lbl { flex:1; }
+.lang-chk { font-weight:800; }
 .tabs { display:flex; gap:4px; }
 .tabs.top { padding:8px 16px 0; max-width:1200px; width:100%; margin:0 auto; }
 .tabs.bottom { display:none; }

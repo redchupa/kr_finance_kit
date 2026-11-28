@@ -321,7 +321,7 @@ async def _get_corp_map_cached(
         vol.Required("type"): "kr_finance_kit/catalog",
         vol.Optional("market", default=MARKET_KR): vol.In(list(pd.PANEL_MARKETS)),
         vol.Optional("category", default="all"): vol.All(str, vol.Length(max=24)),
-        vol.Optional("lang", default="ko"): vol.In(["ko", "en"]),
+        vol.Optional("lang", default="ko"): vol.In(list(pd.SUPPORTED_LANGS)),
         vol.Optional("query", default=""): vol.All(str, vol.Length(max=40)),
         vol.Optional("limit", default=80): vol.All(int, vol.Range(min=1, max=150)),
     }
@@ -352,7 +352,7 @@ async def ws_catalog(hass: HomeAssistant, connection, msg: dict[str, Any]) -> No
     {
         vol.Required("type"): "kr_finance_kit/search",
         vol.Required("query"): vol.All(str, vol.Length(min=1, max=40)),
-        vol.Optional("lang", default="ko"): vol.In(["ko", "en"]),
+        vol.Optional("lang", default="ko"): vol.In(list(pd.SUPPORTED_LANGS)),
     }
 )
 @websocket_api.async_response

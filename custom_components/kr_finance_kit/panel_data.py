@@ -55,7 +55,8 @@ LAYOUTS: tuple[str, ...] = ("cards", "list", "compact", "big", "heatmap", "tape"
 SECTIONS: tuple[str, ...] = (
     "summary", "indices", "watchlist", "crypto", "portfolio", "disclosures",
 )
-LANGS: tuple[str, ...] = ("auto", "ko", "en")
+SUPPORTED_LANGS: tuple[str, ...] = ("ko", "en", "ja", "zh", "es", "fr", "de", "pt")
+LANGS: tuple[str, ...] = ("auto", *SUPPORTED_LANGS)
 UP_COLORS: tuple[str, ...] = ("auto", "red", "green")
 CHART_PERIODS: tuple[str, ...] = ("1d", "5d", "1mo", "6mo", "1y")
 

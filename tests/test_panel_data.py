@@ -45,6 +45,11 @@ def test_sanitize_prefs_keeps_valid_and_drops_unknown():
     assert "evil" not in out
 
 
+@pytest.mark.parametrize("lang", ["auto", "ko", "en", "ja", "zh", "es", "fr", "de", "pt"])
+def test_sanitize_prefs_accepts_all_supported_languages(lang):
+    assert pd.sanitize_prefs({"lang": lang})["lang"] == lang
+
+
 def test_sanitize_prefs_rejects_bad_values():
     out = pd.sanitize_prefs({"theme": "hacker", "layout": None, "sparkline": "yes",
                              "refresh_sec": True, "spark_period": "10y"})
