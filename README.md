@@ -5,7 +5,7 @@
 거실 태블릿이나 휴대폰 Home Assistant에서 국내·미국 주식, 코인, 환율, 보유 종목 손익, 공시까지 한눈에 확인하세요.
 대시보드를 직접 꾸밀 필요도, 증권사 계정을 연결할 필요도 없습니다.
 
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-FF8C00?style=flat-square&logo=homeassistantcommunitystore&logoColor=white)](https://hacs.xyz)
+[![HACS Default](https://img.shields.io/badge/HACS-Default-41BDF5?style=flat-square&logo=homeassistantcommunitystore&logoColor=white)](https://hacs.xyz)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.6%2B-03A9F4?style=flat-square&logo=home-assistant&logoColor=white)](https://www.home-assistant.io)
 [![Releases](https://img.shields.io/github/v/release/redchupa/kr_finance_kit?style=flat-square)](https://github.com/redchupa/kr_finance_kit/releases)
 
@@ -35,15 +35,13 @@
 
 Home Assistant에 [HACS](https://hacs.xyz)가 설치되어 있으면 3단계로 끝납니다.
 
-### 1. HACS에 저장소 추가
+### 1. HACS에서 Finance Kit 열기
 
-아래 버튼을 누르면 사용 중인 Home Assistant의 HACS 화면으로 바로 연결됩니다.
+Finance Kit은 HACS 기본 목록에 등록되어 있어 저장소를 따로 추가하지 않아도 됩니다. 아래 버튼을 누르면 사용 중인 Home Assistant의 HACS에서 Finance Kit 화면이 바로 열립니다.
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=redchupa&repository=kr_finance_kit&category=integration)
 
-버튼이 동작하지 않는다면 HACS 우측 상단 메뉴 → **사용자 정의 저장소**에서 아래 주소를 직접 추가해 주세요.
-- 주소: `https://github.com/redchupa/kr_finance_kit`
-- 유형: `통합 구성요소 (Integration)`
+버튼이 동작하지 않으면 HACS 검색창에 **Finance Kit**을 입력해 찾으면 됩니다.
 
 ### 2. 다운로드 후 재시작
 

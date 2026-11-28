@@ -93,7 +93,7 @@ git push origin v<version>
 ```
 
 릴리스 노트는 의미 있는 변경만 짧게 (예: "M2 보유 종목 + OpenDart 공시
-추가"). HACS Custom Repository 사용자에게 자동 노출됩니다.
+추가"). HACS 사용자에게 업데이트로 자동 노출됩니다.
 
 ## 6. HACS Default Repository PR (선택)
 

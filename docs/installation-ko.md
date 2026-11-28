@@ -1,10 +1,11 @@
 # 설치 가이드 (한국어)
 
-## 1. HACS 사용자 저장소로 등록
+## 1. HACS에서 설치
 
-1. HACS → 통합 → 우상단 ⋮ → **사용자 저장소**
-2. URL: `https://github.com/redchupa/kr_finance_kit` 입력, 카테고리: `Integration`
-3. Finance Kit 검색 → 다운로드 → HA 재시작
+Finance Kit은 HACS 기본 목록에 등록되어 있어 사용자 저장소를 추가하지 않아도 됩니다.
+
+1. HACS에서 Finance Kit 검색
+2. 다운로드 → HA 재시작
 
 ## 2. 통합 추가
 

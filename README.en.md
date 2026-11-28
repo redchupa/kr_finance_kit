@@ -5,7 +5,7 @@ English · **[한국어](README.md)**
 Track Korean and US stocks, crypto, FX, holdings P/L, and corporate disclosures right inside Home Assistant — on your wall tablet or phone.
 No dashboard YAML to write, and no brokerage account login required.
 
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-FF8C00?style=flat-square&logo=homeassistantcommunitystore&logoColor=white)](https://hacs.xyz)
+[![HACS Default](https://img.shields.io/badge/HACS-Default-41BDF5?style=flat-square&logo=homeassistantcommunitystore&logoColor=white)](https://hacs.xyz)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.6%2B-03A9F4?style=flat-square&logo=home-assistant&logoColor=white)](https://www.home-assistant.io)
 [![Releases](https://img.shields.io/github/v/release/redchupa/kr_finance_kit?style=flat-square)](https://github.com/redchupa/kr_finance_kit/releases)
 
@@ -35,15 +35,13 @@ No dashboard YAML to write, and no brokerage account login required.
 
 Requires Home Assistant with [HACS](https://hacs.xyz).
 
-### 1. Add the repository to HACS
+### 1. Open Finance Kit in HACS
 
-Click the button below to open this repository directly in HACS on your Home Assistant instance:
+Finance Kit is in the default HACS list, so there is no need to add a custom repository. Click the button below to open Finance Kit directly in HACS on your Home Assistant instance:
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=redchupa&repository=kr_finance_kit&category=integration)
 
-Or add it manually via HACS menu → **Custom repositories**:
-- Repository: `https://github.com/redchupa/kr_finance_kit`
-- Category: `Integration`
+If the button doesn't work, search for **Finance Kit** in HACS.
 
 ### 2. Download and restart
 

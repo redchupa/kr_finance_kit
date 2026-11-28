@@ -1,10 +1,11 @@
 # Installation (English)
 
-## 1. Add as a HACS custom repository
+## 1. Install from HACS
 
-1. HACS → Integrations → top-right menu → **Custom repositories**
-2. URL: `https://github.com/redchupa/kr_finance_kit`, category: `Integration`
-3. Search "Finance Kit" → download → restart HA
+Finance Kit is in the default HACS list, so you don't need to add a custom repository.
+
+1. Open HACS and search "Finance Kit"
+2. Download → restart HA
 
 ## 2. Add the integration
 
